@@ -1,0 +1,11 @@
+.git
+.github
+node_modules
+.next
+.env*.local
+.vscode
+.idea
+*.md
+!README.md
+Dockerfile
+docker-compose*.yml
