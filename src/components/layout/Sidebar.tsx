@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, ShieldCheck, History, LogOut, GraduationCap } from 'lucide-react';
+import { Home, User, ShieldCheck, History, LogOut, GraduationCap, Zap } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const nav = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard/quizzes', label: '🎯 Quizzes', icon: Zap },
   { href: '/dashboard/profile', label: 'Profile', icon: User },
   { href: '/dashboard/security', label: 'Security (2FA)', icon: ShieldCheck },
   { href: '/dashboard/history', label: 'Login History', icon: History },
