@@ -1,5 +1,9 @@
 import type { Config } from 'tailwindcss';
 
+/**
+ * SAFCO FINTECH brand palette
+ * Navy blue (primary) + orange (accent) taken from the official logo.
+ */
 const config: Config = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -9,19 +13,52 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50:  '#eef7ff',
-          100: '#d8ecff',
-          200: '#b8dfff',
-          300: '#87cbff',
-          400: '#50b0ff',
-          500: '#2892ff',
-          600: '#1174ef',
-          700: '#0e5fdc',
-          800: '#134db2',
-          900: '#164389',
-          950: '#122a54',
+        // Primary brand navy (from SAFCO logo)
+        navy: {
+          50:  '#eaf0f8',
+          100: '#c9d7ea',
+          200: '#93b0d5',
+          300: '#5d89c0',
+          400: '#2c65a8',
+          500: '#0f2a50',   // MAIN — matches logo
+          600: '#0d2547',
+          700: '#0a1e3b',
+          800: '#08182f',
+          900: '#050f1f',
+          950: '#020913',
         },
+
+        // Accent orange (from SAFCO logo "FinTech" text)
+        orange: {
+          50:  '#fff8ec',
+          100: '#ffedc9',
+          200: '#ffd88e',
+          300: '#ffbe4d',
+          400: '#ffa724',
+          500: '#f5a623',   // MAIN — matches logo
+          600: '#d98a10',
+          700: '#b46b10',
+          800: '#925514',
+          900: '#784616',
+          950: '#452408',
+        },
+
+        // Alias `brand` -> navy so existing components keep working
+        brand: {
+          50:  '#eaf0f8',
+          100: '#c9d7ea',
+          200: '#93b0d5',
+          300: '#5d89c0',
+          400: '#2c65a8',
+          500: '#0f2a50',
+          600: '#0d2547',
+          700: '#0a1e3b',
+          800: '#08182f',
+          900: '#050f1f',
+          950: '#020913',
+        },
+
+        // Kahoot answer palette (unchanged for quiz play buttons)
         kahoot: {
           red:    '#e21b3c',
           blue:   '#1368ce',

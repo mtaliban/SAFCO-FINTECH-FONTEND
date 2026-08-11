@@ -44,14 +44,12 @@ export default function PlayLandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <main className="min-h-screen bg-gradient-to-br from-navy-500 via-navy-700 to-navy-900 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,166,35,0.2),transparent_50%)]" />
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center font-bold text-brand-700">
-              SF
-            </div>
-            <span className="text-white font-bold text-xl">SAFCO PLAY</span>
+          <div className="flex justify-center mb-4">
+            <img src="/logo.png" alt="SAFCO FinTech" className="h-12 brightness-0 invert" />
           </div>
           <h1 className="text-4xl font-black text-white mb-2">🎯 Jiunge Quiz!</h1>
           <p className="text-white/70">Weka PIN uliyopewa na mwalimu</p>
@@ -82,7 +80,7 @@ export default function PlayLandingPage() {
             <form onSubmit={nickForm.handleSubmit(submitNickname)} className="space-y-5 animate-fade-in">
               <div className="text-center mb-2">
                 <div className="text-sm text-slate-500">PIN</div>
-                <div className="text-2xl font-mono font-bold text-brand-700">{pin}</div>
+                <div className="text-2xl font-mono font-bold text-navy-500">{pin}</div>
               </div>
               <div>
                 <label className="label flex items-center gap-2"><User className="w-4 h-4" /> Nickname</label>
@@ -97,7 +95,7 @@ export default function PlayLandingPage() {
                   <p className="text-red-600 text-sm mt-1">{nickForm.formState.errors.nickname.message}</p>
                 )}
               </div>
-              <button type="submit" disabled={nickForm.formState.isSubmitting} className="btn-primary w-full text-lg py-4 bg-gradient-to-r from-brand-600 to-brand-700">
+              <button type="submit" disabled={nickForm.formState.isSubmitting} className="btn-primary w-full text-lg py-4 bg-gradient-to-r from-orange-500 to-orange-600">
                 {nickForm.formState.isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Jiunge Sasa 🚀'}
               </button>
               <button
