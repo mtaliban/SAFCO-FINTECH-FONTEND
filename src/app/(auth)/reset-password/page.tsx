@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, Lock, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { authApi } from '@/lib/auth';
 
 const schema = z
@@ -21,7 +21,7 @@ const schema = z
 
 type FormData = z.infer<typeof schema>;
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') || '';
@@ -92,5 +92,13 @@ export default function ResetPasswordPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-navy-500" /></div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }

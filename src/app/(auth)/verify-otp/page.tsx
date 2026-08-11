@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, CheckCircle2 } from 'lucide-react';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import toast from 'react-hot-toast';
 import { authApi } from '@/lib/auth';
 
@@ -16,7 +16,7 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
-export default function VerifyOtpPage() {
+function VerifyOtpForm() {
   const router = useRouter();
   const params = useSearchParams();
   const email = params.get('email') || '';
@@ -90,5 +90,13 @@ export default function VerifyOtpPage() {
         💡 <strong>Dev tip:</strong> OTP inatumwa kwa <a href="http://localhost:8025" target="_blank" className="underline font-semibold">MailHog</a> (localhost:8025) kwa testing.
       </div>
     </div>
+  );
+}
+
+export default function VerifyOtpPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-navy-500" /></div>}>
+      <VerifyOtpForm />
+    </Suspense>
   );
 }
