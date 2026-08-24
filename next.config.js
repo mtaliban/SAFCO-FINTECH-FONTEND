@@ -8,12 +8,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.amazonaws.com' },
     ],
   },
-  async rewrites() {
-    return [
-      // proxy /api/* to Laravel backend (avoids CORS in dev)
-      { source: '/api/:path*', destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/:path*` },
-    ];
-  },
 };
 
 module.exports = nextConfig;
