@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="grid md:grid-cols-2 gap-4">
         {[
           { title: '📚 Courses', desc: 'Angalia kozi zote', href: '#', badge: 'Module 2 - Coming' },
-          { title: '🎯 Live Quiz (Kahoot-style)', desc: 'Cheza quiz kwa PIN', href: '#', badge: 'Module 7 - Coming' },
+          { title: '🎯 SAFCO Live Quiz', desc: 'Cheza quiz kwa PIN', href: '/dashboard/quizzes', badge: 'Available' },
           { title: '🏆 Certificates', desc: 'Vyeti vyako', href: '#', badge: 'Module 10 - Coming' },
           { title: '📊 Reports', desc: 'Angalia progress yako', href: '#', badge: 'Module 11 - Coming' },
         ].map((item) => (

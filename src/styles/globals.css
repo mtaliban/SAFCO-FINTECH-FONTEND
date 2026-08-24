@@ -50,4 +50,8 @@
   .card {
     @apply rounded-xl border border-slate-200 bg-white shadow-sm;
   }
+
+  .help {
+    @apply text-xs text-slate-500 mt-1;
+  }
 }

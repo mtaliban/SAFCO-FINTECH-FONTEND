@@ -16,7 +16,7 @@ export default function QuizzesListPage() {
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Quizzes</h1>
-          <p className="text-slate-600 mt-1">Tengeneza na host live Kahoot-style quizzes.</p>
+          <p className="text-slate-600 mt-1">Tengeneza na host SAFCO Live Quizzes.</p>
         </div>
         <Link href="/dashboard/quizzes/new" className="btn-primary">
           <Plus className="w-4 h-4" /> Quiz Mpya
@@ -25,7 +25,7 @@ export default function QuizzesListPage() {
 
       {isLoading ? (
         <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>
-      ) : !data?.data?.length ? (
+      ) : !data?.length ? (
         <div className="card p-12 text-center">
           <div className="text-6xl mb-4">🎯</div>
           <h3 className="text-xl font-bold text-slate-900 mb-2">Hakuna quiz bado</h3>
@@ -36,7 +36,7 @@ export default function QuizzesListPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.data.map((q: Quiz) => (
+          {data.map((q: Quiz) => (
             <div key={q.id} className="card p-5 hover:shadow-md transition">
               <div className="flex items-start justify-between mb-3">
                 <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
@@ -48,7 +48,7 @@ export default function QuizzesListPage() {
                 </span>
                 {q.mode === 'live_kahoot' && (
                   <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-brand-100 text-brand-700">
-                    <Zap className="w-3 h-3" /> Live Kahoot
+                    <Zap className="w-3 h-3" /> SAFCO Live
                   </span>
                 )}
               </div>

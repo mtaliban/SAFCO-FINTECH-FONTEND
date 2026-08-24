@@ -35,7 +35,7 @@ export default function HomePage() {
           </h1>
           <p className="text-lg text-slate-600 mb-8 max-w-lg">
             Master Excel, Power BI, Accounting, IFRS, Coding &amp; more with SAFCO FinTech&apos;s
-            Kahoot-style interactive quizzes and industry-recognized certifications.
+            SAFCO Live Quizzes and industry-recognized certifications.
           </p>
           <div className="flex flex-wrap gap-3">
             <Link href="/register" className="btn-accent text-base px-6 py-3">
@@ -77,7 +77,7 @@ export default function HomePage() {
                 🎯
               </div>
               <div>
-                <div className="font-bold">Live Kahoot-Style Quizzes</div>
+                <div className="font-bold">SAFCO Live Quizzes</div>
                 <div className="text-xs text-white/70">Real-time competitions with PIN codes</div>
               </div>
             </div>
@@ -100,7 +100,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-4 gap-4">
             {[
               { icon: GraduationCap, title: '10+ Course Categories', desc: 'Excel, Power BI, Finance, IFRS, ERP & more' },
-              { icon: Zap, title: 'Kahoot-Style Quizzes', desc: 'Live competitions with real-time leaderboards' },
+              { icon: Zap, title: 'SAFCO Live Quizzes', desc: 'Live competitions with real-time leaderboards' },
               { icon: Trophy, title: 'Certificates', desc: 'QR-verifiable certificates on completion' },
               { icon: Users, title: 'Trusted by Banks', desc: 'BOT · CRDB · NMB · NBC · SACCOS' },
             ].map(({ icon: Icon, title, desc }) => (

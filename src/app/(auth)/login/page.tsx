@@ -33,7 +33,15 @@ export default function LoginPage() {
     try {
       const res = await login(data.identifier, data.password, 'web');
       toast.success(`Karibu, ${res.user.profile?.first_name || res.user.email}!`);
-      router.push('/dashboard');
+      const role = res.user.roles?.[0];
+      const landing = ({
+        system_admin: '/admin',
+        trainer: '/trainer',
+        facilitator: '/trainer',
+        student: '/student',
+        corporate_client: '/corporate',
+      } as Record<string, string>)[role ?? ''] ?? '/dashboard';
+      router.push(landing);
     } catch {
       // toast already shown by axios interceptor
     }
@@ -121,10 +129,13 @@ export default function LoginPage() {
         </Link>
       </p>
 
-      <div className="mt-8 p-4 rounded-lg bg-brand-50 border border-brand-200 text-xs text-brand-800">
-        <strong className="block mb-1">Test credentials (from seeder):</strong>
-        Admin: <code>admin@safcofintech.co.tz</code> / <code>Admin@2026!</code><br />
-        Trainer: <code>yustino.nyendeza@safcofintech.co.tz</code> / <code>Trainer@2026!</code>
+      <div className="mt-8 p-4 rounded-lg bg-brand-50 border border-brand-200 text-xs text-brand-800 space-y-1">
+        <strong className="block mb-1">Test credentials (all 5 roles):</strong>
+        <div><strong>Admin:</strong> admin@safcofintech.co.tz / Admin@2026!</div>
+        <div><strong>Trainer:</strong> yustino.nyendeza@safcofintech.co.tz / Trainer@2026!</div>
+        <div><strong>Facilitator:</strong> facilitator@safcofintech.co.tz / Facilitator@2026!</div>
+        <div><strong>Student:</strong> student@safcofintech.co.tz / Student@2026!</div>
+        <div><strong>Corporate:</strong> admin@bot.go.tz / Corporate@2026!</div>
       </div>
     </div>
   );

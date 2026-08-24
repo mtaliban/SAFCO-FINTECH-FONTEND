@@ -1,13 +1,17 @@
+########################################################
+# SAFCO FINTECH LMS - Frontend CI (Pull Requests only)
+#
+# Runs on PRs targeting main/develop. Main branch pushes
+# are gated by the CD workflow's own test job.
+########################################################
 name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
     branches: [main, develop]
 
 jobs:
-  build:
+  quality-check:
     name: Lint · Type-check · Build
     runs-on: ubuntu-latest
     steps:
@@ -22,12 +26,15 @@ jobs:
       - name: Install dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Type check
-        run: npm run type-check
+      - name: ESLint
+        run: npm run lint
         continue-on-error: true
 
-      - name: Next.js build
+      - name: TypeScript type check
+        run: npm run type-check
+
+      - name: Next.js production build (smoke test)
         run: npm run build
         env:
-          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+          NEXT_PUBLIC_API_URL: http://13.62.222.211:8000/api
           NEXT_TELEMETRY_DISABLED: "1"

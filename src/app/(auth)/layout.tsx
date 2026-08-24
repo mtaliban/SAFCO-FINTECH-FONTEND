@@ -16,7 +16,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </h1>
           <p className="text-lg text-white/80 max-w-md">
             Jiunge na maelfu ya wanafunzi wanaojifunza Excel, Power BI, Accounting, IFRS na coding
-            kupitia jukwaa la kisasa la Kahoot-style quizzes.
+            kupitia jukwaa la kisasa la SAFCO Live Quizzes.
           </p>
         </div>
 
@@ -31,7 +31,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-2xl">⚡</div>
             <div>
-              <div className="font-semibold">Kahoot-Style Live Quizzes</div>
+              <div className="font-semibold">SAFCO Live Quizzes</div>
               <div className="text-sm text-white/60">Compete in real time, climb the leaderboard</div>
             </div>
           </div>
