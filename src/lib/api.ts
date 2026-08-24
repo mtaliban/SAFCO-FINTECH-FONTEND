@@ -13,7 +13,7 @@ import toast from 'react-hot-toast';
 export const TOKEN_KEY = 'safco_token';
 export const USER_KEY = 'safco_user';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api/proxy';
 
 export const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/v1`,
