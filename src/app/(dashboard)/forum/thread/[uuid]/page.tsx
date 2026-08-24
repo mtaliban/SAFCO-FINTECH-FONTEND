@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { forumApi, type PostView, type ThreadShowResponse } from '@/lib/forum/api';
-import { timeAgo } from '../../page';
+import { timeAgo } from '../../_shared';
 
 export default function ThreadDetailPage() {
   const params = useParams();

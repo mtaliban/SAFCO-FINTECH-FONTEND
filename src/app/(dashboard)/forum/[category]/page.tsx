@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2, Plus, Search, ArrowLeft, Filter } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { forumApi, type CategorySlug, type ThreadListQuery } from '@/lib/forum/api';
-import { ThreadRow } from '../page';
+import { ThreadRow } from '../_shared';
 
 export default function CategoryThreadsPage() {
   const params = useParams();
