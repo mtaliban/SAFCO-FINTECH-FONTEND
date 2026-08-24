@@ -1,22 +1,16 @@
 ########################################################
 # SAFCO FINTECH LMS - Frontend Continuous Deployment
 #
-# On push to `main` (or tag v*.*.*):
-#   1. Type-check + lint (gate)
-#   2. Build sanity check
-#   3. Deploy to Vercel
-#
-# Required repository secrets:
-#   VERCEL_TOKEN       - Vercel personal token
-#   VERCEL_ORG_ID      - Team or personal org id
-#   VERCEL_PROJECT_ID  - Project id from `.vercel/project.json`
+# Triggered by CI workflow completion on main branch.
+# Runs ONLY if CI passed.
 ########################################################
 name: CD
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
-    tags: ["v*.*.*"]
   workflow_dispatch:
 
 env:
@@ -24,42 +18,16 @@ env:
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
 jobs:
-  ##########################################
-  # 0. Test job — must pass before deploy
-  ##########################################
-  test:
-    name: Type-check · Build (gate)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm install --legacy-peer-deps
-
-      - name: TypeScript type check
-        run: npm run type-check
-
-      - name: Production build sanity check
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: http://13.62.222.211:8000/api
-          NEXT_TELEMETRY_DISABLED: "1"
-
-  ##########################################
-  # 1. Deploy to Vercel (only if tests pass)
-  ##########################################
   deploy-vercel:
     name: Deploy to Vercel (production)
     runs-on: ubuntu-latest
-    needs: test
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
