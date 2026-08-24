@@ -43,8 +43,8 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     try {
       await register(data);
-      toast.success('Umefanikiwa kujisajili! Angalia email yako kwa OTP.');
-      router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
+      toast.success('Karibu SAFCO! Umefanikiwa kujisajili.');
+      router.push('/dashboard');
     } catch {
       // toast handled by interceptor
     }

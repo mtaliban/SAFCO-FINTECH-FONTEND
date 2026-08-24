@@ -19,7 +19,7 @@ export const authApi = {
     gender?: string;
     position?: string;
     role?: string;
-  }) => apiRequest.post<{ user: User; requires_verification: boolean }>('/auth/register', payload),
+  }) => apiRequest.post<LoginResponse>('/auth/register', payload),
 
   login: (payload: { identifier: string; password: string; device_name?: string }) =>
     apiRequest.post<LoginResponse>('/auth/login', payload),

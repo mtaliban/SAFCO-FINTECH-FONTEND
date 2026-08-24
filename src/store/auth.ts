@@ -39,9 +39,12 @@ export const useAuthStore = create<AuthState>()(
       async register(payload) {
         set({ loading: true });
         try {
-          await authApi.register(payload);
-        } finally {
+          const res = await authApi.register(payload);
+          saveSession(res);
+          set({ user: res.user, token: res.token, isAuthenticated: true, loading: false });
+        } catch (e) {
           set({ loading: false });
+          throw e;
         }
       },
 
