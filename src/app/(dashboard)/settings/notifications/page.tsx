@@ -49,15 +49,10 @@ export default function NotificationSettingsPage() {
     onError: () => toast.error('Failed to save'),
   });
 
-  if (isLoading || !data) {
-    return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>;
-  }
-
-  const events = data.events;
-  const activeChannels = data.active_channels;
+  const events = data?.events ?? [];
+  const activeChannels = data?.active_channels ?? [];
   const dirtyCount = Object.keys(dirty).length;
 
-  // Group events by category
   const grouped = useMemo(() => {
     const m = new Map<string, EventPrefRow[]>();
     for (const e of events) {
@@ -66,6 +61,10 @@ export default function NotificationSettingsPage() {
     }
     return Array.from(m.entries());
   }, [events]);
+
+  if (isLoading || !data) {
+    return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>;
+  }
 
   const isEnabled = (row: EventPrefRow, ch: Channel) => {
     const k = row.key + '|' + ch;
