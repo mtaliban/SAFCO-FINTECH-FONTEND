@@ -42,6 +42,8 @@ export default function EditCoursePage() {
   const [addLessonForModule, setAddLessonForModule] = useState<string | null>(null);
   const [attachQuizForModule, setAttachQuizForModule] = useState<string | null>(null);
   const [addAssignmentForLesson, setAddAssignmentForLesson] = useState<string | null>(null);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['course', uuid] });
@@ -58,11 +60,20 @@ export default function EditCoursePage() {
   async function handleThumbnail(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    // Show local preview immediately while uploading
+    const preview = URL.createObjectURL(file);
+    setThumbnailPreview(preview);
+    setThumbnailUploading(true);
     try {
       await courseApi.uploadThumbnail(uuid as string, file);
-      toast.success('Thumbnail imepakiwa');
+      toast.success('Thumbnail imepakiwa ✓');
       refresh();
-    } catch { /* toast handled */ }
+    } catch {
+      setThumbnailPreview(null);
+    } finally {
+      setThumbnailUploading(false);
+      URL.revokeObjectURL(preview);
+    }
   }
 
   async function updateInstructor(instructorUuid: string) {
@@ -138,18 +149,38 @@ export default function EditCoursePage() {
         <div className="card p-5">
           <h3 className="font-bold text-slate-900 mb-2">Thumbnail</h3>
           <div className="aspect-video rounded-lg bg-gradient-to-br from-navy-500 to-navy-800 relative overflow-hidden mb-3">
-            {course.thumbnail_url ? (
-              <Image src={mediaUrl(course.thumbnail_url)!} alt="" fill className="object-cover" />
+            {(thumbnailPreview || course.thumbnail_url) ? (
+              <Image
+                src={thumbnailPreview ?? mediaUrl(course.thumbnail_url)!}
+                alt=""
+                fill
+                className="object-cover"
+                unoptimized={!!thumbnailPreview}
+              />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-40">📚</div>
+            )}
+            {thumbnailUploading && (
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-2">
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                <span className="text-white text-sm font-semibold">Inapakia S3...</span>
+              </div>
             )}
           </div>
           {isEditable && (
             <>
-              <input type="file" accept="image/*" hidden ref={fileRef} onChange={handleThumbnail} />
-              <button onClick={() => fileRef.current?.click()} className="btn-secondary text-sm w-full">
-                <Upload className="w-4 h-4" /> {course.thumbnail_url ? 'Badilisha' : 'Pakia'}
+              <input type="file" accept="image/jpeg,image/png,image/webp" hidden ref={fileRef} onChange={handleThumbnail} />
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={thumbnailUploading}
+                className="btn-secondary text-sm w-full disabled:opacity-60"
+              >
+                {thumbnailUploading
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Inapakia...</>
+                  : <><Upload className="w-4 h-4" /> {course.thumbnail_url ? 'Badilisha Thumbnail' : 'Pakia Thumbnail'}</>
+                }
               </button>
+              <p className="text-xs text-slate-400 mt-1 text-center">JPG · PNG · WebP · max 4MB</p>
             </>
           )}
         </div>
