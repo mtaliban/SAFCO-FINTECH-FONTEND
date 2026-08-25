@@ -37,7 +37,7 @@ export default function LoginPage() {
       const landing = ({
         system_admin: '/admin',
         trainer: '/trainer',
-        facilitator: '/trainer',
+        facilitator: '/dashboard',
         student: '/student',
         corporate_client: '/corporate',
       } as Record<string, string>)[role ?? ''] ?? '/dashboard';
@@ -108,13 +108,13 @@ export default function LoginPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <a
-            href="http://localhost:8000/api/v1/auth/social/google"
+            href="/api/proxy/v1/auth/social/google"
             className="btn-secondary"
           >
             <span className="text-lg">🌐</span> Google
           </a>
           <a
-            href="http://localhost:8000/api/v1/auth/social/microsoft"
+            href="/api/proxy/v1/auth/social/microsoft"
             className="btn-secondary"
           >
             <span className="text-lg">🪟</span> Microsoft
