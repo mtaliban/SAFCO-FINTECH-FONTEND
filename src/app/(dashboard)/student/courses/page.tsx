@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BookOpen, Users, Clock, Loader2 } from 'lucide-react';
 import { courseApi, CATEGORIES, CATEGORY_LABEL, type Category } from '@/lib/course/api';
+import { mediaUrl } from '@/lib/utils';
 
 export default function BrowseCoursesPage() {
   const [category, setCategory] = useState<Category | ''>('');
@@ -56,7 +57,7 @@ export default function BrowseCoursesPage() {
             <Link key={c.uuid} href={`/student/courses/${c.uuid}`} className="card overflow-hidden hover:shadow-md hover:border-brand-300 transition group">
               <div className="aspect-video bg-gradient-to-br from-navy-500 to-navy-800 relative">
                 {c.thumbnail_url ? (
-                  <Image src={`http://localhost:8000${c.thumbnail_url}`} alt="" fill className="object-cover" />
+                  <Image src={mediaUrl(c.thumbnail_url)!} alt="" fill className="object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-40">📚</div>
                 )}

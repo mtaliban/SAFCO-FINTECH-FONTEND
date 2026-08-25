@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Loader2, BookOpen, Users, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { courseApi, CATEGORY_LABEL, Course } from '@/lib/course/api';
+import { mediaUrl } from '@/lib/utils';
 import { Pagination, usePagedSlice } from '@/components/ui/Pagination';
 
 const PAGE_SIZE = 10;
@@ -63,7 +64,7 @@ export default function TrainerCoursesPage() {
               <Link key={c.uuid} href={`/trainer/courses/${c.uuid}/edit`} className="card hover:shadow-md transition overflow-hidden group">
                 <div className="aspect-video bg-gradient-to-br from-navy-500 to-navy-800 relative">
                   {c.thumbnail_url ? (
-                    <Image src={`http://localhost:8000${c.thumbnail_url}`} alt="" fill className="object-cover" />
+                    <Image src={mediaUrl(c.thumbnail_url)!} alt="" fill className="object-cover" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-6xl opacity-40">📚</div>
                   )}

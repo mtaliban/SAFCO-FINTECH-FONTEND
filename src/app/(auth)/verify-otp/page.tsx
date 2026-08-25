@@ -86,9 +86,6 @@ function VerifyOtpForm() {
         </div>
       </div>
 
-      <div className="mt-8 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
-        💡 <strong>Dev tip:</strong> OTP inatumwa kwa <a href="http://localhost:8025" target="_blank" className="underline font-semibold">MailHog</a> (localhost:8025) kwa testing.
-      </div>
     </div>
   );
 }

@@ -38,10 +38,8 @@ export interface PublicVerifyResult {
 export const certificateApi = {
   myList: () => apiRequest.get<CertificateRow[]>('/student/certificates'),
   get: (uuid: string) => apiRequest.get<CertificateRow>(`/certificates/${uuid}`),
-  qrUrl: (uuid: string) =>
-    `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1')}/certificates/${uuid}/qr`,
-  pdfUrl: (uuid: string) =>
-    `${(process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api/v1')}/certificates/${uuid}/pdf`,
+  qrUrl: (uuid: string) => `/api/proxy/v1/certificates/${uuid}/qr`,
+  pdfUrl: (uuid: string) => `/api/proxy/v1/certificates/${uuid}/pdf`,
   /**
    * Download the PDF as a blob (uses fetch with auth header, then triggers a save-as).
    * Direct <a href={pdfUrl}> won't work because we can't attach the Bearer via anchor tag.

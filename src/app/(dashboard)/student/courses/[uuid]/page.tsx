@@ -8,6 +8,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { BookOpen, Users, Clock, PlayCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { courseApi, enrollmentApi, CATEGORY_LABEL, type Lesson } from '@/lib/course/api';
+import { mediaUrl } from '@/lib/utils';
 
 export default function CourseDetailPage() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -62,7 +63,7 @@ export default function CourseDetailPage() {
         <div className="card overflow-hidden">
           <div className="aspect-video bg-gradient-to-br from-navy-500 to-navy-800 relative">
             {course.thumbnail_url ? (
-              <Image src={`http://localhost:8000${course.thumbnail_url}`} alt="" fill className="object-cover" />
+              <Image src={mediaUrl(course.thumbnail_url)!} alt="" fill className="object-cover" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-40">📚</div>
             )}

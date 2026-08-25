@@ -60,7 +60,7 @@ export const attendanceApi = {
   open: (uuid: string) => apiRequest.post<AttendanceSession>(`/attendance-sessions/${uuid}/open`),
   close: (uuid: string) => apiRequest.post<AttendanceSession>(`/attendance-sessions/${uuid}/close`),
   rotateQr: (uuid: string) => apiRequest.post<{ qr_token: string }>(`/attendance-sessions/${uuid}/rotate-qr`),
-  qrUrl: (uuid: string) => `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/v1/attendance-sessions/${uuid}/qr`,
+  qrUrl: (uuid: string) => `/api/proxy/v1/attendance-sessions/${uuid}/qr`,
   mark: (sessionUuid: string, studentUuid: string, status: RecordStatus, notes?: string) =>
     apiRequest.post<AttendanceRecord>(`/attendance-sessions/${sessionUuid}/mark`, {
       student_uuid: studentUuid, status, notes,

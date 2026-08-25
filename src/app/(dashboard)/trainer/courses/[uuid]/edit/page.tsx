@@ -12,6 +12,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
+import { mediaUrl } from '@/lib/utils';
 import {
   courseApi, moduleApi, lessonApi, assignmentApi, instructorApi, materialApi,
   CATEGORY_LABEL, MATERIAL_TYPE_LABEL,
@@ -139,7 +140,7 @@ export default function EditCoursePage() {
           <h3 className="font-bold text-slate-900 mb-2">Thumbnail</h3>
           <div className="aspect-video rounded-lg bg-gradient-to-br from-navy-500 to-navy-800 relative overflow-hidden mb-3">
             {course.thumbnail_url ? (
-              <Image src={`http://localhost:8000${course.thumbnail_url}`} alt="" fill className="object-cover" />
+              <Image src={mediaUrl(course.thumbnail_url)!} alt="" fill className="object-cover" />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-4xl opacity-40">📚</div>
             )}

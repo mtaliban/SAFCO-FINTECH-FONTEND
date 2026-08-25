@@ -9,6 +9,7 @@ import {
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { courseApi, lessonApi, type LessonMaterial, type MaterialType, type Assignment } from '@/lib/course/api';
+import { mediaUrl } from '@/lib/utils';
 
 export default function LessonViewPage() {
   const { uuid, lessonUuid } = useParams<{ uuid: string; lessonUuid: string }>();
@@ -147,8 +148,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function VideoMaterial({ material }: { material: LessonMaterial }) {
   // Prefer the server-side streaming endpoint (with Range Requests) for stored MP4s.
   // Falls back to embedded iframe for YouTube/Vimeo.
-  const streamUrl = material.stream_url ? `http://localhost:8000${material.stream_url}` : material.url;
-  const poster = material.thumbnail_url ? `http://localhost:8000${material.thumbnail_url}` : undefined;
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
+  const poster = mediaUrl(material.thumbnail_url);
 
   return (
     <div className="mb-4">
@@ -213,7 +214,7 @@ function extractEmbed(url: string): string | null {
 
 function DocumentMaterial({ material }: { material: LessonMaterial }) {
   const isStorage = material.url.startsWith('/storage/');
-  const fullUrl = isStorage ? `http://localhost:8000${material.url}` : material.url;
+  const fullUrl = isStorage ? mediaUrl(material.url)! : material.url;
   const isPdf = material.type === 'document_pdf';
 
   return (
@@ -258,7 +259,7 @@ function docColor(type: MaterialType): string {
 
 function InteractiveMaterial({ material }: { material: LessonMaterial }) {
   const isStorage = material.url.startsWith('/storage/');
-  const fullUrl = isStorage ? `http://localhost:8000${material.url}` : material.url;
+  const fullUrl = isStorage ? mediaUrl(material.url)! : material.url;
 
   if (material.type === 'interactive_html5' && !isStorage) {
     return (

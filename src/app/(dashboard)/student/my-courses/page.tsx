@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, BookOpen, CheckCircle2 } from 'lucide-react';
 import { enrollmentApi, CATEGORY_LABEL } from '@/lib/course/api';
+import { mediaUrl } from '@/lib/utils';
 
 export default function MyCoursesPage() {
   const { data, isLoading } = useQuery({
@@ -36,7 +37,7 @@ export default function MyCoursesPage() {
             <Link key={e.uuid} href={`/student/courses/${e.course.uuid}`} className="card overflow-hidden hover:shadow-md transition">
               <div className="aspect-video bg-gradient-to-br from-navy-500 to-navy-800 relative">
                 {e.course.thumbnail_url ? (
-                  <Image src={`http://localhost:8000${e.course.thumbnail_url}`} alt="" fill className="object-cover" />
+                  <Image src={mediaUrl(e.course.thumbnail_url)!} alt="" fill className="object-cover" />
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-40">📚</div>
                 )}
