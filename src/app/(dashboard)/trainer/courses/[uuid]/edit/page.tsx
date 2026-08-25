@@ -4,8 +4,8 @@ import { useParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef } from 'react';
 import {
-  Loader2, Plus, CheckCircle2, Trash2, Upload, Video, FileText,
-  PlayCircle, Zap, ChevronUp, ChevronDown, Award, ClipboardList,
+  Loader2, Plus, CheckCircle2, Trash2, Upload, FileText,
+  PlayCircle, Zap, ChevronUp, ChevronDown, ClipboardList,
   Package, FileArchive, Youtube, Film,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -42,7 +42,6 @@ export default function EditCoursePage() {
   const [addLessonForModule, setAddLessonForModule] = useState<string | null>(null);
   const [attachQuizForModule, setAttachQuizForModule] = useState<string | null>(null);
   const [addAssignmentForLesson, setAddAssignmentForLesson] = useState<string | null>(null);
-  const [addMaterialForLesson, setAddMaterialForLesson] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ['course', uuid] });
@@ -217,7 +216,6 @@ export default function EditCoursePage() {
                 onAddLesson={() => setAddLessonForModule(m.uuid)}
                 onAttachQuiz={() => setAttachQuizForModule(m.uuid)}
                 onAddAssignment={(lu) => setAddAssignmentForLesson(lu)}
-                onAddMaterial={(lu) => setAddMaterialForLesson(lu)}
                 onMoveLesson={(idx, dir) => moveLesson(m, idx, dir)}
                 onChanged={refresh}
               />
@@ -255,13 +253,6 @@ export default function EditCoursePage() {
           onCreated={() => { refresh(); setAddAssignmentForLesson(null); }}
         />
       )}
-      {addMaterialForLesson && (
-        <AddMaterialModal
-          lessonUuid={addMaterialForLesson}
-          onClose={() => setAddMaterialForLesson(null)}
-          onCreated={() => { refresh(); setAddMaterialForLesson(null); }}
-        />
-      )}
     </div>
   );
 }
@@ -280,13 +271,12 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, onAttachQuiz, onAddAssignment, onAddMaterial, onMoveLesson, onChanged }: {
+function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, onAttachQuiz, onAddAssignment, onMoveLesson, onChanged }: {
   module: CourseModule;
   position: number; total: number; editable: boolean;
   onMove: (dir: -1 | 1) => void;
   onAddLesson: () => void; onAttachQuiz: () => void;
   onAddAssignment: (lessonUuid: string) => void;
-  onAddMaterial: (lessonUuid: string) => void;
   onMoveLesson: (idx: number, dir: -1 | 1) => void;
   onChanged: () => void;
 }) {
@@ -353,7 +343,6 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
               onMove={(dir) => onMoveLesson(j, dir)}
               onDeleted={onChanged}
               onAddAssignment={() => onAddAssignment(l.uuid)}
-              onAddMaterial={() => onAddMaterial(l.uuid)}
               first={j === 0}
               last={j === (module.lessons?.length ?? 1) - 1}
             />
@@ -376,11 +365,17 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
   );
 }
 
-function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onAddMaterial, onMove, first, last }: {
+function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, first, last }: {
   lesson: Lesson; num: string; editable: boolean;
-  onDeleted: () => void; onAddAssignment: () => void; onAddMaterial: () => void;
+  onDeleted: () => void; onAddAssignment: () => void;
   onMove: (dir: -1 | 1) => void; first: boolean; last: boolean;
 }) {
+  const videoRef = useRef<HTMLInputElement>(null);
+  const pdfRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
+  const [uploadPct, setUploadPct] = useState<{ label: string; pct: number } | null>(null);
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
+
   async function del() {
     if (!confirm(`Futa lesson "${lesson.title}"?`)) return;
     await lessonApi.destroy(lesson.uuid);
@@ -393,42 +388,135 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onAddMat
     toast.success('Assignment imefutwa');
     onDeleted();
   }
+
+  async function handleFileUpload(file: File, label: string, type?: MaterialType) {
+    setUploadPct({ label, pct: 0 });
+    try {
+      const title = file.name.replace(/\.[^.]+$/, '');
+      await materialApi.upload(lesson.uuid, title, file, type, (pct) => setUploadPct({ label, pct }));
+      toast.success(`${label} imepakiwa`);
+      onDeleted();
+    } catch {
+      toast.error('Upload imeshindwa');
+    } finally {
+      setUploadPct(null);
+    }
+  }
+
   return (
-    <div className="p-2 rounded bg-white">
+    <div className="rounded-lg bg-white border border-slate-100 p-3 mb-2">
+      {/* Lesson header */}
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-xs font-mono text-slate-400 w-10">{num}</span>
+        <span className="text-xs font-mono text-slate-400 w-10 shrink-0">{num}</span>
         <PlayCircle className="w-4 h-4 text-brand-500 shrink-0" />
-        <span className="flex-1 text-slate-800">{lesson.title}</span>
-        <div className="flex items-center gap-2 text-xs text-slate-400">
-          {lesson.video_url && <Video className="w-3 h-3" />}
-          {lesson.pdf_url && <FileText className="w-3 h-3" />}
-          {lesson.duration_seconds && <span>{Math.round(lesson.duration_seconds / 60)}m</span>}
-        </div>
+        <span className="flex-1 font-medium text-slate-800">{lesson.title}</span>
+        {lesson.duration_seconds && (
+          <span className="text-xs text-slate-400">{Math.round(lesson.duration_seconds / 60)}m</span>
+        )}
         {editable && (
           <div className="flex items-center gap-1">
-            <button onClick={() => onMove(-1)} disabled={first} className="p-1 text-slate-500 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
-            <button onClick={() => onMove(1)} disabled={last} className="p-1 text-slate-500 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
-            <button onClick={onAddMaterial} title="Add material" className="text-xs text-brand-600 hover:underline flex items-center gap-1"><Package className="w-3 h-3" /></button>
-            <button onClick={onAddAssignment} title="Add assignment" className="text-xs text-brand-600 hover:underline flex items-center gap-1"><Award className="w-3 h-3" /></button>
-            <button onClick={del} className="p-1 text-red-500 hover:bg-red-50 rounded"><Trash2 className="w-3 h-3" /></button>
+            <button onClick={() => onMove(-1)} disabled={first} className="p-1 text-slate-400 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+            <button onClick={() => onMove(1)} disabled={last} className="p-1 text-slate-400 hover:bg-slate-100 rounded disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+            <button onClick={del} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3 h-3" /></button>
           </div>
         )}
       </div>
 
+      {/* Upload buttons — visible directly, no modal needed */}
+      {editable && (
+        <div className="ml-14 mt-2 flex flex-wrap gap-2">
+          {/* Video upload */}
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition">
+            <Film className="w-3.5 h-3.5" /> Upload Video
+            <input
+              ref={videoRef}
+              type="file"
+              accept=".mp4,.webm,.mov"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, 'Video', 'video_mp4'); e.target.value = ''; }}
+            />
+          </label>
+
+          {/* PDF upload */}
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition">
+            <FileText className="w-3.5 h-3.5" /> Upload PDF
+            <input
+              ref={pdfRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, 'PDF', 'document_pdf'); e.target.value = ''; }}
+            />
+          </label>
+
+          {/* Word/Excel/PPT upload */}
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition">
+            <FileText className="w-3.5 h-3.5" /> Upload Doc/Excel/PPT
+            <input
+              ref={docRef}
+              type="file"
+              accept=".doc,.docx,.xls,.xlsx,.ppt,.pptx"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, 'Document'); e.target.value = ''; }}
+            />
+          </label>
+
+          {/* YouTube/Vimeo link */}
+          <button
+            onClick={() => setShowYouTubeModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold transition"
+          >
+            <Youtube className="w-3.5 h-3.5" /> YouTube / Vimeo
+          </button>
+
+          {/* Assignment */}
+          <button
+            onClick={onAddAssignment}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold transition"
+          >
+            <ClipboardList className="w-3.5 h-3.5" /> Add Assignment
+          </button>
+        </div>
+      )}
+
+      {/* Upload progress bar */}
+      {uploadPct && (
+        <div className="ml-14 mt-2">
+          <div className="flex justify-between text-xs text-slate-600 mb-1">
+            <span className="font-semibold">{uploadPct.label} inapakiwa...</span>
+            <span>{uploadPct.pct}%</span>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-2">
+            <div className="bg-brand-600 h-2 rounded-full transition-all" style={{ width: `${uploadPct.pct}%` }} />
+          </div>
+        </div>
+      )}
+
+      {/* Existing materials */}
       {(lesson.materials ?? []).length > 0 && (
-        <div className="ml-14 mt-1 space-y-0.5">
+        <div className="ml-14 mt-2 space-y-0.5">
           {lesson.materials!.map((m) => (
             <MaterialRow key={m.uuid} material={m} editable={editable} onDeleted={onDeleted} />
           ))}
         </div>
       )}
 
+      {/* Existing assignments */}
       {(lesson.assignments ?? []).length > 0 && (
         <div className="ml-14 mt-1 space-y-1">
           {lesson.assignments!.map((a) => (
             <AssignmentRow key={a.uuid} a={a} editable={editable} onDeleted={() => delAssignment(a.uuid)} onChanged={onDeleted} />
           ))}
         </div>
+      )}
+
+      {/* YouTube/Vimeo link modal */}
+      {showYouTubeModal && (
+        <AddYouTubeLinkModal
+          lessonUuid={lesson.uuid}
+          onClose={() => setShowYouTubeModal(false)}
+          onCreated={() => { setShowYouTubeModal(false); onDeleted(); }}
+        />
       )}
     </div>
   );
@@ -592,33 +680,56 @@ function AddModuleModal({ courseUuid, onClose, onCreated }: { courseUuid: string
 }
 
 function AddLessonModal({ moduleUuid, onClose, onCreated }: { moduleUuid: string; onClose: () => void; onCreated: () => void }) {
-  const [f, setF] = useState({ title: '', description: '', video_url: '', pdf_url: '', duration_seconds: '' });
+  const [f, setF] = useState({ title: '', description: '' });
   const [busy, setBusy] = useState(false);
   async function save() {
     if (!f.title.trim()) return;
     setBusy(true);
     try {
-      await lessonApi.create(moduleUuid, {
-        title: f.title,
-        description: f.description || undefined,
-        video_url: f.video_url || undefined,
-        pdf_url: f.pdf_url || undefined,
-        duration_seconds: f.duration_seconds ? Number(f.duration_seconds) : undefined,
-      });
-      toast.success('Lesson imeongezwa');
+      await lessonApi.create(moduleUuid, { title: f.title, description: f.description || undefined });
+      toast.success('Lesson imeongezwa — sasa pakia video na PDF');
       onCreated();
     } catch { setBusy(false); }
   }
   return (
     <Modal onClose={onClose} title="Ongeza Lesson">
       <div className="space-y-3">
-        <div><label className="label">Title *</label><input className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} /></div>
-        <div><label className="label">Description</label><textarea rows={2} className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
-        <div><label className="label">Video URL</label><input className="input" value={f.video_url} onChange={(e) => setF({ ...f, video_url: e.target.value })} placeholder="https://youtube.com/watch?v=..." /></div>
-        <div><label className="label">PDF Notes URL</label><input className="input" value={f.pdf_url} onChange={(e) => setF({ ...f, pdf_url: e.target.value })} placeholder="https://.../notes.pdf" /></div>
-        <div><label className="label">Duration (sec)</label><input type="number" className="input" value={f.duration_seconds} onChange={(e) => setF({ ...f, duration_seconds: e.target.value })} placeholder="900" /></div>
+        <div><label className="label">Lesson Title *</label><input className="input" autoFocus value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="e.g. Introduction to Excel Interface" /></div>
+        <div><label className="label">Description (optional)</label><textarea rows={2} className="input" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} placeholder="Maelezo mafupi ya lesson hii" /></div>
+        <p className="text-xs text-slate-500">Baada ya kuongeza lesson, utaweza kupakia Video, PDF, na Documents moja kwa moja.</p>
       </div>
       <ModalFooter onClose={onClose} onSave={save} busy={busy} />
+    </Modal>
+  );
+}
+
+function AddYouTubeLinkModal({ lessonUuid, onClose, onCreated }: { lessonUuid: string; onClose: () => void; onCreated: () => void }) {
+  const [title, setTitle] = useState('');
+  const [url, setUrl] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    if (!url.trim()) return;
+    const t = title.trim() || 'Video';
+    setBusy(true);
+    try {
+      await materialApi.addUrl(lessonUuid, { title: t, url });
+      toast.success('Link imeongezwa');
+      onCreated();
+    } catch { setBusy(false); }
+  }
+  return (
+    <Modal onClose={onClose} title="Ongeza YouTube / Vimeo Link">
+      <div className="space-y-3">
+        <div>
+          <label className="label">YouTube / Vimeo URL *</label>
+          <input className="input" autoFocus value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+        <div>
+          <label className="label">Title (optional)</label>
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Jina la video" />
+        </div>
+      </div>
+      <ModalFooter onClose={onClose} onSave={save} busy={busy} disabled={!url.trim()} />
     </Modal>
   );
 }
@@ -749,108 +860,6 @@ function AddAssignmentModal({ lessonUuid, onClose, onCreated }: { lessonUuid: st
   );
 }
 
-function AddMaterialModal({ lessonUuid, onClose, onCreated }: { lessonUuid: string; onClose: () => void; onCreated: () => void }) {
-  const [mode, setMode] = useState<'url' | 'upload'>('url');
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [type, setType] = useState<MaterialType | ''>('');
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [uploadPct, setUploadPct] = useState<number | null>(null);
-
-  async function save() {
-    if (!title.trim()) return;
-    setBusy(true);
-    try {
-      if (mode === 'url') {
-        if (!url.trim()) { setBusy(false); return; }
-        await materialApi.addUrl(lessonUuid, {
-          title, url, description: undefined,
-          type: (type || undefined) as MaterialType | undefined,
-        });
-      } else {
-        if (!file) { setBusy(false); return; }
-        setUploadPct(0);
-        await materialApi.upload(
-          lessonUuid, title, file,
-          (type || undefined) as MaterialType | undefined,
-          (pct) => setUploadPct(pct),
-        );
-        setUploadPct(100);
-      }
-      toast.success(mode === 'upload' ? 'Uploaded — processing in background' : 'Material imeongezwa');
-      onCreated();
-    } catch { setBusy(false); setUploadPct(null); }
-  }
-
-  return (
-    <Modal onClose={onClose} title="Ongeza Material (SRS Module 3)">
-      <p className="text-sm text-slate-600 mb-3">
-        Supported: PDF · Word · Excel · PowerPoint · MP4 · YouTube · Vimeo · SCORM · HTML5
-      </p>
-
-      <div className="flex gap-2 mb-4 border-b border-slate-200">
-        <button
-          onClick={() => setMode('url')}
-          className={`px-3 py-2 text-sm font-semibold border-b-2 ${mode === 'url' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500'}`}
-        >Add URL / Embed</button>
-        <button
-          onClick={() => setMode('upload')}
-          className={`px-3 py-2 text-sm font-semibold border-b-2 ${mode === 'upload' ? 'border-brand-600 text-brand-600' : 'border-transparent text-slate-500'}`}
-        >Upload File</button>
-      </div>
-
-      <div className="space-y-3">
-        <div>
-          <label className="label">Title *</label>
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Chapter 1 slides" />
-        </div>
-
-        {mode === 'url' ? (
-          <div>
-            <label className="label">URL *</label>
-            <input className="input" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://youtu.be/... au https://.../notes.pdf" />
-            <p className="text-xs text-slate-500 mt-1">YouTube, Vimeo, na PDF/Doc URLs zinatambulika kiotomatiki.</p>
-          </div>
-        ) : (
-          <div>
-            <label className="label">File *</label>
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.mp4,.webm,.mov,.zip"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="input"
-            />
-            {file && <p className="text-xs text-slate-500 mt-1">{file.name} · {(file.size/1024/1024).toFixed(1)} MB</p>}
-          </div>
-        )}
-
-        <div>
-          <label className="label">Type (optional — auto-detected)</label>
-          <select className="input" value={type} onChange={(e) => setType(e.target.value as MaterialType | '')}>
-            <option value="">— Auto-detect —</option>
-            {(Object.keys(MATERIAL_TYPE_LABEL) as MaterialType[]).map((t) => (
-              <option key={t} value={t}>{MATERIAL_TYPE_LABEL[t]}</option>
-            ))}
-          </select>
-        </div>
-
-        {uploadPct !== null && (
-          <div>
-            <div className="flex justify-between text-xs mb-1">
-              <span className="font-semibold text-slate-700">{uploadPct < 100 ? 'Uploading' : 'Uploaded — server processing'}</span>
-              <span className="text-slate-500">{uploadPct}%</span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2">
-              <div className="bg-brand-600 h-2 rounded-full transition-all" style={{ width: `${uploadPct}%` }} />
-            </div>
-          </div>
-        )}
-      </div>
-      <ModalFooter onClose={onClose} onSave={save} busy={busy} disabled={mode === 'upload' && !file} />
-    </Modal>
-  );
-}
 
 function Modal({ children, onClose, title }: { children: React.ReactNode; onClose: () => void; title: string }) {
   return (
