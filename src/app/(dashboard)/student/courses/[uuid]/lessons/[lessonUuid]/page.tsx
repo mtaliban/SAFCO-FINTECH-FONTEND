@@ -213,9 +213,13 @@ function extractEmbed(url: string): string | null {
 /* ---------------------- Document materials (SRS: PDF/Word/Excel/PowerPoint) ---------------------- */
 
 function DocumentMaterial({ material }: { material: LessonMaterial }) {
-  const isStorage = material.url.startsWith('/storage/');
-  const fullUrl = isStorage ? mediaUrl(material.url)! : material.url;
   const isPdf = material.type === 'document_pdf';
+
+  // stream_url (e.g. /v1/materials/uuid/stream) goes through the Next.js proxy → backend
+  // generates a signed S3 URL and redirects — supports ?disposition=inline|attachment
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const viewUrl = streamUrl ?? (material.url.startsWith('/storage/') ? mediaUrl(material.url)! : material.url);
+  const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
 
   return (
     <div className="card p-4">
@@ -224,22 +228,23 @@ function DocumentMaterial({ material }: { material: LessonMaterial }) {
         <div className="flex-1 min-w-0">
           <div className="font-semibold text-slate-900 truncate">{material.title}</div>
           <div className="text-xs text-slate-500 uppercase">{material.type.replace('document_', '')}</div>
+          {material.file_size && (
+            <div className="text-xs text-slate-400">{(material.file_size / 1024 / 1024).toFixed(1)} MB</div>
+          )}
         </div>
       </div>
-      {isPdf && (
-        <div className="aspect-video rounded overflow-hidden border border-slate-200 mb-3">
-          <iframe src={fullUrl} className="w-full h-full" title={material.title} />
+      {isPdf && streamUrl && (
+        <div className="rounded overflow-hidden border border-slate-200 mb-3" style={{ height: 520 }}>
+          <iframe src={streamUrl} className="w-full h-full" title={material.title} />
         </div>
       )}
       <div className="flex gap-2">
-        <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm flex-1 justify-center">
+        <a href={viewUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm flex-1 justify-center">
           <ExternalLink className="w-3 h-3" /> Open
         </a>
-        {isStorage && (
-          <a href={fullUrl} download className="btn-secondary text-sm justify-center">
-            <Download className="w-3 h-3" />
-          </a>
-        )}
+        <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm justify-center" title="Download">
+          <Download className="w-3 h-3" />
+        </a>
       </div>
     </div>
   );
