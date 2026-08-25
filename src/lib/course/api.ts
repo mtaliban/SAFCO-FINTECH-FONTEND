@@ -99,6 +99,7 @@ export interface Lesson {
   pdf_url: string | null;
   duration_seconds: number | null;
   position: number;
+  is_completed?: boolean;
   assignments?: Assignment[];
   materials?: LessonMaterial[];
 }

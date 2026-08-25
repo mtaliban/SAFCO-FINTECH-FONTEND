@@ -1,162 +1,455 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useState, useMemo, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  CheckCircle2, ChevronLeft, FileText, Loader2, Youtube, Film,
-  FileArchive, Package, ExternalLink, Download, ClipboardList, ArrowRight,
-} from 'lucide-react';
 import Link from 'next/link';
+import {
+  CheckCircle2, Circle, ChevronLeft, ChevronRight, Menu, X,
+  FileText, ExternalLink, Download, ClipboardList, ArrowRight,
+  Loader2, BookOpen, Play, FileArchive,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { courseApi, lessonApi, type LessonMaterial, type MaterialType, type Assignment } from '@/lib/course/api';
+import {
+  courseApi, lessonApi,
+  type LessonMaterial, type MaterialType, type Assignment, type Module, type Lesson,
+} from '@/lib/course/api';
 import { mediaUrl } from '@/lib/utils';
+
+type LessonWithMeta = Lesson & { moduleTitle: string; modIndex: number; lesIndex: number };
 
 export default function LessonViewPage() {
   const { uuid, lessonUuid } = useParams<{ uuid: string; lessonUuid: string }>();
+  const router = useRouter();
   const qc = useQueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [completedSet, setCompletedSet] = useState<Set<string> | null>(null);
+  const [markingComplete, setMarkingComplete] = useState(false);
 
   const { data: course, isLoading } = useQuery({
     queryKey: ['course', uuid],
     queryFn: () => courseApi.get(uuid as string),
   });
 
-  const lesson = (course?.modules ?? [])
-    .flatMap((m) => (m.lessons ?? []).map((l) => ({ ...l, moduleTitle: m.title })))
-    .find((l) => l.uuid === lessonUuid);
+  // Initialise completion state from server data (runs once)
+  useEffect(() => {
+    if (!course || completedSet !== null) return;
+    const initial = new Set<string>();
+    for (const mod of course.modules ?? []) {
+      for (const l of mod.lessons ?? []) {
+        if (l.is_completed) initial.add(l.uuid);
+      }
+    }
+    setCompletedSet(initial);
+  }, [course, completedSet]);
 
-  async function markComplete() {
+  // Flat ordered list for prev / next navigation
+  const allLessons = useMemo<LessonWithMeta[]>(() => {
+    return (course?.modules ?? []).flatMap((m, mi) =>
+      (m.lessons ?? []).map((l, li) => ({
+        ...l,
+        moduleTitle: m.title,
+        modIndex: mi,
+        lesIndex: li,
+      }))
+    );
+  }, [course]);
+
+  const currentIdx = allLessons.findIndex((l) => l.uuid === lessonUuid);
+  const lesson      = currentIdx >= 0 ? allLessons[currentIdx] : null;
+  const prevLesson  = currentIdx > 0 ? allLessons[currentIdx - 1] : null;
+  const nextLesson  = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
+  const isDone      = completedSet?.has(lessonUuid as string) ?? false;
+
+  const completedCount = completedSet?.size ?? 0;
+  const totalLessons   = allLessons.length;
+  const progressPct    = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+  async function handleMarkComplete() {
+    if (isDone || markingComplete) return;
+    setMarkingComplete(true);
     try {
       const res = await lessonApi.markComplete(lessonUuid as string);
-      toast.success(`Progress: ${res.progress_percentage}%${res.completed ? ' — Course completed! 🎉' : ''}`);
+      setCompletedSet((prev) => new Set([...(prev ?? []), lessonUuid as string]));
       qc.invalidateQueries({ queryKey: ['student', 'my-enrollments'] });
-    } catch { /* toast handled */ }
+      if (res.completed) {
+        toast.success('🎉 Hongera! Umefanikiwa kumaliza course nzima!');
+        setTimeout(() => router.push(`/student/courses/${uuid}`), 1800);
+      } else {
+        toast.success(`Progress: ${Number(res.progress_percentage).toFixed(0)}%`);
+        if (nextLesson) {
+          setTimeout(() => router.push(`/student/courses/${uuid}/lessons/${nextLesson.uuid}`), 700);
+        }
+      }
+    } catch {
+      toast.error('Imeshindwa. Jaribu tena.');
+    } finally {
+      setMarkingComplete(false);
+    }
   }
 
-  if (isLoading || !course) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
-  if (!lesson) return <div className="p-8"><Link href={`/student/courses/${uuid}`} className="text-brand-600">← Rudi</Link><p className="mt-4">Lesson haipatikani.</p></div>;
+  if (isLoading || !course) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
+      </div>
+    );
+  }
 
-  const materials = lesson.materials ?? [];
-  const videos = materials.filter((m) => m.category === 'videos');
-  const documents = materials.filter((m) => m.category === 'documents');
-  const interactive = materials.filter((m) => m.category === 'interactive');
+  if (!lesson) {
+    return (
+      <div className="p-8">
+        <Link href={`/student/courses/${uuid}`} className="text-brand-600 hover:underline">← Rudi</Link>
+        <p className="mt-4 text-slate-500">Lesson haipatikani.</p>
+      </div>
+    );
+  }
+
+  const materials    = lesson.materials ?? [];
+  const videos       = materials.filter((m) => m.category === 'videos');
+  const docs         = materials.filter((m) => m.category === 'documents');
+  const interactive  = materials.filter((m) => m.category === 'interactive');
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
-      <Link href={`/student/courses/${uuid}`} className="text-sm text-brand-600 hover:underline flex items-center gap-1 mb-4">
-        <ChevronLeft className="w-4 h-4" /> Rudi kwenye course
-      </Link>
+    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50">
 
-      <div className="mb-2 text-sm text-slate-500">{course.title} · {lesson.moduleTitle}</div>
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">{lesson.title}</h1>
+      {/* ── Mobile sidebar overlay ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      {lesson.description && <p className="text-slate-700 mb-6">{lesson.description}</p>}
-
-      {/* Legacy: single video_url (before materials system) */}
-      {lesson.video_url && !videos.some((v) => v.url === lesson.video_url) && (
-        <div className="mb-6">
-          <VideoPlayer url={lesson.video_url} title={lesson.title} />
+      {/* ── Left sidebar ── */}
+      <aside className={`
+        fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200
+        flex flex-col transition-transform duration-200
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+      `}>
+        {/* Sidebar header */}
+        <div className="flex items-center gap-2 p-4 border-b border-slate-200 bg-slate-50">
+          <BookOpen className="w-4 h-4 text-brand-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-700 uppercase tracking-wider flex-1 truncate">
+            Muundo wa Course
+          </span>
+          <button onClick={() => setSidebarOpen(false)} className="lg:hidden p-1 rounded hover:bg-slate-200">
+            <X className="w-4 h-4" />
+          </button>
         </div>
-      )}
 
-      {/* Materials — grouped by SRS category */}
-      {videos.length > 0 && (
-        <Section title="Videos">
-          {videos.map((m) => <VideoMaterial key={m.uuid} material={m} />)}
-        </Section>
-      )}
+        {/* Module / lesson tree */}
+        <div className="flex-1 overflow-y-auto">
+          {(course.modules ?? []).map((mod, mi) => (
+            <ModuleBlock
+              key={mod.uuid}
+              mod={mod}
+              mi={mi}
+              courseUuid={uuid as string}
+              activeLessonUuid={lessonUuid as string}
+              completedSet={completedSet ?? new Set()}
+              onSelect={() => setSidebarOpen(false)}
+            />
+          ))}
+        </div>
 
-      {documents.length > 0 && (
-        <Section title="Documents">
-          <div className="grid md:grid-cols-2 gap-3">
-            {documents.map((m) => <DocumentMaterial key={m.uuid} material={m} />)}
+        {/* Sidebar footer — overall progress */}
+        <div className="p-4 border-t border-slate-200 bg-slate-50">
+          <div className="flex justify-between text-xs text-slate-500 mb-1">
+            <span>{completedCount} / {totalLessons} lessons</span>
+            <span className="font-bold text-slate-700">{progressPct}%</span>
           </div>
-        </Section>
-      )}
-
-      {interactive.length > 0 && (
-        <Section title="Interactive Content">
-          <div className="space-y-3">
-            {interactive.map((m) => <InteractiveMaterial key={m.uuid} material={m} />)}
+          <div className="w-full bg-slate-200 rounded-full h-2">
+            <div
+              className="bg-green-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
           </div>
-        </Section>
-      )}
+        </div>
+      </aside>
 
-      {/* Legacy: pdf_url */}
-      {lesson.pdf_url && !documents.some((d) => d.url === lesson.pdf_url) && (
-        <a href={lesson.pdf_url} target="_blank" rel="noopener noreferrer" className="card p-4 flex items-center gap-3 hover:shadow-md transition mb-6">
-          <FileText className="w-6 h-6 text-red-600" />
-          <div className="flex-1">
-            <div className="font-semibold text-slate-900">PDF Notes</div>
-            <div className="text-xs text-slate-500 truncate">{lesson.pdf_url}</div>
+      {/* ── Main lesson content ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        {/* Top bar */}
+        <div className="flex items-center gap-3 px-4 py-3 bg-white border-b border-slate-200">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden p-1.5 rounded hover:bg-slate-100"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+          <Link
+            href={`/student/courses/${uuid}`}
+            className="flex items-center gap-1 text-sm text-slate-500 hover:text-brand-600 min-w-0"
+          >
+            <ChevronLeft className="w-4 h-4 shrink-0" />
+            <span className="truncate">{course.title}</span>
+          </Link>
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-20 bg-slate-200 rounded-full h-1.5">
+                <div className="bg-green-500 h-1.5 rounded-full" style={{ width: `${progressPct}%` }} />
+              </div>
+              <span className="text-xs font-semibold text-slate-600">{progressPct}%</span>
+            </div>
           </div>
-          <Download className="w-4 h-4 text-slate-400" />
-        </a>
-      )}
+        </div>
 
-      {/* Assignments (SRS Module 9) */}
-      {(lesson.assignments ?? []).length > 0 && (
-        <Section title="Assignments">
-          <div className="space-y-2">
-            {(lesson.assignments as Assignment[]).map((a) => (
-              <Link
-                key={a.uuid}
-                href={`/student/assignments/${a.uuid}`}
-                className="card p-4 flex items-center gap-3 hover:shadow-md hover:border-amber-300 transition"
-              >
-                <ClipboardList className="w-6 h-6 text-amber-600 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-slate-900">{a.title}</div>
-                  <div className="text-xs text-slate-500">
-                    {a.max_points} pts{a.due_date ? ` · due ${new Date(a.due_date).toLocaleDateString()}` : ''}
-                    {a.brief && ` · brief attached`}
-                  </div>
+        {/* Scrollable lesson body */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 md:px-8 py-6">
+
+            {/* Lesson header */}
+            <div className="mb-6">
+              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+                Module {lesson.modIndex + 1} · {lesson.moduleTitle}
+              </p>
+              <h1 className="text-2xl font-bold text-slate-900">
+                {lesson.modIndex + 1}.{lesson.lesIndex + 1} — {lesson.title}
+              </h1>
+              {lesson.description && (
+                <p className="mt-2 text-slate-600 leading-relaxed">{lesson.description}</p>
+              )}
+            </div>
+
+            {/* Videos */}
+            {videos.length > 0 && (
+              <ContentSection title="🎬 Videos">
+                <div className="space-y-4">
+                  {videos.map((m) => <VideoMaterial key={m.uuid} material={m} />)}
                 </div>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </Link>
-            ))}
+              </ContentSection>
+            )}
+
+            {/* Legacy video_url */}
+            {lesson.video_url && !videos.some((v) => v.url === lesson.video_url) && (
+              <ContentSection title="🎬 Video">
+                <VideoPlayer url={lesson.video_url} title={lesson.title} />
+              </ContentSection>
+            )}
+
+            {/* Documents */}
+            {docs.length > 0 && (
+              <ContentSection title="📄 Nyaraka (Documents)">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {docs.map((m) => <DocMaterial key={m.uuid} material={m} />)}
+                </div>
+              </ContentSection>
+            )}
+
+            {/* Legacy pdf_url */}
+            {lesson.pdf_url && !docs.some((d) => d.url === lesson.pdf_url) && (
+              <a
+                href={lesson.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 card hover:shadow-md transition mb-6"
+              >
+                <FileText className="w-6 h-6 text-red-600 shrink-0" />
+                <div className="flex-1 font-semibold text-slate-900">PDF Notes</div>
+                <Download className="w-4 h-4 text-slate-400" />
+              </a>
+            )}
+
+            {/* Interactive */}
+            {interactive.length > 0 && (
+              <ContentSection title="⚡ Interactive">
+                <div className="space-y-3">
+                  {interactive.map((m) => <InteractiveMaterial key={m.uuid} material={m} />)}
+                </div>
+              </ContentSection>
+            )}
+
+            {/* Assignments */}
+            {(lesson.assignments ?? []).length > 0 && (
+              <ContentSection title="📝 Kazi za Nyumbani (Assignments)">
+                <div className="space-y-2">
+                  {(lesson.assignments as Assignment[]).map((a) => (
+                    <Link
+                      key={a.uuid}
+                      href={`/student/assignments/${a.uuid}`}
+                      className="card p-4 flex items-center gap-3 hover:shadow-md hover:border-amber-300 transition"
+                    >
+                      <ClipboardList className="w-6 h-6 text-amber-600 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-900">{a.title}</div>
+                        <div className="text-xs text-slate-500">
+                          {a.max_points} pts
+                          {a.due_date ? ` · Deadline: ${new Date(a.due_date).toLocaleDateString('sw-TZ')}` : ''}
+                        </div>
+                      </div>
+                      <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">
+                        Fanya →
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </ContentSection>
+            )}
+
+            {/* ── Prev / Mark Complete / Next ── */}
+            <div className="mt-8 pt-6 border-t border-slate-200">
+              <div className="flex items-stretch gap-3">
+                {/* Previous */}
+                {prevLesson ? (
+                  <Link
+                    href={`/student/courses/${uuid}/lessons/${prevLesson.uuid}`}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Iliyopita</span>
+                  </Link>
+                ) : (
+                  <div className="w-10" />
+                )}
+
+                {/* Mark complete — centre */}
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={isDone || markingComplete}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-sm transition
+                    ${isDone
+                      ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
+                      : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
+                    }`}
+                >
+                  {markingComplete
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : <CheckCircle2 className="w-4 h-4" />
+                  }
+                  {isDone ? 'Imekamilika ✓' : 'Nimefanya — Mark Complete'}
+                </button>
+
+                {/* Next */}
+                {nextLesson ? (
+                  <Link
+                    href={`/student/courses/${uuid}/lessons/${nextLesson.uuid}`}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-navy-700 text-white text-sm font-semibold hover:bg-navy-800 transition shadow-sm"
+                  >
+                    <span className="hidden sm:inline">Inayofuata</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                ) : (
+                  <Link
+                    href={`/student/courses/${uuid}`}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-navy-700 text-white text-sm font-semibold hover:bg-navy-800 transition shadow-sm"
+                  >
+                    <span className="hidden sm:inline">Rudi</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
+                )}
+              </div>
+
+              {/* Next lesson preview */}
+              {nextLesson && (
+                <p className="text-center text-xs text-slate-400 mt-3">
+                  Inayofuata: <span className="font-medium text-slate-600">{nextLesson.title}</span>
+                </p>
+              )}
+            </div>
           </div>
-        </Section>
-      )}
-
-      {/* Content notes */}
-      {lesson.content && (
-        <div className="card p-6 prose max-w-none mb-6">
-          <div className="whitespace-pre-wrap">{lesson.content}</div>
-        </div>
-      )}
-
-      <div className="flex justify-end">
-        <button onClick={markComplete} className="btn-primary">
-          <CheckCircle2 className="w-4 h-4" /> Nimefanya — Mark Complete
-        </button>
+        </main>
       </div>
     </div>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/* ── Sidebar module block ── */
+function ModuleBlock({
+  mod, mi, courseUuid, activeLessonUuid, completedSet, onSelect,
+}: {
+  mod: Module; mi: number; courseUuid: string;
+  activeLessonUuid: string; completedSet: Set<string>; onSelect: () => void;
+}) {
+  const total     = mod.lessons?.length ?? 0;
+  const done      = (mod.lessons ?? []).filter((l) => completedSet.has(l.uuid)).length;
+  const allDone   = total > 0 && done === total;
+  const hasActive = (mod.lessons ?? []).some((l) => l.uuid === activeLessonUuid);
+  const [open, setOpen] = useState(hasActive || mi === 0);
+
   return (
-    <section className="mb-6">
-      <h2 className="text-lg font-bold text-slate-900 mb-3">{title}</h2>
+    <div className="border-b border-slate-100">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full text-left px-4 py-3 hover:bg-slate-50 flex items-start gap-2"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+            Module {mi + 1}
+          </div>
+          <div className="text-sm font-semibold text-slate-800 leading-tight">{mod.title}</div>
+          <div className={`text-xs mt-0.5 ${allDone ? 'text-green-600' : 'text-slate-400'}`}>
+            {allDone ? '✓ Imekamilika' : `${done}/${total} lessons`}
+          </div>
+        </div>
+        <ChevronRight className={`w-4 h-4 text-slate-400 mt-1 shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="pb-1">
+          {(mod.lessons ?? []).map((l, li) => {
+            const isActive   = l.uuid === activeLessonUuid;
+            const isComplete = completedSet.has(l.uuid);
+            return (
+              <Link
+                key={l.uuid}
+                href={`/student/courses/${courseUuid}/lessons/${l.uuid}`}
+                onClick={onSelect}
+                className={`flex items-start gap-2.5 pl-4 pr-3 py-2.5 text-sm transition
+                  ${isActive
+                    ? 'bg-brand-50 border-r-[3px] border-brand-600'
+                    : 'hover:bg-slate-50'
+                  }`}
+              >
+                {isComplete ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                ) : (
+                  <Circle className={`w-4 h-4 shrink-0 mt-0.5 ${isActive ? 'text-brand-500' : 'text-slate-300'}`} />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className={`leading-snug text-[13px] ${
+                    isActive ? 'text-brand-700 font-semibold' :
+                    isComplete ? 'text-slate-400' : 'text-slate-700'
+                  }`}>
+                    {mi + 1}.{li + 1} · {l.title}
+                  </p>
+                  {l.duration_seconds && (
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {Math.floor(l.duration_seconds / 60)}m {l.duration_seconds % 60}s
+                    </p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Section wrapper ── */
+function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-8">
+      <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">{title}</h2>
       {children}
     </section>
   );
 }
 
-/* ---------------------- Video materials (SRS: MP4/YouTube/Vimeo) ---------------------- */
-
+/* ── Video material ── */
 function VideoMaterial({ material }: { material: LessonMaterial }) {
-  // Prefer the server-side streaming endpoint (with Range Requests) for stored MP4s.
-  // Falls back to embedded iframe for YouTube/Vimeo.
   const streamUrl = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
-  const poster = mediaUrl(material.thumbnail_url);
+  const poster    = mediaUrl(material.thumbnail_url) ?? undefined;
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-semibold text-slate-800">{material.title}</div>
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-sm font-semibold text-slate-800">{material.title}</p>
         {material.duration_seconds && (
-          <div className="text-xs text-slate-500">{formatDuration(material.duration_seconds)}</div>
+          <span className="text-xs text-slate-400">{formatDur(material.duration_seconds)}</span>
         )}
       </div>
       <VideoPlayer
@@ -166,20 +459,24 @@ function VideoMaterial({ material }: { material: LessonMaterial }) {
         type={material.type}
         poster={poster}
       />
+      {material.description && (
+        <p className="text-xs text-slate-500 mt-1.5">{material.description}</p>
+      )}
     </div>
   );
 }
 
-function VideoPlayer({ url, embedUrl, title, type, poster }: { url: string; embedUrl?: string; title: string; type?: MaterialType; poster?: string }) {
-  // YouTube/Vimeo → iframe (their own player, adaptive streaming, CDN)
+function VideoPlayer({
+  url, embedUrl, title, type, poster,
+}: {
+  url: string; embedUrl?: string; title: string; type?: MaterialType; poster?: string;
+}) {
   const embed = embedUrl ?? extractEmbed(url);
   return (
-    <div className="aspect-video bg-black rounded-lg overflow-hidden">
+    <div className="aspect-video bg-black rounded-xl overflow-hidden shadow">
       {embed ? (
         <iframe src={embed} className="w-full h-full" allowFullScreen title={title} />
       ) : (
-        // MP4 via our streaming endpoint — HTML5 <video> issues Range requests
-        // for seeking, so scrubbing works without loading the whole file.
         <video
           src={url}
           controls
@@ -188,66 +485,112 @@ function VideoPlayer({ url, embedUrl, title, type, poster }: { url: string; embe
           className="w-full h-full"
           controlsList="nodownload"
         >
-          Your browser doesn&apos;t support {type ?? 'video'}.
+          Kivinjari chako hakitumii {type ?? 'video'}.
         </video>
       )}
     </div>
   );
 }
 
-function formatDuration(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function extractEmbed(url: string): string | null {
-  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
-  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
-  const v = url.match(/vimeo\.com\/(\d+)/);
-  if (v) return `https://player.vimeo.com/video/${v[1]}`;
-  return null;
-}
-
-/* ---------------------- Document materials (SRS: PDF/Word/Excel/PowerPoint) ---------------------- */
-
-function DocumentMaterial({ material }: { material: LessonMaterial }) {
-  const isPdf = material.type === 'document_pdf';
-
-  // stream_url (e.g. /v1/materials/uuid/stream) goes through the Next.js proxy → backend
-  // generates a signed S3 URL and redirects — supports ?disposition=inline|attachment
-  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
-  const viewUrl = streamUrl ?? (material.url.startsWith('/storage/') ? mediaUrl(material.url)! : material.url);
+/* ── Document material ── */
+function DocMaterial({ material }: { material: LessonMaterial }) {
+  const isPdf      = material.type === 'document_pdf';
+  const streamUrl  = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const viewUrl    = streamUrl ?? material.url;
   const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
 
   return (
-    <div className="card p-4">
-      <div className="flex items-start gap-3 mb-3">
-        <FileText className={`w-6 h-6 shrink-0 ${docColor(material.type)}`} />
+    <div className="card p-4 flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <FileText className={`w-6 h-6 shrink-0 mt-0.5 ${docColor(material.type)}`} />
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-slate-900 truncate">{material.title}</div>
-          <div className="text-xs text-slate-500 uppercase">{material.type.replace('document_', '')}</div>
-          {material.file_size && (
-            <div className="text-xs text-slate-400">{(material.file_size / 1024 / 1024).toFixed(1)} MB</div>
-          )}
+          <p className="font-semibold text-slate-900 truncate">{material.title}</p>
+          <p className="text-xs text-slate-400 uppercase mt-0.5">
+            {material.type.replace('document_', '')}
+            {material.file_size ? ` · ${(material.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
+          </p>
         </div>
       </div>
+
+      {/* PDF inline viewer */}
       {isPdf && streamUrl && (
-        <div className="rounded overflow-hidden border border-slate-200 mb-3" style={{ height: 520 }}>
+        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 480 }}>
           <iframe src={streamUrl} className="w-full h-full" title={material.title} />
         </div>
       )}
+
       <div className="flex gap-2">
-        <a href={viewUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm flex-1 justify-center">
-          <ExternalLink className="w-3 h-3" /> Open
+        <a
+          href={viewUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-secondary text-xs flex-1 justify-center gap-1"
+        >
+          <ExternalLink className="w-3 h-3" /> Fungua
         </a>
-        <a href={downloadUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary text-sm justify-center" title="Download">
+        <a
+          href={downloadUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-secondary text-xs px-3 justify-center"
+          title="Download"
+        >
           <Download className="w-3 h-3" />
         </a>
       </div>
     </div>
   );
+}
+
+/* ── Interactive material ── */
+function InteractiveMaterial({ material }: { material: LessonMaterial }) {
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const url       = streamUrl ?? material.url;
+
+  if (material.type === 'interactive_html5' && !material.url.startsWith('/storage/')) {
+    return (
+      <div>
+        <p className="text-sm font-semibold text-slate-800 mb-2">{material.title}</p>
+        <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 shadow">
+          <iframe src={url} className="w-full h-full" title={material.title} allowFullScreen />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-4 flex items-center gap-3">
+      <FileArchive className="w-6 h-6 text-purple-600 shrink-0" />
+      <div className="flex-1">
+        <p className="font-semibold text-slate-900">{material.title}</p>
+        <p className="text-xs text-slate-500">
+          {material.type === 'interactive_scorm' ? 'SCORM' : 'HTML5'}
+          {material.file_size ? ` · ${(material.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
+        </p>
+      </div>
+      <a href={url} target="_blank" rel="noopener noreferrer" className="btn-primary text-xs gap-1">
+        <ExternalLink className="w-3 h-3" /> Launch
+      </a>
+    </div>
+  );
+}
+
+/* ── Helpers ── */
+function formatDur(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+    : `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function extractEmbed(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
 }
 
 function docColor(type: MaterialType): string {
@@ -258,41 +601,4 @@ function docColor(type: MaterialType): string {
     document_powerpoint: 'text-orange-600',
   };
   return map[type] ?? 'text-slate-600';
-}
-
-/* ---------------------- Interactive materials (SRS: SCORM, HTML5) ---------------------- */
-
-function InteractiveMaterial({ material }: { material: LessonMaterial }) {
-  const isStorage = material.url.startsWith('/storage/');
-  const fullUrl = isStorage ? mediaUrl(material.url)! : material.url;
-
-  if (material.type === 'interactive_html5' && !isStorage) {
-    return (
-      <div>
-        <div className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
-          <Package className="w-4 h-4 text-purple-600" /> {material.title}
-        </div>
-        <div className="aspect-video rounded-lg overflow-hidden border border-slate-200">
-          <iframe src={fullUrl} className="w-full h-full" title={material.title} allowFullScreen />
-        </div>
-      </div>
-    );
-  }
-
-  // SCORM zip or HTML5 zip → launch button (playback needs SCORM player, out of scope for MVP)
-  return (
-    <div className="card p-4 flex items-center gap-3">
-      <FileArchive className="w-6 h-6 text-purple-600 shrink-0" />
-      <div className="flex-1">
-        <div className="font-semibold text-slate-900">{material.title}</div>
-        <div className="text-xs text-slate-500">
-          {material.type === 'interactive_scorm' ? 'SCORM Package' : 'HTML5 Package'}
-          {material.file_size && ` · ${(material.file_size/1024/1024).toFixed(1)} MB`}
-        </div>
-      </div>
-      <a href={fullUrl} target="_blank" rel="noopener noreferrer" className="btn-primary text-sm">
-        <ExternalLink className="w-3 h-3" /> Launch
-      </a>
-    </div>
-  );
 }
