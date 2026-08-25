@@ -50,7 +50,7 @@ const trainerNav: NavItem[] = [
 
 // SRS 3.2 Facilitator: helps trainer run sessions
 const facilitatorNav: NavItem[] = [
-  { href: '/trainer', label: 'Dashboard', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/trainer/sessions', label: 'Live Sessions', icon: ClipboardList },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
