@@ -3,45 +3,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, XCircle, Loader2, Trophy, Zap, Flame, Clock } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Trophy, Zap, Flame } from 'lucide-react';
 import { playApi, type LeaderboardEntry } from '@/lib/quiz/api';
 import { useLiveSession } from '@/lib/quiz/useLiveSession';
 
-/**
- * Student play page — MQTT-driven with polling as fallback.
- * Screens: waiting-room → active question → per-question result → final podium.
- */
-
 interface Participant { id: string; nickname: string; pin: string }
 interface CurrentQuestion {
-  question_id: string;
-  question_number: number;
-  total_questions: number;
-  type: string;
-  text: string;
-  image_url: string | null;
+  question_id: string; question_number: number; total_questions: number;
+  type: string; text: string; image_url: string | null;
   options: Array<{ id: string; label: string; color?: string; shape?: string }>;
-  time_limit_seconds: number;
-  ends_at: string | null;
+  time_limit_seconds: number; ends_at: string | null;
 }
 interface AnswerResult {
-  is_correct: boolean; points_earned: number;
-  total_score: number; current_streak: number;
-  speed_bonus: number; streak_bonus: number;
+  is_correct: boolean; points_earned: number; total_score: number;
+  current_streak: number; speed_bonus: number; streak_bonus: number;
 }
 interface SessionState {
-  pin: string;
-  quiz_name: string;
-  status: string;
-  participant_count: number;
-  total_questions: number;
-  current_question_index: number;
-  current_question_ends_at: string | null;
+  pin: string; quiz_name: string; status: string;
+  participant_count: number; total_questions: number;
+  current_question_index: number; current_question_ends_at: string | null;
   final_leaderboard?: LeaderboardEntry[] | null;
 }
 
-const DEFAULT_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c', '#8b5cf6', '#0ea5e9'];
-const DEFAULT_SHAPES = ['▲', '◆', '●', '■', '★', '✚'];
+const COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c'];
+const SHAPES = ['▲', '◆', '●', '■'];
 
 export default function PlaySessionPage() {
   const { pin } = useParams<{ pin: string }>();
@@ -53,7 +38,6 @@ export default function PlaySessionPage() {
   const [busy, setBusy] = useState(false);
   const answeredForRef = useRef<string | null>(null);
 
-  // 1) Load participant from sessionStorage
   useEffect(() => {
     const raw = sessionStorage.getItem('safco_participant');
     if (!raw) { router.replace('/play'); return; }
@@ -62,26 +46,18 @@ export default function PlaySessionPage() {
     setParticipant(p);
   }, [pin, router]);
 
-  // 2) Session state — polled every 3s as fallback; MQTT invalidates on events
   const { data: state, refetch: refetchState } = useQuery<SessionState | null>({
     queryKey: ['play-session', pin],
-    queryFn: async () => {
-      const s = await playApi.sessionState(pin as string);
-      return s as SessionState;
-    },
+    queryFn: () => playApi.sessionState(pin as string) as Promise<SessionState>,
     refetchInterval: 3000,
     enabled: !!participant,
   });
 
   const status = state?.status ?? 'connecting';
 
-  // 3) When question_active → fetch current question payload
   const fetchCurrentQuestion = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/play/session/${pin}/current-question`);
-      if (!res.ok) return;
-      const json = await res.json();
-      const q: CurrentQuestion | null = json.data;
+      const q = await playApi.currentQuestion(pin as string);
       if (!q) return;
       setCurrentQuestion(q);
       if (answeredForRef.current !== q.question_id) {
@@ -97,7 +73,6 @@ export default function PlaySessionPage() {
     if (status !== 'question_active' && status !== 'question_ended') setCurrentQuestion(null);
   }, [status, currentQuestion, fetchCurrentQuestion]);
 
-  // 4) MQTT — event-driven transitions (fires ~50ms after server, not 3s)
   useLiveSession(
     pin,
     ['question_started', 'question_ended', 'completed'],
@@ -108,7 +83,7 @@ export default function PlaySessionPage() {
         setLastResult(null);
         fetchCurrentQuestion();
         refetchState();
-      } else if (event === 'question_ended' || event === 'completed') {
+      } else {
         refetchState();
       }
     }, [fetchCurrentQuestion, refetchState]),
@@ -123,23 +98,17 @@ export default function PlaySessionPage() {
       setLastResult(res as AnswerResult);
     } catch {
       setSelectedOption(null);
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   if (!participant) return null;
 
-  /* --------- Screens --------- */
-
   if (status === 'connecting' || (!state && !currentQuestion)) {
-    return <FullScreen bg="bg-navy-900"><Loader2 className="w-10 h-10 animate-spin text-white" /></FullScreen>;
+    return <Full bg="bg-navy-900"><Loader2 className="w-12 h-12 animate-spin text-white/50" /></Full>;
   }
-
   if (status === 'waiting' || status === 'starting') {
-    return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} />;
+    return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} />;
   }
-
   if (status === 'question_active' && currentQuestion) {
     return (
       <QuestionScreen
@@ -151,207 +120,265 @@ export default function PlaySessionPage() {
       />
     );
   }
-
   if (status === 'question_ended') {
-    if (lastResult) {
-      return <ResultScreen result={lastResult} participant={participant} />;
-    }
-    return <NoAnswerScreen participant={participant} />;
+    if (lastResult) return <ResultScreen result={lastResult} participant={participant} />;
+    return <WaitScreen participant={participant} />;
   }
-
   if (status === 'completed') {
-    return <CompletedScreen
-      participant={participant}
-      finalScore={lastResult?.total_score ?? null}
-      finalLeaderboard={state?.final_leaderboard ?? []}
-    />;
+    return (
+      <CompletedScreen
+        participant={participant}
+        finalScore={lastResult?.total_score ?? null}
+        finalLeaderboard={state?.final_leaderboard ?? []}
+      />
+    );
   }
-
-  return <FullScreen bg="bg-slate-900"><span className="text-white">Status: {status}</span></FullScreen>;
+  return <Full bg="bg-slate-900"><span className="text-white/60">Status: {status}</span></Full>;
 }
 
-/* ============================================================ *
- * Screen components
- * ============================================================ */
+/* ── helpers ── */
 
-function FullScreen({ bg, children }: { bg: string; children: React.ReactNode }) {
-  return <main className={`min-h-screen ${bg} flex items-center justify-center p-6`}>{children}</main>;
-}
-
-function LobbyScreen({ participant, pin, count }: { participant: Participant; pin: string; count: number }) {
+function Full({ bg, children }: { bg: string; children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-navy-700 to-navy-950 flex flex-col items-center justify-center text-white p-6">
-      <div className="text-center animate-fade-in">
-        <div className="text-8xl mb-6 animate-bounce">🎯</div>
-        <h1 className="text-3xl font-black mb-1">Karibu, {participant.nickname}!</h1>
-        <p className="text-white/70 mb-8">Subiri mwalimu aanze quiz…</p>
-        <div className="inline-block bg-white/10 px-6 py-3 rounded-2xl">
-          <div className="text-xs uppercase tracking-widest text-white/60">Game PIN</div>
-          <div className="text-5xl font-mono font-black tracking-widest text-orange-300">{pin}</div>
+    <main className={`fixed inset-0 ${bg} flex items-center justify-center`}>
+      {children}
+    </main>
+  );
+}
+
+/* ── Lobby ── */
+function LobbyScreen({ participant, pin, count, quizName }: {
+  participant: Participant; pin: string; count: number; quizName?: string;
+}) {
+  return (
+    <main className="fixed inset-0 bg-gradient-to-br from-navy-700 via-navy-800 to-navy-950 flex flex-col items-center justify-center text-white p-6 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,166,35,0.15),transparent_60%)]" />
+
+      <div className="relative text-center animate-fade-in max-w-sm w-full">
+        {/* Avatar */}
+        <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-4xl font-black shadow-lg shadow-orange-500/30">
+          {participant.nickname[0]?.toUpperCase()}
         </div>
-        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-white/70">
-          <span className="animate-pulse text-green-400">●</span>
-          {count} washindani waliojiunga
+
+        <h1 className="text-3xl font-black mb-1">{participant.nickname}</h1>
+        {quizName && <p className="text-white/60 text-sm mb-6">{quizName}</p>}
+
+        <div className="bg-white/10 backdrop-blur rounded-2xl p-5 mb-6">
+          <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Game PIN</p>
+          <p className="text-5xl font-mono font-black tracking-widest text-orange-300">{pin}</p>
         </div>
+
+        <div className="inline-flex items-center gap-2 bg-green-500/20 rounded-full px-4 py-2 text-green-300 text-sm font-semibold">
+          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+          {count} {count === 1 ? 'player' : 'players'} joined
+        </div>
+
+        <p className="mt-8 text-white/40 text-xs">Subiri mwalimu aanze quiz…</p>
       </div>
     </main>
   );
 }
 
-function useCountdown(endsAt: string | null | undefined): number {
+/* ── Countdown circle ── */
+function CountdownCircle({ remaining, total }: { remaining: number; total: number }) {
+  const pct = total > 0 ? remaining / total : 0;
+  const r = 40;
+  const circ = 2 * Math.PI * r;
+  const dash = circ * pct;
+  const col = remaining <= 5 ? '#ef4444' : remaining <= 10 ? '#f59e0b' : '#22c55e';
+
+  return (
+    <div className="relative w-20 h-20 shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
+        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="8" />
+        <circle
+          cx="48" cy="48" r={r} fill="none"
+          stroke={col} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`}
+          style={{ transition: 'stroke-dasharray 0.25s linear, stroke 0.25s' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-2xl font-black text-white">{remaining}</span>
+      </div>
+    </div>
+  );
+}
+
+function useCountdown(endsAt: string | null | undefined, totalSeconds: number): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 250);
+    const t = setInterval(() => setNow(Date.now()), 200);
     return () => clearInterval(t);
   }, []);
-  if (!endsAt) return 0;
+  if (!endsAt) return totalSeconds;
   return Math.max(0, Math.ceil((new Date(endsAt).getTime() - now) / 1000));
 }
 
-function QuestionScreen({
-  participant, question, selectedOption, busy, onSelect,
-}: {
+function shapeChar(shape?: string): string {
+  const map: Record<string, string> = { triangle: '▲', diamond: '◆', circle: '●', square: '■', star: '★', plus: '✚' };
+  return shape ? (map[shape] ?? '●') : '●';
+}
+
+/* ── Question ── */
+function QuestionScreen({ participant, question, selectedOption, busy, onSelect }: {
   participant: Participant;
   question: CurrentQuestion;
   selectedOption: string | null;
   busy: boolean;
   onSelect: (id: string) => void;
 }) {
-  const remaining = useCountdown(question.ends_at);
+  const remaining = useCountdown(question.ends_at, question.time_limit_seconds);
   const timeUp = remaining <= 0;
   const answered = !!selectedOption;
+  const opts = question.options?.slice(0, 4) ?? [];
 
   return (
-    <main className="min-h-screen bg-navy-900 text-white flex flex-col">
+    <main className="fixed inset-0 bg-slate-900 flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="p-3 flex justify-between items-center border-b border-white/10">
-        <div className="text-xs text-white/70">
-          Swali <span className="font-bold text-white">{question.question_number}</span> / {question.total_questions}
+      <div className="flex items-center gap-3 px-4 py-2 bg-black/30">
+        <div className="flex-1 text-xs text-white/60 font-medium">
+          Swali <span className="text-white font-bold">{question.question_number}</span> / {question.total_questions}
         </div>
-        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-mono font-black text-xl ${
-          timeUp ? 'bg-red-500' : remaining <= 5 ? 'bg-amber-500 animate-pulse' : 'bg-green-500'
-        }`}>
-          <Clock className="w-4 h-4" />
-          {timeUp ? '0s' : `${remaining}s`}
+        <CountdownCircle remaining={remaining} total={question.time_limit_seconds} />
+        <div className="flex-1 text-right text-xs text-white/60">
+          {participant.nickname}
         </div>
-        <div className="text-xs text-white/70">👤 {participant.nickname}</div>
       </div>
 
-      {/* Question */}
-      <div className="p-6 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold">{question.text}</h2>
+      {/* Progress bar */}
+      <div className="h-1 bg-white/10">
+        <div
+          className="h-full bg-orange-400 transition-all duration-200"
+          style={{ width: `${(question.question_number / question.total_questions) * 100}%` }}
+        />
       </div>
 
-      {/* Options grid */}
-      <div className="flex-1 grid grid-cols-2 gap-3 p-4 pb-6">
-        {question.options?.map((opt, i) => {
-          const bg = opt.color ?? DEFAULT_COLORS[i] ?? '#334155';
-          const shape = shapeChar(opt.shape) ?? DEFAULT_SHAPES[i] ?? '●';
+      {/* Question text */}
+      <div className="flex items-center justify-center px-6 py-4 flex-shrink-0" style={{ minHeight: '28%' }}>
+        <div className="bg-white rounded-2xl shadow-lg px-6 py-4 max-w-2xl w-full text-center">
+          {question.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={question.image_url} alt="" className="w-full max-h-32 object-contain mb-3 rounded" />
+          )}
+          <p className="text-xl md:text-2xl font-bold text-slate-900 leading-snug">{question.text}</p>
+        </div>
+      </div>
+
+      {/* Options — 2×2 grid */}
+      <div className="flex-1 grid grid-cols-2 gap-2 p-3">
+        {opts.map((opt, i) => {
+          const bg = opt.color ?? COLORS[i] ?? '#334155';
+          const shape = shapeChar(opt.shape) ?? SHAPES[i] ?? '●';
           const isSel = selectedOption === opt.id;
           const dim = answered && !isSel;
+
           return (
             <button
               key={opt.id}
               onClick={() => onSelect(opt.id)}
               disabled={answered || busy || timeUp}
-              className={`rounded-2xl p-6 md:p-8 text-white font-bold text-xl flex items-center justify-center gap-3 transition transform ${
-                dim ? 'opacity-30 scale-95' : 'active:scale-95 hover:brightness-110'
-              } ${isSel ? 'ring-4 ring-white scale-105' : ''} ${timeUp && !answered ? 'opacity-50' : ''}`}
+              className={`
+                relative rounded-2xl flex flex-col items-center justify-center gap-2 p-3
+                text-white font-bold transition-all duration-150
+                ${dim ? 'opacity-25 scale-95' : 'active:scale-95'}
+                ${isSel ? 'ring-4 ring-white ring-offset-2 ring-offset-slate-900 scale-[1.03]' : ''}
+                ${!answered && !timeUp ? 'hover:brightness-110 hover:scale-[1.02]' : ''}
+                ${timeUp && !answered ? 'opacity-40' : ''}
+              `}
               style={{ backgroundColor: bg }}
             >
-              <span className="text-4xl">{shape}</span>
-              <span className="text-left">{opt.label}</span>
+              <span className="text-3xl leading-none">{shape}</span>
+              <span className="text-sm md:text-base text-center leading-tight">{opt.label}</span>
+              {isSel && (
+                <div className="absolute inset-0 rounded-2xl border-4 border-white/60 animate-pulse" />
+              )}
             </button>
           );
         })}
       </div>
 
-      {answered && (
-        <div className="p-3 text-center text-white/80 text-sm animate-fade-in border-t border-white/10">
-          ✓ Jibu limetumwa · subiri washindani wengine…
-        </div>
-      )}
-      {timeUp && !answered && (
-        <div className="p-3 text-center text-red-300 text-sm animate-fade-in border-t border-white/10">
-          Muda umeisha!
-        </div>
-      )}
-    </main>
-  );
-}
-
-function shapeChar(shape?: string): string | null {
-  const map: Record<string, string> = { triangle: '▲', diamond: '◆', circle: '●', square: '■', star: '★', plus: '✚' };
-  return shape ? map[shape] ?? null : null;
-}
-
-function ResultScreen({ result, participant }: { result: AnswerResult; participant: Participant }) {
-  const bg = result.is_correct
-    ? 'bg-gradient-to-br from-green-500 to-green-800'
-    : 'bg-gradient-to-br from-red-500 to-red-800';
-
-  return (
-    <main className={`min-h-screen ${bg} flex flex-col items-center justify-center text-white p-8`}>
-      <div className="text-center animate-fade-in">
-        {result.is_correct ? (
-          <>
-            <CheckCircle2 className="w-28 h-28 mx-auto mb-4 animate-bounce" strokeWidth={2.5} />
-            <h1 className="text-5xl font-black mb-2">Sahihi!</h1>
-            <div className="text-7xl font-black text-yellow-300 mb-3 font-mono">+{result.points_earned.toLocaleString()}</div>
-            {result.speed_bonus > 0 && (
-              <div className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm mr-2">
-                <Zap className="w-4 h-4" /> Speed +{result.speed_bonus}
-              </div>
-            )}
-            {result.streak_bonus > 0 && (
-              <div className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm">
-                <Flame className="w-4 h-4" /> Streak +{result.streak_bonus}
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <XCircle className="w-28 h-28 mx-auto mb-4" strokeWidth={2.5} />
-            <h1 className="text-5xl font-black mb-2">Sio Sahihi</h1>
-            <div className="text-4xl mb-3">😬</div>
-          </>
-        )}
-
-        <div className="mt-6 inline-block bg-white/10 px-6 py-3 rounded-2xl">
-          <div className="text-xs uppercase tracking-widest opacity-80">Alama Zako</div>
-          <div className="text-3xl font-black font-mono">{result.total_score.toLocaleString()}</div>
-        </div>
-
-        {result.current_streak >= 2 && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-orange-500/30 rounded-full px-4 py-2 text-lg font-bold">
-            <Flame className="w-5 h-5 text-orange-300" />
-            {result.current_streak} in a row!
-          </div>
-        )}
-
-        <div className="mt-8 text-sm text-white/70">👤 {participant.nickname}</div>
+      {/* Status footer */}
+      <div className="py-2 text-center text-xs shrink-0">
+        {answered && <p className="text-green-300 font-semibold">✓ Jibu limetumwa — subiri wengine…</p>}
+        {timeUp && !answered && <p className="text-red-400 font-semibold">⏱ Muda umeisha!</p>}
+        {!answered && !timeUp && <p className="text-white/30">&nbsp;</p>}
       </div>
     </main>
   );
 }
 
-function NoAnswerScreen({ participant }: { participant: Participant }) {
+/* ── Wait (time up, no answer) ── */
+function WaitScreen({ participant }: { participant: Participant }) {
   return (
-    <main className="min-h-screen bg-slate-800 text-white flex flex-col items-center justify-center p-8">
-      <div className="text-6xl mb-4">⌛</div>
-      <h1 className="text-2xl font-bold mb-2">Swali limemalizika</h1>
-      <p className="text-white/70">Hukujibu kwa wakati. Subiri swali linalofuata…</p>
-      <div className="mt-6 text-sm text-white/50">👤 {participant.nickname}</div>
+    <Full bg="bg-slate-800">
+      <div className="text-center text-white">
+        <div className="text-7xl mb-4">⌛</div>
+        <h1 className="text-2xl font-bold mb-2">Swali limemalizika</h1>
+        <p className="text-white/60 text-sm">Hukujibu kwa wakati</p>
+        <p className="mt-6 text-xs text-white/30">{participant.nickname}</p>
+      </div>
+    </Full>
+  );
+}
+
+/* ── Per-question result ── */
+function ResultScreen({ result, participant }: { result: AnswerResult; participant: Participant }) {
+  return (
+    <main className={`fixed inset-0 flex flex-col items-center justify-center text-white p-8 ${
+      result.is_correct
+        ? 'bg-gradient-to-br from-green-500 to-emerald-700'
+        : 'bg-gradient-to-br from-red-500 to-red-800'
+    }`}>
+      <div className="text-center animate-fade-in">
+        {result.is_correct ? (
+          <>
+            <CheckCircle2 className="w-28 h-28 mx-auto mb-3" strokeWidth={2} />
+            <h1 className="text-5xl font-black mb-4">Sahihi! 🎉</h1>
+            <div className="text-7xl font-black text-yellow-200 font-mono mb-4">
+              +{result.points_earned.toLocaleString()}
+            </div>
+            <div className="flex items-center justify-center gap-2 flex-wrap">
+              {result.speed_bonus > 0 && (
+                <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm font-bold">
+                  <Zap className="w-4 h-4" /> Kasi +{result.speed_bonus}
+                </span>
+              )}
+              {result.streak_bonus > 0 && (
+                <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm font-bold">
+                  <Flame className="w-4 h-4" /> Streak +{result.streak_bonus}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <XCircle className="w-28 h-28 mx-auto mb-3" strokeWidth={2} />
+            <h1 className="text-5xl font-black mb-4">Sio Sahihi 😬</h1>
+          </>
+        )}
+
+        <div className="mt-8 bg-white/15 rounded-2xl px-8 py-4 inline-block">
+          <p className="text-xs uppercase tracking-widest text-white/60">Jumla ya Alama</p>
+          <p className="text-4xl font-black font-mono">{result.total_score.toLocaleString()}</p>
+        </div>
+
+        {result.current_streak >= 2 && (
+          <div className="mt-4 inline-flex items-center gap-2 bg-orange-400/30 rounded-full px-4 py-2 font-bold">
+            <Flame className="w-5 h-5 text-orange-200" />
+            {result.current_streak} sahihi mfululizo!
+          </div>
+        )}
+
+        <p className="mt-8 text-white/40 text-xs">Subiri swali linalofuata…</p>
+      </div>
     </main>
   );
 }
 
-function CompletedScreen({
-  participant, finalScore, finalLeaderboard,
-}: {
-  participant: Participant;
-  finalScore: number | null;
-  finalLeaderboard: LeaderboardEntry[];
+/* ── Final podium ── */
+function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
+  participant: Participant; finalScore: number | null; finalLeaderboard: LeaderboardEntry[];
 }) {
   const router = useRouter();
   const myRow = useMemo(
@@ -359,28 +386,27 @@ function CompletedScreen({
     [finalLeaderboard, participant.nickname],
   );
   const rank = myRow?.rank;
-  const displayScore = myRow?.total_score ?? finalScore ?? 0;
+  const score = myRow?.total_score ?? finalScore ?? 0;
+
+  const rankLabel = !rank ? null
+    : rank === 1 ? '🥇 Umeshinda!' : rank === 2 ? '🥈 Nafasi ya 2!' : rank === 3 ? '🥉 Nafasi ya 3!'
+    : `Nafasi ya ${rank}`;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-navy-800 to-navy-950 text-white flex flex-col items-center p-6 py-10">
-      <div className="text-center animate-fade-in max-w-2xl w-full">
-        <Trophy className="w-24 h-24 mx-auto mb-4 text-yellow-300" />
-        <h1 className="text-4xl font-black mb-2">Quiz Imekamilika!</h1>
+    <main className="fixed inset-0 bg-gradient-to-br from-navy-800 to-navy-950 text-white overflow-y-auto">
+      <div className="min-h-full flex flex-col items-center justify-start px-4 py-10">
+        <Trophy className="w-20 h-20 text-yellow-300 mb-4" />
+        <h1 className="text-4xl font-black mb-1">Quiz Imekamilika!</h1>
+        {rankLabel && <div className="text-2xl mb-4">{rankLabel}</div>}
 
-        {rank && (
-          <div className="text-3xl mb-3">
-            {rank === 1 ? '🥇 Umeshinda!' : rank === 2 ? '🥈 Nafasi ya pili!' : rank === 3 ? '🥉 Nafasi ya tatu!' : `Nafasi ya ${rank}`}
-          </div>
-        )}
-
-        <div className="bg-white/10 rounded-2xl p-6 mb-8 inline-block">
-          <div className="text-xs uppercase tracking-widest text-white/60 mb-1">Alama Zako</div>
-          <div className="text-6xl font-black text-yellow-300 font-mono">{displayScore.toLocaleString()}</div>
+        <div className="bg-white/10 rounded-2xl px-8 py-5 mb-8 text-center">
+          <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Alama Zako</p>
+          <p className="text-6xl font-black text-yellow-300 font-mono">{score.toLocaleString()}</p>
           {myRow && (
-            <div className="mt-3 text-sm text-white/80 flex items-center justify-center gap-3">
-              <span>{myRow.correct_answers} sahihi</span>
+            <div className="flex items-center justify-center gap-4 mt-3 text-sm text-white/70">
+              <span>✓ {myRow.correct_answers} sahihi</span>
               {myRow.longest_streak > 0 && (
-                <span className="text-orange-300 font-bold flex items-center gap-1">
+                <span className="text-orange-300 flex items-center gap-1">
                   <Flame className="w-4 h-4" /> streak {myRow.longest_streak}
                 </span>
               )}
@@ -389,28 +415,30 @@ function CompletedScreen({
         </div>
 
         {finalLeaderboard.length > 0 && (
-          <div className="text-left bg-white/5 rounded-2xl p-4 mb-6">
-            <div className="text-xs uppercase tracking-widest text-white/60 mb-3 text-center">Podium</div>
-            <div className="space-y-1.5">
-              {finalLeaderboard.slice(0, 10).map((e) => {
-                const isMe = e.nickname === participant.nickname;
-                return (
-                  <div key={e.participant_id}
-                    className={`flex items-center gap-3 p-2 rounded ${isMe ? 'bg-orange-500/30 ring-2 ring-orange-400' : 'bg-white/5'}`}>
-                    <div className="w-8 text-center font-black">
-                      {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
-                    </div>
-                    <div className="flex-1 font-semibold truncate">{e.nickname}{isMe && ' (you)'}</div>
-                    <div className="font-mono font-black text-yellow-300">{e.total_score.toLocaleString()}</div>
+          <div className="w-full max-w-sm bg-white/5 rounded-2xl p-4 mb-8 space-y-1.5">
+            <p className="text-xs uppercase tracking-widest text-white/50 text-center mb-3">Orodha ya Ushindi</p>
+            {finalLeaderboard.slice(0, 10).map((e) => {
+              const isMe = e.nickname === participant.nickname;
+              const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
+              return (
+                <div key={e.participant_id}
+                  className={`flex items-center gap-3 p-2.5 rounded-xl ${isMe ? 'bg-orange-500/30 ring-2 ring-orange-400' : 'bg-white/5'}`}>
+                  <div className="w-8 text-center font-black text-sm">{medal}</div>
+                  <div className="flex-1 font-semibold truncate">
+                    {e.nickname}{isMe && <span className="text-orange-300 text-xs ml-1">(wewe)</span>}
                   </div>
-                );
-              })}
-            </div>
+                  <div className="font-mono font-black text-yellow-300">{e.total_score.toLocaleString()}</div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        <button onClick={() => router.push('/play')} className="btn-primary text-lg px-8 py-3">
-          Cheza Tena
+        <button
+          onClick={() => router.push('/play')}
+          className="btn-primary text-lg px-10 py-3 bg-orange-500 hover:bg-orange-600 border-none"
+        >
+          Cheza Tena 🚀
         </button>
       </div>
     </main>

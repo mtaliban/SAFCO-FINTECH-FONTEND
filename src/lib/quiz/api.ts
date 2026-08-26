@@ -308,6 +308,12 @@ export const playApi = {
     total_questions: number; current_question_index: number;
     current_question_ends_at: string | null; realtime_topic: string;
   }>(`/play/session/${pin}`),
+  currentQuestion: (pin: string) => apiRequest.get<{
+    question_id: string; question_number: number; total_questions: number;
+    type: string; text: string; image_url: string | null;
+    options: Array<{ id: string; label: string; color?: string; shape?: string }>;
+    time_limit_seconds: number; ends_at: string | null;
+  } | null>(`/play/session/${pin}/current-question`),
   submitAnswer: (pin: string, participantId: string, answer: unknown) =>
     apiRequest.post<{
       is_correct: boolean; points_earned: number; speed_bonus: number;

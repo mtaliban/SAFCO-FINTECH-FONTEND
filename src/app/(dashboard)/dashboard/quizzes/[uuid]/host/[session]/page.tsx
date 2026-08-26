@@ -10,7 +10,7 @@ import {
   Zap, Clock, Flame,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { sessionApi, type LeaderboardEntry, type LiveEndQuestionPayload, type LiveParticipant } from '@/lib/quiz/api';
+import { sessionApi, playApi, type LeaderboardEntry, type LiveEndQuestionPayload, type LiveParticipant } from '@/lib/quiz/api';
 import { useLiveSession } from '@/lib/quiz/useLiveSession';
 
 type SessionStatus = 'waiting' | 'starting' | 'question_active' | 'question_ended' | 'showing_leaderboard' | 'completed' | 'cancelled';
@@ -48,11 +48,7 @@ export default function HostSessionPage() {
   // Poll session state as fallback (MQTT drives most updates but this is authoritative)
   const { data: state } = useQuery<SessionState | null>({
     queryKey: ['host-session', pin],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/play/session/${pin}`);
-      const json = await res.json();
-      return json.data;
-    },
+    queryFn: () => playApi.sessionState(pin) as Promise<SessionState | null>,
     refetchInterval: 3000,
     enabled: !!pin,
   });
@@ -147,6 +143,7 @@ export default function HostSessionPage() {
   const isLast = currentIndex + 1 >= totalQuestions;
 
   return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-white">
     <div className="p-6 max-w-7xl mx-auto animate-fade-in">
       {/* Header — PIN + participant count + status */}
       <HostHeader
@@ -159,8 +156,8 @@ export default function HostSessionPage() {
       />
 
       {/* Controls bar */}
-      <div className="card p-4 mb-6 flex flex-wrap items-center gap-3">
-        <div className="text-sm font-bold text-slate-700 mr-2">Host controls:</div>
+      <div className="bg-white/10 rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 border border-white/10">
+        <div className="text-sm font-bold text-white/70 mr-2">Host controls:</div>
         {status === 'waiting' && (
           <button onClick={startQuestion} className="btn-primary text-base px-6 py-3">
             <Play className="w-5 h-5" /> Anzisha Quiz
@@ -217,6 +214,7 @@ export default function HostSessionPage() {
           <LeaderboardPanel leaderboard={leaderboard} highlight={status !== 'completed'} />
         </div>
       </div>
+    </div>
     </div>
   );
 }
@@ -286,24 +284,24 @@ function StatusBadge({ status }: { status: SessionStatus }) {
 
 function ParticipantLobby({ participants, count }: { participants: LiveParticipant[]; count: number }) {
   return (
-    <div className="card p-6">
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold flex items-center gap-2">
-          <Users className="w-5 h-5 text-brand-600" /> Waiting Room
+        <h3 className="text-lg font-bold flex items-center gap-2 text-white">
+          <Users className="w-5 h-5 text-orange-400" /> Waiting Room
         </h3>
-        <span className="text-sm text-slate-500">{count} joined</span>
+        <span className="text-sm text-white/50">{count} joined</span>
       </div>
       {participants.length === 0 ? (
         <div className="p-12 text-center">
           <div className="text-6xl mb-3 animate-bounce">👀</div>
-          <p className="text-slate-500">Share the PIN — waiting for players to join…</p>
+          <p className="text-white/50">Share the PIN — waiting for players to join…</p>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {participants.map((p) => (
             <div
               key={p.id}
-              className="px-3 py-2 rounded-full bg-brand-100 text-brand-800 font-semibold text-sm flex items-center gap-1.5 animate-fade-in"
+              className="px-3 py-2 rounded-full bg-orange-500/20 text-orange-200 border border-orange-500/30 font-semibold text-sm flex items-center gap-1.5 animate-fade-in"
               title={p.joined_at ? new Date(p.joined_at).toLocaleTimeString() : ''}
             >
               {p.nickname}
@@ -328,31 +326,33 @@ function ActiveQuestionView({
   const answerPct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   return (
-    <div className="card p-6">
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Question {question.index + 1} / {question.total}
+        <div className="text-xs font-semibold uppercase tracking-wider text-white/50">
+          Swali {question.index + 1} / {question.total}
         </div>
-        <div className={`flex items-center gap-2 px-3 py-1 rounded-full font-mono font-black text-xl ${
-          timeUp ? 'bg-red-100 text-red-700' : remaining <= 5 ? 'bg-amber-100 text-amber-700 animate-pulse' : 'bg-green-100 text-green-700'
+        <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-black text-2xl ${
+          timeUp ? 'bg-red-500 text-white' : remaining <= 5 ? 'bg-amber-400 text-slate-900 animate-pulse' : 'bg-green-500 text-white'
         }`}>
-          <Clock className="w-4 h-4" />
+          <Clock className="w-5 h-5" />
           {timeUp ? "TIME'S UP" : `${remaining}s`}
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">{q.text}</h2>
+      <div className="bg-white rounded-xl p-4 mb-5">
+        <h2 className="text-2xl font-bold text-slate-900 text-center">{q.text}</h2>
+      </div>
 
       {opts.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          {opts.slice(0, 6).map((o, i) => (
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {opts.slice(0, 4).map((o, i) => (
             <div
               key={o.id ?? i}
-              className="p-4 rounded-xl text-white font-bold text-center"
+              className="p-4 rounded-xl text-white font-bold text-center flex items-center justify-center gap-2"
               style={{ backgroundColor: o.color ?? DEFAULT_COLORS[i] ?? '#334155' }}
             >
-              <span className="text-2xl mr-2">{DEFAULT_SHAPES[i] ?? '●'}</span>
-              {o.label}
+              <span className="text-2xl">{DEFAULT_SHAPES[i] ?? '●'}</span>
+              <span>{o.label}</span>
             </div>
           ))}
         </div>
@@ -360,15 +360,15 @@ function ActiveQuestionView({
 
       {/* Live "answered" ticker */}
       <div>
-        <div className="flex items-center justify-between text-sm mb-1">
-          <span className="font-semibold text-slate-700">
-            <Zap className="w-4 h-4 inline mr-1 text-brand-600" />
-            {answered} / {total} answered
+        <div className="flex items-center justify-between text-sm mb-2 text-white/70">
+          <span className="font-semibold flex items-center gap-1">
+            <Zap className="w-4 h-4 text-orange-400" />
+            {answered} / {total} wamejibu
           </span>
-          <span className="text-slate-500">{answerPct}%</span>
+          <span className="font-bold text-white">{answerPct}%</span>
         </div>
-        <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-          <div className="h-full bg-brand-500 transition-all duration-300" style={{ width: `${answerPct}%` }} />
+        <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden">
+          <div className="h-full bg-orange-400 transition-all duration-300 rounded-full" style={{ width: `${answerPct}%` }} />
         </div>
       </div>
     </div>
@@ -398,17 +398,19 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
   const correctIds = normaliseCorrect(reveal.correct_answer);
 
   return (
-    <div className="card p-6">
-      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-        Answer revealed
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
+      <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">
+        Jibu limeonyeshwa
       </div>
-      <h2 className="text-xl font-bold text-slate-900 mb-4">{q.text}</h2>
+      <div className="bg-white rounded-xl p-4 mb-5">
+        <h2 className="text-xl font-bold text-slate-900 text-center">{q.text}</h2>
+      </div>
 
       {/* Big stats banner */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <StatCard label="Answered" value={stats.total_answers} total={total} />
-        <StatCard label="Correct" value={stats.correct_count} accent="green" />
-        <StatCard label="Correct Rate" value={`${stats.correct_rate_percent}%`} accent={stats.correct_rate_percent >= 50 ? 'green' : 'red'} />
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <StatCard label="Walijibu" value={stats.total_answers} total={total} />
+        <StatCard label="Sahihi" value={stats.correct_count} accent="green" />
+        <StatCard label="Asilimia" value={`${stats.correct_rate_percent}%`} accent={stats.correct_rate_percent >= 50 ? 'green' : 'red'} />
       </div>
 
       {/* Bar chart per option */}
@@ -420,22 +422,22 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
             const totalPct = stats.total_answers > 0 ? Math.round((count / stats.total_answers) * 100) : 0;
             const isCorrect = correctIds.includes(String(o.id));
             return (
-              <div key={o.id} className={`p-3 rounded-lg border-2 ${
-                isCorrect ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white'
+              <div key={o.id} className={`p-3 rounded-xl border-2 ${
+                isCorrect ? 'border-green-400 bg-green-900/40' : 'border-white/10 bg-white/5'
               }`}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xl" style={{ color: o.color ?? DEFAULT_COLORS[i] }}>
                     {DEFAULT_SHAPES[i] ?? '●'}
                   </span>
-                  <span className={`flex-1 font-semibold ${isCorrect ? 'text-green-700' : 'text-slate-800'}`}>
+                  <span className={`flex-1 font-semibold ${isCorrect ? 'text-green-300' : 'text-white/80'}`}>
                     {o.label}
                   </span>
-                  {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-600" />}
-                  <span className="text-sm font-mono text-slate-600">{count} ({totalPct}%)</span>
+                  {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-400" />}
+                  <span className="text-sm font-mono text-white/50">{count} ({totalPct}%)</span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden bg-slate-100">
+                <div className="h-2.5 rounded-full overflow-hidden bg-white/10">
                   <div
-                    className={`h-full transition-all duration-500 ${isCorrect ? 'bg-green-500' : 'bg-slate-400'}`}
+                    className={`h-full transition-all duration-500 rounded-full ${isCorrect ? 'bg-green-400' : 'bg-white/30'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -444,16 +446,16 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
           })}
         </div>
       ) : (
-        <div className="p-4 rounded-lg bg-green-50 border-2 border-green-500">
-          <div className="text-xs font-semibold text-green-700 mb-1 uppercase">Correct answer</div>
-          <div className="text-lg font-bold text-green-900">{JSON.stringify(reveal.correct_answer)}</div>
+        <div className="p-4 rounded-xl bg-green-900/40 border-2 border-green-400">
+          <div className="text-xs font-semibold text-green-300 mb-1 uppercase">Jibu Sahihi</div>
+          <div className="text-lg font-bold text-green-100">{JSON.stringify(reveal.correct_answer)}</div>
         </div>
       )}
 
       {q.explanation && (
-        <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-          <div className="text-xs font-semibold text-blue-700 mb-1">Explanation</div>
-          <div className="text-sm text-blue-900">{q.explanation}</div>
+        <div className="mt-4 p-3 bg-blue-900/30 border-l-4 border-blue-400 rounded-r-xl">
+          <div className="text-xs font-semibold text-blue-300 mb-1">Maelezo</div>
+          <div className="text-sm text-blue-100">{q.explanation}</div>
         </div>
       )}
     </div>
@@ -467,13 +469,13 @@ function normaliseCorrect(v: unknown): string[] {
 }
 
 function StatCard({ label, value, total, accent }: { label: string; value: number | string; total?: number; accent?: 'green' | 'red' }) {
-  const cls = accent === 'green' ? 'bg-green-100 text-green-800'
-    : accent === 'red' ? 'bg-red-100 text-red-700'
-    : 'bg-slate-100 text-slate-800';
+  const cls = accent === 'green' ? 'bg-green-900/50 text-green-300 border border-green-500/30'
+    : accent === 'red' ? 'bg-red-900/50 text-red-300 border border-red-500/30'
+    : 'bg-white/10 text-white border border-white/10';
   return (
-    <div className={`rounded-lg p-3 text-center ${cls}`}>
-      <div className="text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-60"> / {total}</span>}</div>
-      <div className="text-xs font-semibold uppercase tracking-wider opacity-80 mt-1">{label}</div>
+    <div className={`rounded-xl p-3 text-center ${cls}`}>
+      <div className="text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-50"> / {total}</span>}</div>
+      <div className="text-xs font-semibold uppercase tracking-wider opacity-70 mt-1">{label}</div>
     </div>
   );
 }
@@ -481,37 +483,37 @@ function StatCard({ label, value, total, accent }: { label: string; value: numbe
 function LeaderboardPanel({ leaderboard, highlight }: { leaderboard: LeaderboardEntry[]; highlight: boolean }) {
   const top = useMemo(() => leaderboard.slice(0, 10), [leaderboard]);
   return (
-    <div className="card p-4 sticky top-4">
-      <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-yellow-500" /> Leaderboard
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-4 sticky top-4">
+      <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-yellow-400" /> Leaderboard
       </h3>
       {top.length === 0 ? (
-        <div className="p-6 text-center text-sm text-slate-500">Wait for the first answer…</div>
+        <div className="p-6 text-center text-sm text-white/40">Subiri jibu la kwanza…</div>
       ) : (
         <div className="space-y-1.5">
           {top.map((e) => (
             <div
               key={e.participant_id}
-              className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                highlight && e.rank <= 3 ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50'
+              className={`flex items-center gap-2 p-2.5 rounded-xl text-sm ${
+                highlight && e.rank <= 3 ? 'bg-yellow-500/20 border border-yellow-400/30' : 'bg-white/5'
               }`}
             >
-              <div className="w-7 text-center font-black text-slate-500">
-                {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : e.rank}
+              <div className="w-7 text-center font-black">
+                {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : <span className="text-white/50">{e.rank}</span>}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-900 truncate flex items-center gap-1">
+                <div className="font-semibold text-white truncate flex items-center gap-1">
                   {e.nickname}
-                  {e.is_late_join && <span className="text-[9px] px-1 rounded bg-amber-100 text-amber-700 uppercase font-bold">Late</span>}
+                  {e.is_late_join && <span className="text-[9px] px-1 rounded bg-amber-500/30 text-amber-300 uppercase font-bold">Late</span>}
                 </div>
-                <div className="text-[10px] text-slate-500 flex items-center gap-2">
-                  <span><CheckCircle2 className="w-2.5 h-2.5 inline text-green-600" /> {e.correct_answers}</span>
+                <div className="text-[10px] text-white/40 flex items-center gap-2">
+                  <span><CheckCircle2 className="w-2.5 h-2.5 inline text-green-400" /> {e.correct_answers}</span>
                   {typeof e.current_streak === 'number' && e.current_streak >= 2 && (
-                    <span className="text-orange-600 font-bold"><Flame className="w-2.5 h-2.5 inline" /> {e.current_streak}</span>
+                    <span className="text-orange-400 font-bold"><Flame className="w-2.5 h-2.5 inline" /> {e.current_streak}</span>
                   )}
                 </div>
               </div>
-              <div className="text-lg font-black text-brand-700 font-mono">{e.total_score.toLocaleString()}</div>
+              <div className="text-lg font-black text-yellow-300 font-mono">{e.total_score.toLocaleString()}</div>
             </div>
           ))}
         </div>
@@ -523,24 +525,24 @@ function LeaderboardPanel({ leaderboard, highlight }: { leaderboard: Leaderboard
 function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   const [first, second, third] = leaderboard;
   return (
-    <div className="card p-6 text-center">
-      <div className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-1">Final Results</div>
-      <div className="text-3xl font-black text-slate-900 mb-6">🏆 SAFCO Live Quiz — Champions</div>
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-6 text-center">
+      <div className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-1">Matokeo ya Mwisho</div>
+      <div className="text-3xl font-black text-white mb-6">🏆 SAFCO Live — Mabingwa</div>
 
       <div className="grid grid-cols-3 gap-4 mb-6 items-end max-w-2xl mx-auto">
-        <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-300" emoji="🥈" />
+        <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-400" emoji="🥈" />
         <PodiumStep entry={first} rank={1} height="h-40" bg="bg-yellow-400" emoji="🥇" />
-        <PodiumStep entry={third} rank={3} height="h-24" bg="bg-orange-300" emoji="🥉" />
+        <PodiumStep entry={third} rank={3} height="h-24" bg="bg-orange-400" emoji="🥉" />
       </div>
 
       {leaderboard.length > 3 && (
         <div className="text-left max-w-md mx-auto space-y-1.5 mt-6">
-          <div className="text-xs font-semibold text-slate-500 uppercase mb-2">Full leaderboard</div>
+          <div className="text-xs font-semibold text-white/40 uppercase mb-2">Orodha Kamili</div>
           {leaderboard.slice(3, 20).map((e) => (
-            <div key={e.participant_id} className="flex items-center gap-3 p-2 rounded bg-slate-50">
-              <div className="w-6 text-slate-500 font-bold text-sm">{e.rank}</div>
-              <div className="flex-1 truncate font-medium">{e.nickname}</div>
-              <div className="text-brand-700 font-black font-mono">{e.total_score.toLocaleString()}</div>
+            <div key={e.participant_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
+              <div className="w-6 text-white/40 font-bold text-sm">{e.rank}</div>
+              <div className="flex-1 truncate font-medium text-white">{e.nickname}</div>
+              <div className="text-yellow-300 font-black font-mono">{e.total_score.toLocaleString()}</div>
             </div>
           ))}
         </div>
@@ -551,14 +553,14 @@ function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
 
 function PodiumStep({ entry, rank, height, bg, emoji }: { entry?: LeaderboardEntry; rank: number; height: string; bg: string; emoji: string }) {
   if (!entry) {
-    return <div className={`${height} ${bg} opacity-40 rounded-t-lg flex flex-col items-center justify-end p-3 text-white font-bold`}>—</div>;
+    return <div className={`${height} ${bg} opacity-30 rounded-t-xl flex items-center justify-center text-white font-black text-2xl`}>—</div>;
   }
   return (
     <div className="flex flex-col items-center">
       <div className="text-3xl mb-1">{emoji}</div>
-      <div className="font-bold text-slate-900 mb-0.5">{entry.nickname}</div>
-      <div className="text-brand-700 font-black font-mono mb-2">{entry.total_score.toLocaleString()}</div>
-      <div className={`${bg} ${height} w-full rounded-t-lg flex items-center justify-center text-4xl font-black text-white`}>{rank}</div>
+      <div className="font-bold text-white mb-0.5 truncate max-w-full px-1 text-sm">{entry.nickname}</div>
+      <div className="text-yellow-300 font-black font-mono mb-2 text-sm">{entry.total_score.toLocaleString()}</div>
+      <div className={`${bg} ${height} w-full rounded-t-xl flex items-center justify-center text-4xl font-black text-white shadow-lg`}>{rank}</div>
     </div>
   );
 }
