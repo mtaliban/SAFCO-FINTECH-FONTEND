@@ -1,51 +1,125 @@
 'use client';
 
 import Link from 'next/link';
+import { CheckCircle2, MessageSquare, Eye, Pin, Lock, Tag } from 'lucide-react';
 import { type ThreadSummary } from '@/lib/forum/api';
 
+const CATEGORY_CFG: Record<string, { bg: string; text: string; border: string }> = {
+  blue:    { bg: 'bg-blue-100',    text: 'text-blue-700',    border: 'border-blue-200' },
+  amber:   { bg: 'bg-amber-100',   text: 'text-amber-800',   border: 'border-amber-200' },
+  emerald: { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
+};
+const DEFAULT_CFG = { bg: 'bg-slate-100', text: 'text-slate-600', border: 'border-slate-200' };
+
+export function categoryStyle(color: string | null) {
+  return CATEGORY_CFG[color ?? ''] ?? DEFAULT_CFG;
+}
+
 export function ThreadRow({ thread }: { thread: ThreadSummary }) {
+  const cat = categoryStyle(thread.category.color);
+  const solved = thread.has_accepted_answer;
+
   return (
-    <Link href={`/forum/thread/${thread.uuid}`} className="card p-4 flex items-start gap-4 hover:bg-slate-50 transition">
-      <div className="w-14 flex-shrink-0 flex flex-col items-center text-center">
-        <div className="text-2xl font-bold text-slate-800">{thread.votes_score}</div>
-        <div className="text-[10px] uppercase text-slate-500 tracking-widest">votes</div>
-      </div>
-      <div className="w-14 flex-shrink-0 flex flex-col items-center text-center">
-        <div className={`text-2xl font-bold ${thread.has_accepted_answer ? 'text-emerald-700' : 'text-slate-800'}`}>
-          {thread.replies_count}
+    <Link
+      href={`/forum/thread/${thread.uuid}`}
+      className={`group block bg-white border rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
+        solved ? 'border-l-4 border-l-emerald-500 border-slate-200' : 'border-slate-200 hover:border-indigo-200'
+      }`}
+    >
+      <div className="flex items-stretch">
+        {/* Vote + replies column */}
+        <div className="flex flex-col items-center justify-center gap-3 px-5 py-5 bg-slate-50 border-r border-slate-100 shrink-0 min-w-[80px]">
+          <div className="text-center">
+            <div className={`text-xl font-black tabular-nums ${
+              thread.votes_score > 0 ? 'text-indigo-700' : thread.votes_score < 0 ? 'text-red-600' : 'text-slate-700'
+            }`}>
+              {thread.votes_score}
+            </div>
+            <div className="text-[9px] uppercase tracking-widest text-slate-400 font-bold mt-0.5">votes</div>
+          </div>
+
+          <div className={`text-center px-2.5 py-1.5 rounded-lg ${
+            solved ? 'bg-emerald-100' : 'bg-slate-100'
+          }`}>
+            <div className={`text-xl font-black tabular-nums ${solved ? 'text-emerald-700' : 'text-slate-700'}`}>
+              {thread.replies_count}
+            </div>
+            <div className={`text-[9px] uppercase tracking-widest font-bold mt-0.5 ${solved ? 'text-emerald-600' : 'text-slate-400'}`}>
+              {solved ? 'solved' : 'replies'}
+            </div>
+          </div>
         </div>
-        <div className="text-[10px] uppercase text-slate-500 tracking-widest">
-          {thread.has_accepted_answer ? 'solved' : 'replies'}
-        </div>
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          {thread.is_pinned && <span className="text-[10px] uppercase font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">Pinned</span>}
-          {thread.is_locked && <span className="text-[10px] uppercase font-bold text-red-700 bg-red-100 px-1.5 py-0.5 rounded">Locked</span>}
-          <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${colorForCategory(thread.category.color)}`}>
-            {thread.category.name}
-          </span>
-        </div>
-        <div className="font-semibold text-slate-900 mt-1 truncate">{thread.title}</div>
-        <div className="text-sm text-slate-600 mt-1 line-clamp-2">{thread.excerpt}</div>
-        <div className="text-xs text-slate-500 mt-2 flex flex-wrap gap-x-3 gap-y-1">
-          <span>by {thread.author?.name ?? 'Unknown'}</span>
-          <span>· {thread.views_count} views</span>
-          {thread.last_activity_at && <span>· active {timeAgo(thread.last_activity_at)}</span>}
-          {thread.course && <span>· in <span className="font-medium">{thread.course.title}</span></span>}
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0 p-5">
+          {/* Badges row */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-2">
+            {thread.is_pinned && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                <Pin className="w-2.5 h-2.5" /> Pinned
+              </span>
+            )}
+            {thread.is_locked && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200">
+                <Lock className="w-2.5 h-2.5" /> Locked
+              </span>
+            )}
+            {solved && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                <CheckCircle2 className="w-2.5 h-2.5" /> Answered
+              </span>
+            )}
+            <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full border ${cat.bg} ${cat.text} ${cat.border}`}>
+              {thread.category.name}
+            </span>
+          </div>
+
+          {/* Title */}
+          <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-indigo-700 transition-colors line-clamp-2">
+            {thread.title}
+          </h3>
+
+          {/* Excerpt */}
+          {thread.excerpt && (
+            <p className="text-sm text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">{thread.excerpt}</p>
+          )}
+
+          {/* Tags */}
+          {thread.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2.5">
+              {thread.tags.map((t) => (
+                <span key={t} className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 font-semibold border border-indigo-100">
+                  <Tag className="w-2.5 h-2.5" />{t}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Meta footer */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-slate-400">
+            <span className="font-medium text-slate-600">
+              {thread.author?.name ?? 'Unknown'}
+            </span>
+            {thread.created_at && <span>{timeAgo(thread.created_at)}</span>}
+            <span className="inline-flex items-center gap-1">
+              <Eye className="w-3 h-3" /> {thread.views_count.toLocaleString()} views
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <MessageSquare className="w-3 h-3" /> {thread.replies_count}
+            </span>
+            {thread.last_activity_at && (
+              <span>active {timeAgo(thread.last_activity_at)}</span>
+            )}
+            {thread.course && (
+              <span className="text-indigo-600 font-medium truncate max-w-[160px]">
+                {thread.course.title}
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>
   );
-}
-
-function colorForCategory(c: string | null): string {
-  switch (c) {
-    case 'blue': return 'bg-blue-100 text-blue-700';
-    case 'amber': return 'bg-amber-100 text-amber-800';
-    case 'emerald': return 'bg-emerald-100 text-emerald-800';
-    default: return 'bg-slate-100 text-slate-700';
-  }
 }
 
 export function timeAgo(iso: string): string {
@@ -55,5 +129,5 @@ export function timeAgo(iso: string): string {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
   if (diff < 2592000) return `${Math.floor(diff / 86400)}d ago`;
-  return d.toLocaleDateString();
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
