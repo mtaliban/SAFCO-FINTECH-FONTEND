@@ -11,11 +11,10 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
+import { useNotifications } from '@/lib/notifications/hook';
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
-// Menu za SRS 3.1 System Administrator: Manage users · Configure system · Approve courses ·
-// Manage subscriptions · Generate reports · System-wide audit log
 const adminNav: NavItem[] = [
   { href: '/admin', label: 'Dashboard', icon: Home },
   { href: '/admin/users', label: 'Users', icon: Users },
@@ -29,10 +28,9 @@ const adminNav: NavItem[] = [
   { href: '/billing', label: 'All Invoices', icon: CreditCard },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
-// SRS 3.2 Trainer: Create courses · Upload materials · Create quizzes · Manage students · Monitor progress
 const trainerNav: NavItem[] = [
   { href: '/trainer', label: 'Dashboard', icon: Home },
   { href: '/trainer/courses', label: 'My Courses', icon: BookOpen },
@@ -45,19 +43,17 @@ const trainerNav: NavItem[] = [
   { href: '/forum', label: 'Discussion Forum', icon: MessagesSquare },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
-// SRS 3.2 Facilitator: helps trainer run sessions
 const facilitatorNav: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/trainer/sessions', label: 'Live Sessions', icon: ClipboardList },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
 
-// SRS 3.3 Student: Enroll · Attempt quizzes · Download certificates · Track progress
 const studentNav: NavItem[] = [
   { href: '/student', label: 'Dashboard', icon: Home },
   { href: '/student/courses', label: 'Browse Courses', icon: BookOpen },
@@ -73,11 +69,10 @@ const studentNav: NavItem[] = [
   { href: '/billing', label: 'Billing', icon: CreditCard },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
   { href: '/dashboard/history', label: 'My Login History', icon: History },
 ];
 
-// SRS 3.4 Corporate Client: Enroll employees · Monitor staff progress · Download reports
 const corporateNav: NavItem[] = [
   { href: '/corporate', label: 'Dashboard', icon: Home },
   { href: '/corporate/employees', label: 'My Employees', icon: Building2 },
@@ -86,15 +81,17 @@ const corporateNav: NavItem[] = [
   { href: '/billing', label: 'Billing', icon: CreditCard },
   { href: '/dashboard/profile', label: 'My Profile', icon: User },
   { href: '/dashboard/security', label: 'My 2FA', icon: ShieldCheck },
-  { href: '/settings/notifications', label: 'Notifications', icon: Bell },
+  { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
+
+const ROOT_HREFS = new Set(['/admin', '/trainer', '/student', '/corporate', '/dashboard']);
 
 function navForRole(role?: string): NavItem[] {
   switch (role) {
-    case 'system_admin': return adminNav;
-    case 'trainer': return trainerNav;
-    case 'facilitator': return facilitatorNav;
-    case 'student': return studentNav;
+    case 'system_admin':   return adminNav;
+    case 'trainer':        return trainerNav;
+    case 'facilitator':    return facilitatorNav;
+    case 'student':        return studentNav;
     case 'corporate_client': return corporateNav;
     default: return [
       { href: '/dashboard', label: 'Dashboard', icon: Home },
@@ -108,6 +105,7 @@ export function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const { unreadCount, countForRoute } = useNotifications();
 
   const role = user?.roles?.[0];
   const items = navForRole(role);
@@ -123,13 +121,21 @@ export function Sidebar() {
         <Logo width={140} height={42} href={items[0]?.href ?? '/dashboard'} />
       </div>
 
-      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-0.5 overflow-y-auto">
         {items.map(({ href, label, icon: Icon }) => {
-          // Exact match for dashboard-root routes (/admin, /trainer, /student, /corporate, /dashboard)
-          const isRoot = ['/admin', '/trainer', '/student', '/corporate', '/dashboard'].includes(href);
+          const isRoot = ROOT_HREFS.has(href);
           const active = isRoot
             ? pathname === href
             : pathname === href || pathname.startsWith(href + '/');
+
+          // Badge: special handling for /notifications (total unread) and all other routes
+          const isNotifItem = href === '/notifications';
+          const badge = isNotifItem
+            ? unreadCount
+            : ROOT_HREFS.has(href)
+            ? 0
+            : countForRoute(href);
+
           return (
             <Link
               key={href}
@@ -138,11 +144,27 @@ export function Sidebar() {
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 active
                   ? 'bg-navy-50 text-navy-500 border-l-4 border-orange-500 pl-2'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-navy-500'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-navy-500',
               )}
             >
-              <Icon className={cn('w-4 h-4', active && 'text-orange-500')} />
-              {label}
+              <div className="relative shrink-0">
+                <Icon className={cn('w-4 h-4', active && 'text-orange-500')} />
+                {/* Tiny dot for non-notification items with a badge */}
+                {!isNotifItem && badge > 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-orange-500 border border-white" />
+                )}
+              </div>
+              <span className="flex-1 truncate">{label}</span>
+              {badge > 0 && (
+                <span className={cn(
+                  'shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none',
+                  isNotifItem
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-orange-100 text-orange-700',
+                )}>
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
             </Link>
           );
         })}

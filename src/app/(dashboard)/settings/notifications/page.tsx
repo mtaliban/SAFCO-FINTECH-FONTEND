@@ -1,27 +1,24 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Loader2, Save, Bell, Mail, MessageCircle, Smartphone, MessageSquare, Lock, ArrowLeft } from 'lucide-react';
+import {
+  Loader2, Save, Bell, Mail, MessageCircle, Smartphone,
+  MessageSquare, Lock, ArrowLeft, Check, X,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
-import { notificationsApi, type Channel, type EventPrefRow, type PreferencesResponse } from '@/lib/notifications/api';
+import { notificationsApi, type Channel, type EventPrefRow } from '@/lib/notifications/api';
 
-const channelIcon = (c: Channel) => {
-  switch (c) {
-    case 'email': return Mail;
-    case 'in_app': return Bell;
-    case 'whatsapp': return MessageCircle;
-    case 'push': return Smartphone;
-    case 'sms': return MessageSquare;
-  }
-};
-const channelLabel: Record<Channel, string> = {
-  email: 'Email',
-  in_app: 'In-App',
-  whatsapp: 'WhatsApp',
-  push: 'Push',
-  sms: 'SMS',
+const CHANNEL_CFG: Record<Channel, {
+  icon: React.ElementType; label: string;
+  activeBg: string; activeText: string; activeBorder: string;
+}> = {
+  email:    { icon: Mail,           label: 'Email',     activeBg: 'bg-blue-100',    activeText: 'text-blue-800',    activeBorder: 'ring-blue-400' },
+  in_app:   { icon: Bell,           label: 'In-App',    activeBg: 'bg-indigo-100',  activeText: 'text-indigo-800',  activeBorder: 'ring-indigo-400' },
+  whatsapp: { icon: MessageCircle,  label: 'WhatsApp',  activeBg: 'bg-emerald-100', activeText: 'text-emerald-800', activeBorder: 'ring-emerald-400' },
+  push:     { icon: Smartphone,     label: 'Push',      activeBg: 'bg-orange-100',  activeText: 'text-orange-800',  activeBorder: 'ring-orange-400' },
+  sms:      { icon: MessageSquare,  label: 'SMS',       activeBg: 'bg-teal-100',    activeText: 'text-teal-800',    activeBorder: 'ring-teal-400' },
 };
 
 export default function NotificationSettingsPage() {
@@ -30,7 +27,6 @@ export default function NotificationSettingsPage() {
     queryFn: () => notificationsApi.preferences(),
   });
 
-  // Working copy of the matrix (event_key|channel -> enabled)
   const [dirty, setDirty] = useState<Record<string, boolean>>({});
 
   const saveMut = useMutation({
@@ -51,6 +47,7 @@ export default function NotificationSettingsPage() {
 
   const events = data?.events ?? [];
   const activeChannels = data?.active_channels ?? [];
+  const channels = data?.channels ?? [];
   const dirtyCount = Object.keys(dirty).length;
 
   const grouped = useMemo(() => {
@@ -63,140 +60,208 @@ export default function NotificationSettingsPage() {
   }, [events]);
 
   if (isLoading || !data) {
-    return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>;
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="h-36 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#6366f1 100%)' }} />
+        <div className="max-w-4xl mx-auto px-8 py-6 space-y-4">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white rounded-xl border border-slate-200 animate-pulse" />)}
+        </div>
+      </div>
+    );
   }
 
   const isEnabled = (row: EventPrefRow, ch: Channel) => {
-    const k = row.key + '|' + ch;
-    if (k in dirty) return dirty[k];
-    return row.channels[ch].enabled;
+    const k = `${row.key}|${ch}`;
+    return k in dirty ? dirty[k] : row.channels[ch].enabled;
   };
 
   const toggle = (row: EventPrefRow, ch: Channel) => {
-    if (row.channels[ch].locked) {
-      toast.error('This notification is required and cannot be turned off.');
-      return;
-    }
-    if (!row.channels[ch].available) {
-      toast('Channel not available yet.', { icon: 'ℹ️' });
-      return;
-    }
-    const k = row.key + '|' + ch;
-    const original = row.channels[ch].enabled;
+    const info = row.channels[ch];
+    if (info.locked) { toast.error('This notification is required and cannot be disabled.'); return; }
+    if (!info.available) { toast('This channel is coming soon.', { icon: '🔜' }); return; }
+    const k = `${row.key}|${ch}`;
+    const original = info.enabled;
     const next = !isEnabled(row, ch);
     setDirty((d) => {
       const copy = { ...d };
-      if (next === original) delete copy[k];
-      else copy[k] = next;
+      if (next === original) delete copy[k]; else copy[k] = next;
       return copy;
     });
   };
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <Link href="/dashboard/profile" className="text-sm text-slate-500 hover:text-slate-800 inline-flex items-center gap-1">
-        <ArrowLeft className="w-4 h-4" /> Back to profile
-      </Link>
+    <div className="min-h-screen bg-slate-50">
 
-      <header className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <Bell className="w-7 h-7 text-brand-600" /> Notifications
-          </h1>
-          <p className="text-slate-600 mt-1">
-            Chagua nini upate email, in-app, na channels nyingine kwa kila aina ya event.
-          </p>
+      {/* ── HERO ── */}
+      <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #6366f1 100%)' }}>
+        <div className="max-w-4xl mx-auto px-8 py-10">
+          <Link href="/notifications"
+            className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm mb-4 transition">
+            <ArrowLeft className="w-4 h-4" /> Notification Inbox
+          </Link>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-bold uppercase tracking-widest mb-2">
+                <Bell className="w-4 h-4" /> SAFCO FINTECH LMS · Notification Preferences
+              </div>
+              <h1 className="text-3xl font-black text-white">Notification Settings</h1>
+              <p className="text-indigo-200 text-sm mt-1">
+                Choose exactly what you receive on each channel. Required notifications cannot be disabled.
+              </p>
+            </div>
+            <button
+              disabled={dirtyCount === 0 || saveMut.isPending}
+              onClick={() => saveMut.mutate()}
+              className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed font-bold px-5 py-2.5 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
+            >
+              {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save changes {dirtyCount > 0 && <span className="ml-1 opacity-70 text-xs">({dirtyCount})</span>}
+            </button>
+          </div>
         </div>
-        <button
-          disabled={dirtyCount === 0 || saveMut.isPending}
-          onClick={() => saveMut.mutate()}
-          className="btn-primary"
-        >
-          {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Save changes {dirtyCount > 0 && <span className="ml-1 text-xs opacity-80">({dirtyCount})</span>}
-        </button>
-      </header>
-
-      {/* Channel legend */}
-      <div className="card p-3 flex items-center gap-4 flex-wrap text-sm">
-        <div className="text-xs uppercase font-bold text-slate-500 tracking-widest">Channels:</div>
-        {data.channels.map((c) => {
-          const Icon = channelIcon(c);
-          const active = activeChannels.includes(c);
-          return (
-            <span key={c} className={`inline-flex items-center gap-1 px-2 py-1 rounded-full ${active ? 'bg-slate-100' : 'bg-slate-50 text-slate-400 line-through'}`}>
-              <Icon className="w-3.5 h-3.5" /> {channelLabel[c]}
-              {!active && <span className="text-[10px] uppercase font-bold ml-1">soon</span>}
-            </span>
-          );
-        })}
       </div>
 
-      {grouped.map(([catKey, rows]) => (
-        <section key={catKey} className="card p-0 overflow-hidden">
-          <div className="px-5 py-3 bg-slate-100 font-semibold text-slate-800">
-            {data.categories[catKey] ?? catKey}
+      <div className="max-w-4xl mx-auto px-8 py-6 space-y-5">
+
+        {/* Channel legend */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <div className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-3">Available channels</div>
+          <div className="flex flex-wrap gap-2">
+            {channels.map((c) => {
+              const cfg = CHANNEL_CFG[c];
+              const active = activeChannels.includes(c);
+              const Icon = cfg.icon;
+              return (
+                <div
+                  key={c}
+                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-semibold ${
+                    active
+                      ? `${cfg.activeBg} ${cfg.activeText} border-current`
+                      : 'bg-slate-100 text-slate-400 border-slate-200'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {cfg.label}
+                  {!active && (
+                    <span className="text-[9px] uppercase font-black tracking-widest bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded-full">
+                      Soon
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <div className="divide-y divide-slate-200">
-            {rows.map((row) => (
-              <div key={row.key} className="p-4 flex items-center gap-4 flex-wrap">
-                <div className="flex-1 min-w-[280px]">
-                  <div className="font-semibold text-slate-900 flex items-center gap-2">
-                    {row.label}
-                    {row.critical && (
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> Required
-                      </span>
+        </div>
+
+        {/* Event groups */}
+        {grouped.map(([catKey, rows]) => (
+          <div key={catKey} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Category header */}
+            <div className="px-6 py-3.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+              <div className="font-bold text-slate-900 text-sm">{data.categories[catKey] ?? catKey}</div>
+              <div className="hidden md:flex items-center gap-3">
+                {channels.map((c) => {
+                  const cfg = CHANNEL_CFG[c];
+                  const Icon = cfg.icon;
+                  const active = activeChannels.includes(c);
+                  return (
+                    <div key={c} className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest w-16 justify-center ${active ? 'text-slate-600' : 'text-slate-300'}`}>
+                      <Icon className="w-3 h-3" /> {cfg.label}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Event rows */}
+            <div className="divide-y divide-slate-100">
+              {rows.map((row) => (
+                <div key={row.key} className="flex items-center gap-4 px-6 py-4 flex-wrap hover:bg-slate-50/50 transition">
+                  <div className="flex-1 min-w-[260px]">
+                    <div className="font-semibold text-slate-900 text-sm flex items-center gap-2">
+                      {row.label}
+                      {row.critical && (
+                        <span className="inline-flex items-center gap-1 text-[9px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                          <Lock className="w-2.5 h-2.5" /> Required
+                        </span>
+                      )}
+                    </div>
+                    {row.description && (
+                      <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{row.description}</div>
                     )}
                   </div>
-                  <div className="text-sm text-slate-500 mt-0.5">{row.description}</div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {data.channels.map((ch) => {
-                    const Icon = channelIcon(ch);
-                    const chInfo = row.channels[ch];
-                    const enabled = isEnabled(row, ch);
-                    const disabled = chInfo.locked || !chInfo.available;
-                    return (
-                      <button
-                        key={ch}
-                        onClick={() => toggle(row, ch)}
-                        disabled={disabled && !chInfo.locked}
-                        title={
-                          chInfo.locked ? `${channelLabel[ch]} — required`
-                          : !chInfo.available ? `${channelLabel[ch]} coming soon`
-                          : `${channelLabel[ch]} — click to toggle`
-                        }
-                        className={`w-11 h-11 rounded-lg flex flex-col items-center justify-center transition text-[10px] font-semibold ${
-                          enabled
-                            ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-500'
-                            : 'bg-slate-100 text-slate-400'
-                        } ${!chInfo.available ? 'opacity-40 cursor-not-allowed' : ''} ${chInfo.locked ? 'cursor-default' : ''}`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{enabled ? 'ON' : 'OFF'}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
 
-      {dirtyCount > 0 && (
-        <div className="sticky bottom-4 z-10 flex justify-center">
-          <button
-            onClick={() => saveMut.mutate()}
-            disabled={saveMut.isPending}
-            className="btn-primary shadow-xl"
-          >
-            {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save {dirtyCount} change{dirtyCount === 1 ? '' : 's'}
-          </button>
-        </div>
-      )}
+                  <div className="flex items-center gap-3">
+                    {channels.map((ch) => {
+                      const cfg = CHANNEL_CFG[ch];
+                      const Icon = cfg.icon;
+                      const info = row.channels[ch];
+                      const enabled = isEnabled(row, ch);
+                      const isAvailable = activeChannels.includes(ch);
+
+                      return (
+                        <button
+                          key={ch}
+                          onClick={() => toggle(row, ch)}
+                          title={
+                            info.locked ? `${cfg.label} — required, cannot disable`
+                            : !info.available ? `${cfg.label} — coming soon`
+                            : !isAvailable ? `${cfg.label} — not yet available`
+                            : enabled ? `Disable ${cfg.label}` : `Enable ${cfg.label}`
+                          }
+                          className={`relative w-16 h-11 rounded-xl flex flex-col items-center justify-center gap-0.5 transition border ${
+                            !info.available || !isAvailable
+                              ? 'opacity-30 cursor-not-allowed bg-slate-50 border-slate-200'
+                              : enabled
+                              ? `${cfg.activeBg} ${cfg.activeText} border-current ring-2 ${cfg.activeBorder}`
+                              : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                          <span className={`text-[9px] font-black uppercase leading-none ${
+                            enabled && info.available && isAvailable ? cfg.activeText : 'text-slate-400'
+                          }`}>
+                            {enabled ? 'ON' : 'OFF'}
+                          </span>
+                          {info.locked && (
+                            <Lock className="absolute -top-1.5 -right-1.5 w-3 h-3 text-amber-600 bg-amber-100 rounded-full p-0.5" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Sticky save bar */}
+        {dirtyCount > 0 && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+            <div className="bg-slate-900 text-white rounded-2xl shadow-2xl px-6 py-3 flex items-center gap-4">
+              <span className="text-sm font-semibold">{dirtyCount} unsaved change{dirtyCount === 1 ? '' : 's'}</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDirty({})}
+                  className="text-xs font-bold text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition"
+                >
+                  Discard
+                </button>
+                <button
+                  onClick={() => saveMut.mutate()}
+                  disabled={saveMut.isPending}
+                  className="flex items-center gap-1.5 text-xs font-bold bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-1.5 rounded-lg transition"
+                >
+                  {saveMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save now
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
