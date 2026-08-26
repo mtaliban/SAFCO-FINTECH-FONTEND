@@ -215,8 +215,8 @@ export default function LessonViewPage() {
 
             {/* Videos */}
             {videos.length > 0 && (
-              <ContentSection title="🎬 Videos">
-                <div className="space-y-4">
+              <ContentSection icon={<Play className="w-4 h-4" />} title="Video">
+                <div className="space-y-6">
                   {videos.map((m) => <VideoMaterial key={m.uuid} material={m} />)}
                 </div>
               </ContentSection>
@@ -224,20 +224,28 @@ export default function LessonViewPage() {
 
             {/* Legacy video_url */}
             {lesson.video_url && !videos.some((v) => v.url === lesson.video_url) && (
-              <ContentSection title="🎬 Video">
+              <ContentSection icon={<Play className="w-4 h-4" />} title="Video">
                 <VideoPlayer url={lesson.video_url} title={lesson.title} />
               </ContentSection>
             )}
 
             {/* Lesson notes (content field) */}
             {lesson.content && (
-              <ContentSection title="📖 Maelezo ya Somo (Notes)">
+              <ContentSection icon={<BookOpen className="w-4 h-4" />} title="Maelezo ya Somo">
                 <div
                   className="prose prose-sm max-w-none text-slate-700 leading-relaxed
-                    prose-headings:text-slate-900 prose-headings:font-bold
+                    prose-headings:text-slate-900 prose-headings:font-semibold
+                    prose-h2:text-lg prose-h2:mt-5 prose-h2:mb-2
                     prose-h3:text-base prose-h3:mt-4 prose-h3:mb-1
                     prose-p:mb-3 prose-ul:my-2 prose-ol:my-2
-                    prose-li:my-0.5 prose-strong:text-slate-900"
+                    prose-li:my-0.5 prose-strong:text-slate-900
+                    prose-blockquote:border-l-4 prose-blockquote:border-brand-400
+                    prose-blockquote:bg-brand-50 prose-blockquote:rounded-r-lg
+                    prose-blockquote:px-4 prose-blockquote:py-2 prose-blockquote:not-italic
+                    prose-pre:bg-slate-900 prose-pre:text-green-400 prose-pre:rounded-lg prose-pre:text-xs
+                    prose-code:bg-slate-100 prose-code:text-slate-800 prose-code:px-1 prose-code:rounded
+                    prose-table:text-sm prose-th:bg-slate-100 prose-th:px-3 prose-th:py-2
+                    prose-td:px-3 prose-td:py-2 prose-td:border prose-td:border-slate-200"
                   dangerouslySetInnerHTML={{ __html: lesson.content }}
                 />
               </ContentSection>
@@ -245,8 +253,8 @@ export default function LessonViewPage() {
 
             {/* Documents */}
             {docs.length > 0 && (
-              <ContentSection title="📄 Nyaraka (Documents)">
-                <div className="grid sm:grid-cols-2 gap-3">
+              <ContentSection icon={<FileText className="w-4 h-4" />} title="Nyaraka">
+                <div className="space-y-4">
                   {docs.map((m) => <DocMaterial key={m.uuid} material={m} />)}
                 </div>
               </ContentSection>
@@ -268,7 +276,7 @@ export default function LessonViewPage() {
 
             {/* Interactive */}
             {interactive.length > 0 && (
-              <ContentSection title="⚡ Interactive">
+              <ContentSection icon={<Play className="w-4 h-4" />} title="Interactive Content">
                 <div className="space-y-3">
                   {interactive.map((m) => (
                     <InteractiveMaterial
@@ -283,25 +291,33 @@ export default function LessonViewPage() {
 
             {/* Assignments */}
             {(lesson.assignments ?? []).length > 0 && (
-              <ContentSection title="📝 Kazi za Nyumbani (Assignments)">
+              <ContentSection icon={<ClipboardList className="w-4 h-4" />} title="Kazi za Nyumbani">
                 <div className="space-y-2">
                   {(lesson.assignments as Assignment[]).map((a) => (
                     <Link
                       key={a.uuid}
                       href={`/student/assignments/${a.uuid}`}
-                      className="card p-4 flex items-center gap-3 hover:shadow-md hover:border-amber-300 transition"
+                      className="flex items-center gap-4 p-4 rounded-xl border border-slate-200 bg-white
+                        hover:border-amber-300 hover:shadow-md transition group"
                     >
-                      <ClipboardList className="w-6 h-6 text-amber-600 shrink-0" />
+                      <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                        <ClipboardList className="w-5 h-5 text-amber-600" />
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900">{a.title}</div>
-                        <div className="text-xs text-slate-500">
-                          {a.max_points} pts
-                          {a.due_date ? ` · Deadline: ${new Date(a.due_date).toLocaleDateString('sw-TZ')}` : ''}
+                        <div className="font-semibold text-slate-900 group-hover:text-amber-700 transition truncate">
+                          {a.title}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+                          <span className="font-medium">{a.max_points} pointi</span>
+                          {a.due_date && (
+                            <>
+                              <span className="text-slate-300">·</span>
+                              <span>Deadline: {new Date(a.due_date).toLocaleDateString('sw-TZ')}</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <span className="text-xs bg-amber-100 text-amber-700 font-semibold px-2 py-0.5 rounded-full">
-                        Fanya →
-                      </span>
+                      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-amber-500 group-hover:translate-x-0.5 transition" />
                     </Link>
                   ))}
                 </div>
@@ -450,10 +466,13 @@ function ModuleBlock({
 }
 
 /* ── Section wrapper ── */
-function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
+function ContentSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">{title}</h2>
+      <div className="flex items-center gap-2 mb-4">
+        <span className="flex items-center justify-center w-7 h-7 rounded-md bg-brand-50 text-brand-600">{icon}</span>
+        <h2 className="text-sm font-bold text-slate-800 uppercase tracking-widest">{title}</h2>
+      </div>
       {children}
     </section>
   );
@@ -461,17 +480,15 @@ function ContentSection({ title, children }: { title: string; children: React.Re
 
 /* ── Video material ── */
 function VideoMaterial({ material }: { material: LessonMaterial }) {
-  const streamUrl = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
-  const poster    = mediaUrl(material.thumbnail_url) ?? undefined;
+  const streamUrl  = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
+  const poster     = mediaUrl(material.thumbnail_url) ?? undefined;
+  const isYouTube  = material.type === 'video_youtube';
+  const isVimeo    = material.type === 'video_vimeo';
+  const isMp4      = material.type === 'video_mp4';
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <p className="text-sm font-semibold text-slate-800">{material.title}</p>
-        {material.duration_seconds && (
-          <span className="text-xs text-slate-400">{formatDur(material.duration_seconds)}</span>
-        )}
-      </div>
+    <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+      {/* Player */}
       <VideoPlayer
         url={streamUrl}
         embedUrl={(material.metadata?.embed_url as string) ?? undefined}
@@ -479,8 +496,35 @@ function VideoMaterial({ material }: { material: LessonMaterial }) {
         type={material.type}
         poster={poster}
       />
+      {/* Metadata bar */}
+      <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100">
+        {/* Platform badge */}
+        {isYouTube && (
+          <span className="flex items-center gap-1 text-[11px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>
+            YouTube
+          </span>
+        )}
+        {isVimeo && (
+          <span className="flex items-center gap-1 text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 11.4C4.603 8.816 3.834 7.522 3.01 7.522c-.179 0-.806.378-1.881 1.132L0 7.197c1.185-1.044 2.351-2.084 3.501-3.128C5.08 2.701 6.266 1.984 7.055 1.91c1.867-.18 3.016 1.1 3.447 3.834.465 2.954.789 4.789.971 5.507.539 2.45 1.131 3.674 1.776 3.674.502 0 1.256-.796 2.265-2.385 1.004-1.589 1.54-2.797 1.612-3.628.144-1.371-.395-2.061-1.614-2.061-.574 0-1.167.121-1.777.391 1.186-3.868 3.434-5.757 6.762-5.637 2.473.06 3.628 1.664 3.48 4.811z"/></svg>
+            Vimeo
+          </span>
+        )}
+        {isMp4 && (
+          <span className="text-[11px] font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
+            MP4
+          </span>
+        )}
+        <p className="text-sm font-semibold text-slate-900 flex-1 truncate">{material.title}</p>
+        {material.duration_seconds && (
+          <span className="text-xs text-slate-400 font-medium shrink-0">
+            {formatDur(material.duration_seconds)}
+          </span>
+        )}
+      </div>
       {material.description && (
-        <p className="text-xs text-slate-500 mt-1.5">{material.description}</p>
+        <p className="text-xs text-slate-500 px-4 pb-3">{material.description}</p>
       )}
     </div>
   );
@@ -491,11 +535,24 @@ function VideoPlayer({
 }: {
   url: string; embedUrl?: string; title: string; type?: MaterialType; poster?: string;
 }) {
+  const [loading, setLoading] = useState(true);
   const embed = embedUrl ?? extractEmbed(url);
   return (
-    <div className="aspect-video bg-black rounded-xl overflow-hidden shadow">
+    <div className="relative aspect-video bg-slate-900">
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
+          <Loader2 className="w-8 h-8 animate-spin text-slate-600" />
+        </div>
+      )}
       {embed ? (
-        <iframe src={embed} className="w-full h-full" allowFullScreen title={title} />
+        <iframe
+          src={embed}
+          className="w-full h-full"
+          allowFullScreen
+          title={title}
+          onLoad={() => setLoading(false)}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        />
       ) : (
         <video
           src={url}
@@ -504,6 +561,7 @@ function VideoPlayer({
           poster={poster}
           className="w-full h-full"
           controlsList="nodownload"
+          onLoadedMetadata={() => setLoading(false)}
         >
           Kivinjari chako hakitumii {type ?? 'video'}.
         </video>
@@ -514,79 +572,117 @@ function VideoPlayer({
 
 /* ── Document material ── */
 function DocMaterial({ material }: { material: LessonMaterial }) {
+  const [viewerLoading, setViewerLoading] = useState(true);
   const isPdf      = material.type === 'document_pdf';
   const isOffice   = ['document_word', 'document_excel', 'document_powerpoint'].includes(material.type);
   const streamUrl  = material.stream_url ? mediaUrl(material.stream_url) : null;
   const viewUrl    = streamUrl ?? material.url;
   const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
   const isExternal = material.url.startsWith('http');
+  const hasViewer  = (isPdf && (streamUrl || isExternal)) || (isOffice && !!material.office_viewer_url);
 
-  // PDF: stream URL (private S3) or Google Docs viewer for public external URLs
   const pdfEmbedUrl = streamUrl
     ? streamUrl
     : (isPdf && isExternal
         ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true`
         : null);
 
-  // Office (Word/Excel/PPT): Microsoft Office Online viewer via pre-signed S3 URL
   const officeViewerUrl = isOffice && material.office_viewer_url
     ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(material.office_viewer_url)}`
     : null;
 
+  const { label, bgClass, textClass, borderClass } = docMeta(material.type);
+
   return (
-    <div className="card p-4 flex flex-col gap-3">
-      <div className="flex items-start gap-3">
-        <FileText className={`w-6 h-6 shrink-0 mt-0.5 ${docColor(material.type)}`} />
+    <div className={`rounded-2xl border overflow-hidden bg-white shadow-sm ${borderClass}`}>
+      {/* Header bar */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-100">
+        <div className={`w-9 h-9 rounded-lg ${bgClass} flex items-center justify-center shrink-0`}>
+          <FileText className={`w-5 h-5 ${textClass}`} />
+        </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-900 truncate">{material.title}</p>
-          <p className="text-xs text-slate-400 uppercase mt-0.5">
-            {material.type.replace('document_', '')}
-            {material.file_size ? ` · ${(material.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
-          </p>
+          <p className="font-semibold text-slate-900 truncate text-sm">{material.title}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${bgClass} ${textClass}`}>
+              {label}
+            </span>
+            {material.file_size && (
+              <span className="text-[11px] text-slate-400">
+                {material.file_size > 1048576
+                  ? `${(material.file_size / 1048576).toFixed(1)} MB`
+                  : `${Math.round(material.file_size / 1024)} KB`}
+              </span>
+            )}
+            {material.page_count && (
+              <span className="text-[11px] text-slate-400">{material.page_count} ukurasa</span>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <a
+            href={viewUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg
+              bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Fungua</span>
+          </a>
+          {(streamUrl || isExternal) && (
+            <a
+              href={downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100
+                text-slate-700 hover:bg-slate-200 transition"
+              title="Download"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </a>
+          )}
         </div>
       </div>
 
-      {/* PDF inline viewer */}
-      {isPdf && pdfEmbedUrl && (
-        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 500 }}>
-          <iframe src={pdfEmbedUrl} className="w-full h-full" title={material.title} />
-        </div>
-      )}
-
-      {/* Word / Excel / PowerPoint viewer via Microsoft Office Online */}
-      {officeViewerUrl && (
-        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 500 }}>
+      {/* Inline viewer */}
+      {(pdfEmbedUrl || officeViewerUrl) && (
+        <div className="relative" style={{ height: 560 }}>
+          {viewerLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 gap-3">
+              <Loader2 className={`w-8 h-8 animate-spin ${textClass}`} />
+              <p className="text-sm text-slate-500">Inapakia {label}...</p>
+            </div>
+          )}
           <iframe
-            src={officeViewerUrl}
-            className="w-full h-full"
+            src={(pdfEmbedUrl ?? officeViewerUrl)!}
+            className="w-full h-full border-0"
             title={material.title}
-            frameBorder={0}
+            onLoad={() => setViewerLoading(false)}
           />
         </div>
       )}
 
-      <div className="flex gap-2">
-        <a
-          href={viewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-secondary text-xs flex-1 justify-center gap-1"
-        >
-          <ExternalLink className="w-3 h-3" />
-          {isPdf || officeViewerUrl ? 'Fungua Tab Mpya' : 'Fungua / Download'}
-        </a>
-        {(streamUrl || isExternal) && (
+      {/* No viewer: show a download prompt */}
+      {!hasViewer && (
+        <div className="flex flex-col items-center gap-3 py-8 px-4 text-center bg-slate-50">
+          <div className={`w-14 h-14 rounded-2xl ${bgClass} flex items-center justify-center`}>
+            <FileText className={`w-7 h-7 ${textClass}`} />
+          </div>
+          <div>
+            <p className="font-semibold text-slate-800 text-sm">{material.title}</p>
+            <p className="text-xs text-slate-500 mt-1">Bonyeza kitufe hapa chini kupakua au kufungua faili</p>
+          </div>
           <a
-            href={downloadUrl}
+            href={viewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-secondary text-xs px-3 justify-center"
-            title="Download"
+            className={`flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl ${bgClass} ${textClass} hover:opacity-80 transition`}
           >
-            <Download className="w-3 h-3" />
+            <Download className="w-4 h-4" />
+            Download {label}
           </a>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -714,12 +810,12 @@ function extractEmbed(url: string): string | null {
   return null;
 }
 
-function docColor(type: MaterialType): string {
-  const map: Partial<Record<MaterialType, string>> = {
-    document_pdf: 'text-red-600',
-    document_word: 'text-blue-700',
-    document_excel: 'text-green-700',
-    document_powerpoint: 'text-orange-600',
+function docMeta(type: MaterialType): { label: string; bgClass: string; textClass: string; borderClass: string } {
+  const map: Partial<Record<MaterialType, { label: string; bgClass: string; textClass: string; borderClass: string }>> = {
+    document_pdf:        { label: 'PDF',        bgClass: 'bg-red-50',    textClass: 'text-red-600',    borderClass: 'border-red-100' },
+    document_word:       { label: 'Word',        bgClass: 'bg-blue-50',   textClass: 'text-blue-700',   borderClass: 'border-blue-100' },
+    document_excel:      { label: 'Excel',       bgClass: 'bg-green-50',  textClass: 'text-green-700',  borderClass: 'border-green-100' },
+    document_powerpoint: { label: 'PowerPoint',  bgClass: 'bg-orange-50', textClass: 'text-orange-600', borderClass: 'border-orange-100' },
   };
-  return map[type] ?? 'text-slate-600';
+  return map[type] ?? { label: 'Document', bgClass: 'bg-slate-50', textClass: 'text-slate-600', borderClass: 'border-slate-200' };
 }
