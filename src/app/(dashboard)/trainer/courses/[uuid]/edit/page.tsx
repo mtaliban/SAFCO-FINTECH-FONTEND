@@ -482,7 +482,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
           {/* Word/Excel/PPT upload */}
           <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition">
-            <FileText className="w-3.5 h-3.5" /> Upload Doc/Excel/PPT
+            <FileText className="w-3.5 h-3.5" /> Upload Word/Excel/PPT
             <input
               ref={docRef}
               type="file"
@@ -492,12 +492,23 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
             />
           </label>
 
-          {/* YouTube/Vimeo link */}
+          {/* SCORM upload */}
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition">
+            <FileArchive className="w-3.5 h-3.5" /> Upload SCORM (.zip)
+            <input
+              type="file"
+              accept=".zip"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, 'SCORM', 'interactive_scorm'); e.target.value = ''; }}
+            />
+          </label>
+
+          {/* YouTube / Vimeo / HTML5 URL */}
           <button
             onClick={() => setShowYouTubeModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold transition"
           >
-            <Youtube className="w-3.5 h-3.5" /> YouTube / Vimeo
+            <Youtube className="w-3.5 h-3.5" /> Video / HTML5 URL
           </button>
 
           {/* Assignment */}
@@ -735,29 +746,75 @@ function AddLessonModal({ moduleUuid, onClose, onCreated }: { moduleUuid: string
 }
 
 function AddYouTubeLinkModal({ lessonUuid, onClose, onCreated }: { lessonUuid: string; onClose: () => void; onCreated: () => void }) {
-  const [title, setTitle] = useState('');
-  const [url, setUrl] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [title, setTitle]   = useState('');
+  const [url, setUrl]       = useState('');
+  const [kind, setKind]     = useState<'video' | 'html5'>('video');
+  const [busy, setBusy]     = useState(false);
+
+  function detectKind(val: string) {
+    setUrl(val);
+    if (val.match(/youtube\.com|youtu\.be|vimeo\.com/i)) setKind('video');
+    else if (val.startsWith('http')) setKind('html5');
+  }
+
   async function save() {
     if (!url.trim()) return;
-    const t = title.trim() || 'Video';
+    const t = title.trim() || (kind === 'html5' ? 'Interactive Content' : 'Video');
     setBusy(true);
     try {
-      await materialApi.addUrl(lessonUuid, { title: t, url });
+      const type = kind === 'html5' ? 'interactive_html5' : undefined; // auto-detect youtube/vimeo
+      await materialApi.addUrl(lessonUuid, { title: t, url: url.trim(), type });
       toast.success('Link imeongezwa');
       onCreated();
     } catch { setBusy(false); }
   }
+
   return (
-    <Modal onClose={onClose} title="Ongeza YouTube / Vimeo Link">
+    <Modal onClose={onClose} title="Ongeza Video au Interactive URL">
       <div className="space-y-3">
-        <div>
-          <label className="label">YouTube / Vimeo URL *</label>
-          <input className="input" autoFocus value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+        {/* Kind selector */}
+        <div className="flex gap-2">
+          {(['video', 'html5'] as const).map((k) => (
+            <button
+              key={k}
+              onClick={() => setKind(k)}
+              className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                kind === k
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50'
+              }`}
+            >
+              {k === 'video' ? '🎬 YouTube / Vimeo' : '⚡ HTML5 Interactive URL'}
+            </button>
+          ))}
         </div>
+
+        <div>
+          <label className="label">
+            {kind === 'video' ? 'YouTube / Vimeo URL *' : 'HTML5 Content URL *'}
+          </label>
+          <input
+            className="input"
+            autoFocus
+            value={url}
+            onChange={(e) => detectKind(e.target.value)}
+            placeholder={kind === 'video' ? 'https://www.youtube.com/watch?v=...' : 'https://example.com/interactive/index.html'}
+          />
+          {kind === 'html5' && (
+            <p className="text-xs text-slate-400 mt-1">
+              URL ya HTML5 interactive content (H5P, Genially, Articulate Rise, etc.)
+            </p>
+          )}
+        </div>
+
         <div>
           <label className="label">Title (optional)</label>
-          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Jina la video" />
+          <input
+            className="input"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={kind === 'video' ? 'Jina la video' : 'Jina la interactive content'}
+          />
         </div>
       </div>
       <ModalFooter onClose={onClose} onSave={save} busy={busy} disabled={!url.trim()} />

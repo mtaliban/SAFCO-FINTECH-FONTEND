@@ -34,6 +34,8 @@ export interface Course {
   category: Category;
   level: Level;
   duration_hours: number | null;
+  price_tzs?: number | null;
+  is_free?: boolean;
   thumbnail_url: string | null;
   status: CourseStatus;
   rejection_reason: string | null;
@@ -129,7 +131,12 @@ export interface LessonMaterial {
   width?: number | null;
   height?: number | null;
   stream_url?: string | null;
+  /** Pre-signed S3 URL for Word/Excel/PPT — used by Microsoft Office Online viewer */
+  office_viewer_url?: string | null;
 }
+
+/** Alias so components can import `Module` alongside `CourseModule` */
+export type Module = CourseModule;
 
 export const MATERIAL_TYPE_LABEL: Record<MaterialType, string> = {
   document_pdf: 'PDF',

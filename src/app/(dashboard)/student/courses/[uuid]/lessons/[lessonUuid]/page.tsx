@@ -229,6 +229,20 @@ export default function LessonViewPage() {
               </ContentSection>
             )}
 
+            {/* Lesson notes (content field) */}
+            {lesson.content && (
+              <ContentSection title="📖 Maelezo ya Somo (Notes)">
+                <div
+                  className="prose prose-sm max-w-none text-slate-700 leading-relaxed
+                    prose-headings:text-slate-900 prose-headings:font-bold
+                    prose-h3:text-base prose-h3:mt-4 prose-h3:mb-1
+                    prose-p:mb-3 prose-ul:my-2 prose-ol:my-2
+                    prose-li:my-0.5 prose-strong:text-slate-900"
+                  dangerouslySetInnerHTML={{ __html: lesson.content }}
+                />
+              </ContentSection>
+            )}
+
             {/* Documents */}
             {docs.length > 0 && (
               <ContentSection title="📄 Nyaraka (Documents)">
@@ -256,7 +270,13 @@ export default function LessonViewPage() {
             {interactive.length > 0 && (
               <ContentSection title="⚡ Interactive">
                 <div className="space-y-3">
-                  {interactive.map((m) => <InteractiveMaterial key={m.uuid} material={m} />)}
+                  {interactive.map((m) => (
+                    <InteractiveMaterial
+                      key={m.uuid}
+                      material={m}
+                      onComplete={!isDone ? handleMarkComplete : undefined}
+                    />
+                  ))}
                 </div>
               </ContentSection>
             )}
@@ -495,9 +515,23 @@ function VideoPlayer({
 /* ── Document material ── */
 function DocMaterial({ material }: { material: LessonMaterial }) {
   const isPdf      = material.type === 'document_pdf';
+  const isOffice   = ['document_word', 'document_excel', 'document_powerpoint'].includes(material.type);
   const streamUrl  = material.stream_url ? mediaUrl(material.stream_url) : null;
   const viewUrl    = streamUrl ?? material.url;
   const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
+  const isExternal = material.url.startsWith('http');
+
+  // PDF: stream URL (private S3) or Google Docs viewer for public external URLs
+  const pdfEmbedUrl = streamUrl
+    ? streamUrl
+    : (isPdf && isExternal
+        ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true`
+        : null);
+
+  // Office (Word/Excel/PPT): Microsoft Office Online viewer via pre-signed S3 URL
+  const officeViewerUrl = isOffice && material.office_viewer_url
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(material.office_viewer_url)}`
+    : null;
 
   return (
     <div className="card p-4 flex flex-col gap-3">
@@ -513,9 +547,21 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
       </div>
 
       {/* PDF inline viewer */}
-      {isPdf && streamUrl && (
-        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 480 }}>
-          <iframe src={streamUrl} className="w-full h-full" title={material.title} />
+      {isPdf && pdfEmbedUrl && (
+        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 500 }}>
+          <iframe src={pdfEmbedUrl} className="w-full h-full" title={material.title} />
+        </div>
+      )}
+
+      {/* Word / Excel / PowerPoint viewer via Microsoft Office Online */}
+      {officeViewerUrl && (
+        <div className="rounded-lg overflow-hidden border border-slate-200" style={{ height: 500 }}>
+          <iframe
+            src={officeViewerUrl}
+            className="w-full h-full"
+            title={material.title}
+            frameBorder={0}
+          />
         </div>
       )}
 
@@ -526,45 +572,120 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
           rel="noopener noreferrer"
           className="btn-secondary text-xs flex-1 justify-center gap-1"
         >
-          <ExternalLink className="w-3 h-3" /> Fungua
+          <ExternalLink className="w-3 h-3" />
+          {isPdf || officeViewerUrl ? 'Fungua Tab Mpya' : 'Fungua / Download'}
         </a>
-        <a
-          href={downloadUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="btn-secondary text-xs px-3 justify-center"
-          title="Download"
-        >
-          <Download className="w-3 h-3" />
-        </a>
+        {(streamUrl || isExternal) && (
+          <a
+            href={downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary text-xs px-3 justify-center"
+            title="Download"
+          >
+            <Download className="w-3 h-3" />
+          </a>
+        )}
       </div>
     </div>
   );
 }
 
-/* ── Interactive material ── */
-function InteractiveMaterial({ material }: { material: LessonMaterial }) {
-  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
-  const url       = streamUrl ?? material.url;
+/* ── Interactive material (SCORM 1.2 + HTML5) ── */
+function InteractiveMaterial({ material, onComplete }: { material: LessonMaterial; onComplete?: () => void }) {
+  const isScorm = material.type === 'interactive_scorm';
 
-  if (material.type === 'interactive_html5' && !material.url.startsWith('/storage/')) {
+  // Inject SCORM 1.2 window.API — same-origin iframe reads it via window.parent.API
+  useEffect(() => {
+    if (!isScorm) return;
+    let fired = false;
+    const markDone = () => { if (!fired) { fired = true; onComplete?.(); } };
+
+    (window as any).API = {
+      LMSInitialize:   (_: string) => 'true',
+      LMSGetValue:     (el: string) => {
+        if (el === 'cmi.core.lesson_status') return 'not attempted';
+        if (el === 'cmi.core.student_id')    return 'student';
+        if (el === 'cmi.core.student_name')  return 'Student';
+        return '';
+      },
+      LMSSetValue:     (el: string, val: string) => {
+        if (el === 'cmi.core.lesson_status' && ['completed', 'passed'].includes(val)) markDone();
+        return 'true';
+      },
+      LMSCommit:       (_: string) => 'true',
+      LMSFinish:       (_: string) => { markDone(); return 'true'; },
+      LMSGetLastError: () => '0',
+      LMSGetErrorString: (_: string) => 'No error',
+      LMSGetDiagnostic:  (_: string) => 'No diagnostic info',
+    };
+    return () => { delete (window as any).API; };
+  }, [isScorm, onComplete]);
+
+  // ── SCORM player ──
+  if (isScorm) {
+    const notReady  = !material.metadata?.scorm_extracted;
+    const launchUrl = (material.metadata?.launch_url as string) ?? 'index.html';
+    const scormSrc  = `/api/proxy/v1/scorm/${material.uuid}/${launchUrl}`;
+
+    if (notReady) {
+      return (
+        <div className="card p-6 flex flex-col items-center gap-3 text-center">
+          <FileArchive className="w-10 h-10 text-purple-400" />
+          <p className="font-semibold text-slate-800">{material.title}</p>
+          <p className="text-sm text-slate-500">SCORM package inashughulikiwa... Subiri dakika chache kisha refresh.</p>
+          <Loader2 className="w-5 h-5 animate-spin text-purple-500 mt-1" />
+        </div>
+      );
+    }
+
     return (
-      <div>
-        <p className="text-sm font-semibold text-slate-800 mb-2">{material.title}</p>
-        <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 shadow">
-          <iframe src={url} className="w-full h-full" title={material.title} allowFullScreen />
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-800">{material.title}</p>
+          <span className="text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">SCORM</span>
+        </div>
+        <div className="rounded-xl overflow-hidden border-2 border-purple-200 shadow-lg bg-white" style={{ height: 620 }}>
+          <iframe src={scormSrc} className="w-full h-full" title={material.title} allow="fullscreen" />
         </div>
       </div>
     );
   }
 
+  // ── HTML5 external URL — sandboxed iframe ──
+  if (material.type === 'interactive_html5' && material.url.startsWith('http')) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-sm font-semibold text-slate-800">{material.title}</p>
+          <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">HTML5</span>
+        </div>
+        <div className="aspect-video rounded-xl overflow-hidden border border-slate-200 shadow">
+          <iframe
+            src={material.url}
+            className="w-full h-full"
+            title={material.title}
+            allowFullScreen
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+          />
+        </div>
+        {material.description && (
+          <p className="text-xs text-slate-500 mt-1.5">{material.description}</p>
+        )}
+      </div>
+    );
+  }
+
+  // ── Fallback: download card ──
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const url       = streamUrl ?? material.url;
   return (
     <div className="card p-4 flex items-center gap-3">
       <FileArchive className="w-6 h-6 text-purple-600 shrink-0" />
       <div className="flex-1">
         <p className="font-semibold text-slate-900">{material.title}</p>
         <p className="text-xs text-slate-500">
-          {material.type === 'interactive_scorm' ? 'SCORM' : 'HTML5'}
+          {material.type === 'interactive_scorm' ? 'SCORM Package' : 'Interactive Content'}
           {material.file_size ? ` · ${(material.file_size / 1024 / 1024).toFixed(1)} MB` : ''}
         </p>
       </div>
