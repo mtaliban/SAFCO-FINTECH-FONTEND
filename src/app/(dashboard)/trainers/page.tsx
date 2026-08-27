@@ -29,15 +29,15 @@ export default function TrainersDirectoryPage() {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── HERO ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0c1a3a 0%, #1e3a8a 55%, #1d4ed8 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1a3f72 55%, #0d2040 100%)' }}>
         <div className="max-w-6xl mx-auto px-6 py-14">
-          <div className="flex items-center gap-3 text-blue-300 text-[11px] font-bold uppercase tracking-widest mb-4">
+          <div className="flex items-center gap-3 text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-4">
             <GraduationCap className="w-4 h-4" /> SAFCO FINTECH LMS · Certified Trainer Directory
           </div>
           <h1 className="text-4xl md:text-5xl font-black text-white mb-3">
             Learn from the best.
           </h1>
-          <p className="text-lg text-blue-200 max-w-xl mb-8">
+          <p className="text-lg text-white/65 max-w-xl mb-8">
             Browse SAFCO FINTECH's roster of verified financial trainers. Filter by expertise, experience, and student ratings.
           </p>
 
@@ -205,7 +205,7 @@ function TrainerCard({ t }: { t: TrainerDirectoryEntry }) {
       {t.expertise_areas.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-4">
           {t.expertise_areas.slice(0, 4).map((e) => (
-            <span key={e} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold">
+            <span key={e} className="text-[10px] px-2 py-0.5 rounded-full bg-navy-50 text-navy-600 font-semibold">
               {e.replace(/_/g, ' ')}
             </span>
           ))}

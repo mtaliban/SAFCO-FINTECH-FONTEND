@@ -23,7 +23,7 @@ export default function TrainerPublicProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="h-64 animate-pulse" style={{ background: 'linear-gradient(135deg,#0c1a3a 0%,#1e3a8a 100%)' }} />
+        <div className="h-64 animate-pulse" style={{ background: 'linear-gradient(135deg,#0f2a50 0%,#1a3f72 100%)' }} />
         <div className="max-w-5xl mx-auto px-6 -mt-16 space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 animate-pulse">
             <div className="flex gap-6">
@@ -72,7 +72,7 @@ export default function TrainerPublicProfilePage() {
 
       {/* ── COVER ── */}
       <div className="relative h-52 md:h-72 overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #0c1a3a 0%, #1e3a8a 50%, #1d4ed8 100%)' }}>
+        style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1a3f72 55%, #0d2040 100%)' }}>
         {t.cover && (
           <img src={t.cover} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
         )}
@@ -150,7 +150,7 @@ export default function TrainerPublicProfilePage() {
                   {avail.label}
                 </div>
                 {t.hourly_rate_tzs !== null && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-50 text-blue-700">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-navy-50 text-navy-600">
                     <DollarSign className="w-3.5 h-3.5" /> TZS {formatTzs(t.hourly_rate_tzs)} / hour
                   </div>
                 )}
@@ -160,7 +160,7 @@ export default function TrainerPublicProfilePage() {
               {t.expertise_areas.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
                   {t.expertise_areas.map((e) => (
-                    <span key={e} className="text-xs px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-semibold">
+                    <span key={e} className="text-xs px-3 py-1 rounded-full bg-navy-50 text-navy-600 font-semibold">
                       {e.replace(/_/g, ' ')}
                     </span>
                   ))}
@@ -184,7 +184,7 @@ export default function TrainerPublicProfilePage() {
               {t.qualifications.map((q, idx) => (
                 <div key={q.id} className="flex gap-4">
                   <div className="relative shrink-0 flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center">
                       <GraduationCap className="w-5 h-5" />
                     </div>
                     {idx < t.qualifications.length - 1 && (
@@ -195,7 +195,7 @@ export default function TrainerPublicProfilePage() {
                     <div className="font-bold text-slate-900">
                       {q.degree}{q.field_of_study && ` — ${q.field_of_study}`}
                     </div>
-                    <div className="text-sm font-semibold text-teal-700 mt-0.5">{q.institution}</div>
+                    <div className="text-sm font-semibold text-orange-600 mt-0.5">{q.institution}</div>
                     {(q.start_year || q.end_year) && (
                       <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
@@ -247,7 +247,7 @@ export default function TrainerPublicProfilePage() {
 
                   {c.verification_url && (
                     <a href={c.verification_url} target="_blank" rel="noopener"
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold mt-2">
+                      className="inline-flex items-center gap-1 text-xs text-orange-500 hover:text-orange-600 font-semibold mt-2">
                       Verify credential <ExternalLink className="w-3 h-3" />
                     </a>
                   )}
@@ -264,7 +264,7 @@ export default function TrainerPublicProfilePage() {
               {t.experiences.map((e, idx) => (
                 <div key={e.id} className="flex gap-4">
                   <div className="relative shrink-0 flex flex-col items-center">
-                    <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-navy-50 text-navy-600 flex items-center justify-center">
                       <Briefcase className="w-5 h-5" />
                     </div>
                     {idx < t.experiences.length - 1 && (
@@ -273,7 +273,7 @@ export default function TrainerPublicProfilePage() {
                   </div>
                   <div className="flex-1 pb-6">
                     <div className="font-bold text-slate-900">{e.title}</div>
-                    <div className="text-sm font-semibold text-blue-700 mt-0.5">
+                    <div className="text-sm font-semibold text-navy-600 mt-0.5">
                       {e.company}{e.location && <span className="text-slate-500 font-normal"> · {e.location}</span>}
                     </div>
                     <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
