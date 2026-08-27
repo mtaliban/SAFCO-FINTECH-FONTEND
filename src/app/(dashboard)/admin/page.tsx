@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Users, Zap, Activity, Building2, Layers, Loader2, Settings } from 'lucide-react';
+import { Users, Zap, Activity, Building2, Layers, Loader2, Settings, BarChart3, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 import { apiRequest } from '@/lib/api';
 
@@ -62,8 +62,8 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <QuickLink href="/admin/users" icon={Users} title="Manage Users" desc="View, activate, change roles" />
-        <QuickLink href="/admin/audit-log" icon={Activity} title="Audit Log" desc="Every login, IP + device" />
-        <QuickLink href="/admin/quizzes" icon={Layers} title="All Quizzes" desc="System-wide read-only view" />
+        <QuickLink href="/admin/subscriptions" icon={CreditCard} title="Manage Subscriptions" desc="All invoices, revenue, CSV export" />
+        <QuickLink href="/admin/reports" icon={BarChart3} title="Generate Reports" desc="Revenue, users, courses, charts" />
         <QuickLink href="/admin/settings" icon={Settings} title="Configure System" desc="Policies, defaults, notifications" />
       </div>
     </div>

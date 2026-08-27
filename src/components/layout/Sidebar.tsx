@@ -25,8 +25,8 @@ const adminNav: NavItem[] = [
   { href: '/admin/trainer-verifications',label: 'Trainer Verifications',icon: ShieldCheck },
   { href: '/admin/announcements',        label: 'Announcements',        icon: MessagesSquare },
   { href: '/admin/reports',              label: 'System Reports',       icon: BarChart3 },
+  { href: '/admin/subscriptions',        label: 'Manage Subscriptions', icon: CreditCard },
   { href: '/admin/settings',             label: 'Configure System',     icon: Settings },
-  { href: '/billing',                    label: 'All Invoices',         icon: CreditCard },
   { href: '/dashboard/profile',          label: 'My Profile',           icon: User },
 ];
 
