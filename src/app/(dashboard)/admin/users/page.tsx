@@ -1,92 +1,480 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Loader2, Users } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Loader2, Users, Search, Filter, MoreVertical, ShieldCheck,
+  ShieldOff, Trash2, Eye, UserCheck, UserX, ChevronLeft, ChevronRight,
+  Mail, Phone, Building2, Calendar, RefreshCw, X,
+} from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiRequest } from '@/lib/api';
-import { Pagination, usePagedSlice } from '@/components/ui/Pagination';
+import { cn } from '@/lib/utils';
 
 type UserRow = {
-  uuid: string;
+  id: string;
   email: string;
-  status: string;
-  full_name?: string;
+  phone?: string;
+  status: 'active' | 'inactive' | 'suspended' | 'pending';
   roles: string[];
+  profile?: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    position?: string;
+    profile_picture_thumbnail?: string;
+  };
   organization?: { name: string };
+  last_login_at?: string;
   created_at: string;
 };
 
-const PAGE_SIZE = 10;
+type Meta = { total: number; per_page: number; current_page: number; last_page: number };
+type UsersResponse = { data: UserRow[]; meta: Meta };
 
-export default function AdminUsersPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users'],
-    queryFn: () => apiRequest.get<{ data: UserRow[]; meta: { total: number } }>('/admin/users'),
-  });
+const ROLES = ['', 'student', 'trainer', 'facilitator', 'corporate_client', 'system_admin'];
+const STATUSES = ['', 'active', 'pending', 'suspended', 'inactive'];
+const PER_PAGE = 15;
 
-  const [page, setPage] = useState(1);
-  const { page: slice, lastPage, currentPage, totalItems } = usePagedSlice(data?.data, page, PAGE_SIZE);
+const STATUS_STYLE: Record<string, string> = {
+  active:    'bg-emerald-100 text-emerald-700',
+  pending:   'bg-amber-100 text-amber-700',
+  suspended: 'bg-red-100 text-red-700',
+  inactive:  'bg-slate-100 text-slate-500',
+};
+
+function Avatar({ user }: { user: UserRow }) {
+  const initials = (user.profile?.first_name?.[0] ?? user.email[0]).toUpperCase();
+  if (user.profile?.profile_picture_thumbnail) {
+    return (
+      <img src={user.profile.profile_picture_thumbnail} alt={initials}
+        className="w-9 h-9 rounded-full object-cover shrink-0" />
+    );
+  }
+  return (
+    <div className="w-9 h-9 rounded-full bg-navy-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
+      {initials}
+    </div>
+  );
+}
+
+// ── User Detail Drawer ──────────────────────────────────────────────────────
+function UserDrawer({
+  user,
+  onClose,
+  onStatusChange,
+}: {
+  user: UserRow;
+  onClose: () => void;
+  onStatusChange: (uuid: string, status: string) => void;
+}) {
+  const isActive = user.status === 'active';
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
-          <Users className="w-7 h-7 text-orange-500" /> Users
-        </h1>
-        <p className="text-slate-600 mt-1">Kila mtumiaji kwenye mfumo (SRS 3.1).</p>
+    <div className="fixed inset-0 z-50 flex">
+      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="w-full max-w-md bg-white shadow-2xl flex flex-col overflow-y-auto animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 shrink-0">
+          <h2 className="font-black text-navy-700 text-lg">User Details</h2>
+          <button onClick={onClose} className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 transition">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Profile */}
+        <div className="px-6 py-5 border-b border-slate-100">
+          <div className="flex items-center gap-4 mb-4">
+            <Avatar user={user} />
+            <div>
+              <div className="font-bold text-slate-900">{user.profile?.full_name ?? '—'}</div>
+              <div className="text-sm text-slate-500">{user.profile?.position ?? 'No position set'}</div>
+            </div>
+            <span className={cn('ml-auto text-xs px-2.5 py-1 rounded-full font-semibold capitalize', STATUS_STYLE[user.status] ?? 'bg-slate-100 text-slate-600')}>
+              {user.status}
+            </span>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-3 text-slate-600">
+              <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+              <span className="truncate">{user.email}</span>
+            </div>
+            {user.phone && (
+              <div className="flex items-center gap-3 text-slate-600">
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{user.phone}</span>
+              </div>
+            )}
+            {user.organization && (
+              <div className="flex items-center gap-3 text-slate-600">
+                <Building2 className="w-4 h-4 text-slate-400 shrink-0" />
+                <span>{user.organization.name}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3 text-slate-600">
+              <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>Joined {new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            </div>
+            {user.last_login_at && (
+              <div className="flex items-center gap-3 text-slate-500 text-xs">
+                <RefreshCw className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                Last login: {new Date(user.last_login_at).toLocaleString('en-GB')}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Roles */}
+        <div className="px-6 py-4 border-b border-slate-100">
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Roles</div>
+          <div className="flex flex-wrap gap-2">
+            {(user.roles ?? []).map((r) => (
+              <span key={r} className="px-3 py-1 rounded-full bg-navy-50 text-navy-600 text-xs font-semibold capitalize border border-navy-100">
+                {r.replace(/_/g, ' ')}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-6 py-4 space-y-2">
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Actions</div>
+
+          {isActive ? (
+            <button
+              onClick={() => { onStatusChange(user.id, 'suspended'); onClose(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition text-sm font-semibold"
+            >
+              <ShieldOff className="w-4 h-4" /> Suspend Account
+            </button>
+          ) : (
+            <button
+              onClick={() => { onStatusChange(user.id, 'active'); onClose(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition text-sm font-semibold"
+            >
+              <ShieldCheck className="w-4 h-4" /> Activate Account
+            </button>
+          )}
+
+          {user.status === 'pending' && (
+            <button
+              onClick={() => { onStatusChange(user.id, 'active'); onClose(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-200 text-emerald-700 hover:bg-emerald-50 transition text-sm font-semibold"
+            >
+              <UserCheck className="w-4 h-4" /> Approve & Activate
+            </button>
+          )}
+
+          {user.status === 'suspended' && (
+            <button
+              onClick={() => { onStatusChange(user.id, 'inactive'); onClose(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition text-sm font-semibold"
+            >
+              <UserX className="w-4 h-4" /> Mark Inactive
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ───────────────────────────────────────────────────────────────
+export default function AdminUsersPage() {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState('');
+  const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const [selected, setSelected] = useState<UserRow | null>(null);
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['admin', 'users', search, role, status, page],
+    queryFn: () => {
+      const params = new URLSearchParams({ per_page: String(PER_PAGE), page: String(page) });
+      if (search) params.set('search', search);
+      if (role)   params.set('role', role);
+      if (status) params.set('status', status);
+      return apiRequest.get<UsersResponse>(`/admin/users?${params}`);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  const statusMut = useMutation({
+    mutationFn: ({ uuid, newStatus }: { uuid: string; newStatus: string }) =>
+      apiRequest.patch(`/admin/users/${uuid}/status`, { status: newStatus }),
+    onSuccess: (_, { newStatus }) => {
+      toast.success(`User ${newStatus === 'active' ? 'activated' : newStatus}`);
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: () => toast.error('Failed to update status'),
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (uuid: string) => apiRequest.delete(`/admin/users/${uuid}`),
+    onSuccess: () => {
+      toast.success('User archived');
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+    },
+    onError: () => toast.error('Failed to delete user'),
+  });
+
+  const users = data?.data ?? [];
+  const meta  = data?.meta;
+
+  function handleStatusChange(uuid: string, newStatus: string) {
+    statusMut.mutate({ uuid, newStatus });
+  }
+
+  function handleDelete(uuid: string, email: string) {
+    if (!confirm(`Archive user ${email}? This action cannot be undone.`)) return;
+    deleteMut.mutate(uuid);
+    setMenuOpen(null);
+  }
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto animate-fade-in">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 flex items-center gap-2">
+            <Users className="w-7 h-7 text-orange-500" /> Manage Users
+          </h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {meta ? `${meta.total} users total` : 'Loading...'} · Activate, suspend, or archive accounts
+          </p>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-left">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            className="input pl-9 h-10"
+            placeholder="Search by name, email or phone…"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+          />
+          {search && (
+            <button onClick={() => { setSearch(''); setPage(1); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <div className="relative">
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            <select className="input pl-8 h-10 pr-3 text-sm" value={role}
+              onChange={(e) => { setRole(e.target.value); setPage(1); }}>
+              <option value="">All roles</option>
+              {ROLES.filter(Boolean).map((r) => (
+                <option key={r} value={r}>{r.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+          <select className="input h-10 text-sm px-3" value={status}
+            onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
+            <option value="">All statuses</option>
+            {STATUSES.filter(Boolean).map((s) => (
+              <option key={s} value={s} className="capitalize">{s}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card overflow-x-auto relative">
+        {isFetching && !isLoading && (
+          <div className="absolute top-3 right-4">
+            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="p-16 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-navy-500" /></div>
+        ) : (
+          <table className="w-full text-sm min-w-[640px]">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 font-semibold">Email</th>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">Role</th>
-                <th className="px-4 py-3 font-semibold">Organization</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">User</th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Role</th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Organization</th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">Joined</th>
+                <th className="px-4 py-3 text-center text-xs font-bold uppercase tracking-wider text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {slice.map((u) => (
-                <tr key={u.uuid} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-navy-700">{u.email}</td>
-                  <td className="px-4 py-3">{u.full_name ?? '—'}</td>
+            <tbody className="divide-y divide-slate-100">
+              {users.map((u) => (
+                <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                  {/* User */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar user={u} />
+                      <div className="min-w-0">
+                        <div className="font-semibold text-slate-900 truncate max-w-[180px]">
+                          {u.profile?.full_name ?? '—'}
+                        </div>
+                        <div className="text-xs text-slate-500 truncate max-w-[180px]">{u.email}</div>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Role */}
                   <td className="px-4 py-3">
                     {(u.roles ?? []).map((r) => (
-                      <span key={r} className="inline-block text-xs px-2 py-0.5 mr-1 rounded-full bg-brand-100 text-brand-700 capitalize">
-                        {r.replace('_', ' ')}
+                      <span key={r} className="inline-block text-xs px-2 py-0.5 mr-1 rounded-full bg-navy-50 text-navy-600 border border-navy-100 capitalize">
+                        {r.replace(/_/g, ' ')}
                       </span>
                     ))}
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{u.organization?.name ?? '—'}</td>
+
+                  {/* Org */}
+                  <td className="px-4 py-3 text-slate-600 text-xs">{u.organization?.name ?? '—'}</td>
+
+                  {/* Status */}
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold capitalize ${
-                      u.status === 'active' ? 'bg-green-100 text-green-700' :
-                      u.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                      'bg-slate-100 text-slate-600'
-                    }`}>{u.status}</span>
+                    <span className={cn('text-xs px-2.5 py-1 rounded-full font-semibold capitalize', STATUS_STYLE[u.status] ?? 'bg-slate-100 text-slate-600')}>
+                      {u.status}
+                    </span>
+                  </td>
+
+                  {/* Joined */}
+                  <td className="px-4 py-3 text-xs text-slate-500">
+                    {new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+
+                  {/* Actions */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-center gap-1">
+                      {/* Quick status toggle */}
+                      {u.status === 'active' ? (
+                        <button
+                          title="Suspend"
+                          onClick={() => handleStatusChange(u.id, 'suspended')}
+                          disabled={statusMut.isPending}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition"
+                        >
+                          <ShieldOff className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          title="Activate"
+                          onClick={() => handleStatusChange(u.id, 'active')}
+                          disabled={statusMut.isPending}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition"
+                        >
+                          <ShieldCheck className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* View details */}
+                      <button
+                        title="View details"
+                        onClick={() => setSelected(u)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-navy-600 hover:bg-navy-50 transition"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+
+                      {/* More menu */}
+                      <div className="relative">
+                        <button
+                          title="More"
+                          onClick={() => setMenuOpen(menuOpen === u.id ? null : u.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {menuOpen === u.id && (
+                          <div className="absolute right-0 top-8 z-20 w-44 bg-white rounded-xl shadow-lg border border-slate-200 py-1 text-sm">
+                            <button
+                              onClick={() => { handleStatusChange(u.id, 'inactive'); setMenuOpen(null); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-slate-50 transition"
+                            >
+                              <UserX className="w-4 h-4" /> Mark Inactive
+                            </button>
+                            <button
+                              onClick={() => { handleStatusChange(u.id, 'pending'); setMenuOpen(null); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-amber-600 hover:bg-amber-50 transition"
+                            >
+                              <UserCheck className="w-4 h-4" /> Set Pending
+                            </button>
+                            <div className="border-t border-slate-100 my-1" />
+                            <button
+                              onClick={() => handleDelete(u.id, u.email)}
+                              disabled={deleteMut.isPending}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 transition"
+                            >
+                              <Trash2 className="w-4 h-4" /> Archive User
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ))}
-              {slice.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-slate-400">Hakuna users bado.</td></tr>
+
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-16 text-center text-slate-400">
+                    <Users className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <div className="font-medium">No users found</div>
+                    <div className="text-sm mt-1">Try adjusting your search or filters</div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>
-          <div className="px-4">
-            <Pagination
-              currentPage={currentPage}
-              lastPage={lastPage}
-              onPageChange={setPage}
-              totalItems={totalItems}
-              pageSize={PAGE_SIZE}
-            />
+        )}
+
+        {/* Pagination */}
+        {meta && meta.last_page > 1 && (
+          <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">
+              Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, meta.total)} of {meta.total}
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage((p) => p - 1)}
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-semibold text-slate-700 px-2">
+                {page} / {meta.last_page}
+              </span>
+              <button
+                disabled={page >= meta.last_page}
+                onClick={() => setPage((p) => p + 1)}
+                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+      </div>
+
+      {/* User Detail Drawer */}
+      {selected && (
+        <UserDrawer
+          user={selected}
+          onClose={() => setSelected(null)}
+          onStatusChange={handleStatusChange}
+        />
+      )}
+
+      {/* Close menu on outside click */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
       )}
     </div>
   );
