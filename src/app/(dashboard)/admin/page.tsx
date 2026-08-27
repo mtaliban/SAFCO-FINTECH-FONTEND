@@ -20,7 +20,7 @@ export default function AdminDashboard() {
   });
 
   if (isLoading || !data) {
-    return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+    return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-orange-500" /></div>;
   }
 
   return (
