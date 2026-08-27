@@ -5,13 +5,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 import {
   Loader2, Plus, Play, CheckCircle2, Trash2, Copy, Save,
-  ArrowUp, ArrowDown, Library, Settings2, ListChecks, HelpCircle,
+  ArrowUp, ArrowDown, Library, Settings2, ListChecks, HelpCircle, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { quizApi, type Quiz, type QuizFormPayload } from '@/lib/quiz/api';
 import { QUESTION_TYPE_LABEL, type QuestionType } from '@/lib/questionBank/api';
 import { AttachFromBankModal } from './AttachFromBankModal';
 import { ExamSection } from '../../_shared/ExamSection';
+import { AiQuestionGenerator } from '@/components/ai/AiQuestionGenerator';
 
 type Tab = 'questions' | 'settings';
 const TIME_CHOICES = [5, 10, 15, 20, 30, 45, 60, 90, 120] as const;
@@ -23,6 +24,7 @@ export default function QuizEditPage() {
 
   const [tab, setTab] = useState<Tab>('questions');
   const [showAttachModal, setShowAttachModal] = useState(false);
+  const [showAiGenerator, setShowAiGenerator] = useState(false);
 
   const { data: quiz, isLoading } = useQuery({
     queryKey: ['quiz', uuid],
@@ -150,21 +152,39 @@ export default function QuizEditPage() {
 
       {tab === 'questions' && (
         <div className="card p-6">
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
             <h2 className="text-lg font-bold text-slate-900">Questions</h2>
-            <button onClick={() => setShowAttachModal(true)} className="btn-primary text-sm">
-              <Library className="w-4 h-4" /> Attach from Bank
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAiGenerator(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition text-white"
+                style={{ background: 'linear-gradient(135deg, #4338ca, #7c3aed)' }}
+              >
+                <Sparkles className="w-4 h-4" /> Generate with AI
+              </button>
+              <button onClick={() => setShowAttachModal(true)} className="btn-primary text-sm">
+                <Library className="w-4 h-4" /> Attach from Bank
+              </button>
+            </div>
           </div>
 
           {!quiz.questions?.length ? (
             <div className="p-12 text-center">
               <HelpCircle className="w-16 h-16 mx-auto text-slate-300 mb-3" />
               <h3 className="text-lg font-bold text-slate-900 mb-2">No questions attached yet</h3>
-              <p className="text-slate-500 mb-6">Pick questions from your Question Banks to build this quiz.</p>
-              <button onClick={() => setShowAttachModal(true)} className="btn-primary">
-                <Library className="w-4 h-4" /> Attach from Bank
-              </button>
+              <p className="text-slate-500 mb-6">Pick from your Question Banks or let AI generate questions instantly.</p>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <button
+                  onClick={() => setShowAiGenerator(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition"
+                  style={{ background: 'linear-gradient(135deg, #4338ca, #7c3aed)' }}
+                >
+                  <Sparkles className="w-4 h-4" /> Generate with AI
+                </button>
+                <button onClick={() => setShowAttachModal(true)} className="btn-primary">
+                  <Library className="w-4 h-4" /> Attach from Bank
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -222,6 +242,14 @@ export default function QuizEditPage() {
           attachedQuestionUuids={attachedUuidSet}
           onClose={() => setShowAttachModal(false)}
           onAttached={async () => { await refresh(); setShowAttachModal(false); }}
+        />
+      )}
+
+      {showAiGenerator && (
+        <AiQuestionGenerator
+          quizUuid={uuid as string}
+          onClose={() => setShowAiGenerator(false)}
+          onImported={async () => { await refresh(); setShowAiGenerator(false); }}
         />
       )}
     </div>

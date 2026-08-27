@@ -144,7 +144,7 @@ export default function HostSessionPage() {
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-white">
-    <div className="p-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
       {/* Header — PIN + participant count + status */}
       <HostHeader
         pin={pin}
@@ -184,7 +184,7 @@ export default function HostSessionPage() {
       </div>
 
       {/* Main content — changes with status */}
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           {status === 'waiting' && (
             <ParticipantLobby
@@ -231,12 +231,12 @@ function HostHeader({
 }) {
   const showQuestionCounter = status !== 'waiting' && status !== 'completed';
   return (
-    <div className="bg-gradient-to-br from-navy-700 to-navy-900 text-white rounded-3xl p-6 mb-6 relative overflow-hidden">
-      <div className="grid md:grid-cols-3 gap-6 items-center">
-        <div className="text-center md:text-left">
+    <div className="bg-gradient-to-br from-navy-700 to-navy-900 text-white rounded-2xl md:rounded-3xl p-4 md:p-6 mb-4 md:mb-6 relative overflow-hidden">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 items-center">
+        <div className="col-span-2 md:col-span-1 text-center md:text-left">
           <div className="text-xs uppercase tracking-widest opacity-70 mb-1">Game PIN</div>
-          <div className="flex items-center gap-3">
-            <div className="text-6xl font-black tracking-widest font-mono">{pin}</div>
+          <div className="flex items-center justify-center md:justify-start gap-3">
+            <div className="text-4xl md:text-6xl font-black tracking-widest font-mono">{pin}</div>
             <button onClick={onCopy} className="p-2 rounded-lg bg-white/10 hover:bg-white/20" title="Copy PIN">
               <Copy className="w-4 h-4" />
             </button>
@@ -245,8 +245,8 @@ function HostHeader({
         </div>
 
         <div className="text-center">
-          <Users className="w-6 h-6 mx-auto opacity-70 mb-1" />
-          <div className="text-4xl font-black">{participantCount}</div>
+          <Users className="w-5 h-5 md:w-6 md:h-6 mx-auto opacity-70 mb-1" />
+          <div className="text-3xl md:text-4xl font-black">{participantCount}</div>
           <div className="text-xs uppercase tracking-widest opacity-70 mt-0.5">Players</div>
         </div>
 
@@ -254,7 +254,7 @@ function HostHeader({
           {showQuestionCounter && (
             <>
               <div className="text-xs uppercase tracking-widest opacity-70 mb-1">Question</div>
-              <div className="text-4xl font-black">{currentIndex + 1} <span className="text-2xl opacity-60">/ {totalQuestions}</span></div>
+              <div className="text-3xl md:text-4xl font-black">{currentIndex + 1} <span className="text-xl md:text-2xl opacity-60">/ {totalQuestions}</span></div>
             </>
           )}
           <StatusBadge status={status} />
@@ -407,7 +407,7 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
       </div>
 
       {/* Big stats banner */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-3 gap-2 md:gap-3 mb-5">
         <StatCard label="Walijibu" value={stats.total_answers} total={total} />
         <StatCard label="Sahihi" value={stats.correct_count} accent="green" />
         <StatCard label="Asilimia" value={`${stats.correct_rate_percent}%`} accent={stats.correct_rate_percent >= 50 ? 'green' : 'red'} />
@@ -529,7 +529,7 @@ function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
       <div className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-1">Matokeo ya Mwisho</div>
       <div className="text-3xl font-black text-white mb-6">🏆 SAFCO Live — Mabingwa</div>
 
-      <div className="grid grid-cols-3 gap-4 mb-6 items-end max-w-2xl mx-auto">
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 items-end max-w-2xl mx-auto">
         <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-400" emoji="🥈" />
         <PodiumStep entry={first} rank={1} height="h-40" bg="bg-yellow-400" emoji="🥇" />
         <PodiumStep entry={third} rank={3} height="h-24" bg="bg-orange-400" emoji="🥉" />

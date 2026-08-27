@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import {
-  ArrowLeft, Loader2, Download, CheckCircle2, XCircle, Award, Save, Users,
+  ArrowLeft, Loader2, Download, CheckCircle2, XCircle, Award, Save, Users, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { assignmentApi, type Submission } from '@/lib/course/api';
+import { aiApi } from '@/lib/ai/api';
 
 export default function GradingPage() {
   const { uuid } = useParams<{ uuid: string }>();
@@ -86,7 +87,13 @@ export default function GradingPage() {
       ) : (
         <div className="space-y-3">
           {submissions.map((s) => (
-            <SubmissionRow key={s.uuid} s={s} maxPoints={assignment.max_points} />
+            <SubmissionRow
+              key={s.uuid}
+              s={s}
+              maxPoints={assignment.max_points}
+              assignmentTitle={assignment.title}
+              assignmentInstructions={assignment.instructions ?? ''}
+            />
           ))}
         </div>
       )}
@@ -108,12 +115,15 @@ function StatBox({ label, value, icon, accent }: { label: string; value: string 
   );
 }
 
-function SubmissionRow({ s, maxPoints }: { s: Submission; maxPoints: number }) {
+function SubmissionRow({ s, maxPoints, assignmentTitle, assignmentInstructions }: {
+  s: Submission; maxPoints: number; assignmentTitle: string; assignmentInstructions: string;
+}) {
   const qc = useQueryClient();
   const [grade, setGrade] = useState<number>(s.grade ?? 0);
   const [feedback, setFeedback] = useState<string>(s.feedback ?? '');
   const [busy, setBusy] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [aiGrading, setAiGrading] = useState(false);
 
   async function saveGrade() {
     if (grade < 0 || grade > maxPoints) { toast.error(`Grade must be 0–${maxPoints}`); return; }
@@ -126,6 +136,32 @@ function SubmissionRow({ s, maxPoints }: { s: Submission; maxPoints: number }) {
       toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Save failed');
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function autoGrade() {
+    const studentText = s.answer_text;
+    if (!studentText) { toast.error('No text answer to grade — download and grade the file manually'); return; }
+    setAiGrading(true);
+    try {
+      const result = await aiApi.gradeSubmission({
+        assignment_title: assignmentTitle,
+        assignment_instructions: assignmentInstructions,
+        student_answer: studentText,
+        max_points: maxPoints,
+      });
+      setGrade(result.suggested_grade);
+      const feedbackText = [
+        result.feedback,
+        result.strengths?.length ? `\n\nStrengths: ${result.strengths.join('; ')}` : '',
+        result.improvements?.length ? `\nImprovements: ${result.improvements.join('; ')}` : '',
+      ].filter(Boolean).join('');
+      setFeedback(feedbackText);
+      toast.success(`AI suggested ${result.suggested_grade}/${maxPoints} (${result.percentage}%) — review before saving`);
+    } catch {
+      toast.error('AI grading failed — grade manually');
+    } finally {
+      setAiGrading(false);
     }
   }
 
@@ -180,16 +216,31 @@ function SubmissionRow({ s, maxPoints }: { s: Submission; maxPoints: number }) {
         </div>
         <div>
           <label className="label text-xs">Feedback (optional)</label>
-          <input
-            className="input"
+          <textarea
+            rows={2}
+            className="input resize-none text-xs"
             placeholder="Constructive feedback for the student…"
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
           />
         </div>
-        <button onClick={saveGrade} disabled={busy} className="btn-primary">
-          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Save className="w-4 h-4" /> Save</>)}
-        </button>
+        <div className="flex flex-col gap-2">
+          {s.answer_text && (
+            <button
+              onClick={autoGrade}
+              disabled={aiGrading || busy}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-white transition disabled:opacity-50 whitespace-nowrap"
+              style={{ background: 'linear-gradient(135deg, #4338ca, #7c3aed)' }}
+              title="Let AI analyze the student's answer and suggest a grade"
+            >
+              {aiGrading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              Auto-Grade
+            </button>
+          )}
+          <button onClick={saveGrade} disabled={busy} className="btn-primary whitespace-nowrap">
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Save className="w-4 h-4" /> Save</>)}
+          </button>
+        </div>
       </div>
     </div>
   );

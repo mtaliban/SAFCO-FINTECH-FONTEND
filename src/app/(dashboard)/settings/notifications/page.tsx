@@ -63,7 +63,7 @@ export default function NotificationSettingsPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="h-36 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#6366f1 100%)' }} />
-        <div className="max-w-4xl mx-auto px-8 py-6 space-y-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
           {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white rounded-xl border border-slate-200 animate-pulse" />)}
         </div>
       </div>
@@ -94,7 +94,7 @@ export default function NotificationSettingsPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #6366f1 100%)' }}>
-        <div className="max-w-4xl mx-auto px-8 py-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
           <Link href="/notifications"
             className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm mb-4 transition">
             <ArrowLeft className="w-4 h-4" /> Notification Inbox
@@ -121,7 +121,7 @@ export default function NotificationSettingsPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-8 py-6 space-y-5">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
 
         {/* Channel legend */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">

@@ -43,8 +43,14 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     try {
       await register(data);
-      toast.success('Karibu SAFCO! Umefanikiwa kujisajili.');
-      router.push('/dashboard');
+      const role = data.role ?? 'student';
+      const landing: Record<string, string> = {
+        student:          '/student',
+        trainer:          '/trainer',
+        corporate_client: '/corporate',
+      };
+      toast.success('Karibu SAFCO FINTECH LMS! Umefanikiwa kujisajili.');
+      router.push(landing[role] ?? '/dashboard');
     } catch {
       // toast handled by interceptor
     }

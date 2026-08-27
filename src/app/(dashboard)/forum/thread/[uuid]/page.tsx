@@ -1,27 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, ChevronUp, ChevronDown, CheckCircle2, Loader2, Send, Pin,
   Lock, EyeOff, Flag, CornerDownRight, Trash2, MessageCircle, Tag,
-  Eye, Clock, BookOpen,
+  Eye, Clock, BookOpen, Wifi, WifiOff, Bell, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { forumApi, type PostView } from '@/lib/forum/api';
 import { categoryStyle, timeAgo } from '../../_shared';
+import { subscribe } from '@/lib/mqtt';
 
 export default function ThreadDetailPage() {
   const params = useParams();
   const uuid = params?.uuid as string;
   const qc = useQueryClient();
+  const [isLive, setIsLive] = useState(false);
+  const [newRepliesCount, setNewRepliesCount] = useState(0);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['forum', 'thread', uuid],
     queryFn: () => forumApi.show(uuid),
   });
+
+  // ── MQTT real-time subscription ──────────────────────────────────────────
+  useEffect(() => {
+    if (!uuid) return;
+    const topic = `safco/lms/forum/thread/${uuid}/reply`;
+    let connected = true;
+
+    const unsub = subscribe(topic, (raw: unknown) => {
+      const payload = raw as { uuid: string; author_name: string; body_preview: string; created_at: string };
+      if (!connected) return;
+      setIsLive(true);
+      setNewRepliesCount((n) => n + 1);
+      // Silently refresh thread data so the new reply appears
+      qc.invalidateQueries({ queryKey: ['forum', 'thread', uuid] });
+      toast(
+        (t) => (
+          <div className="flex items-center gap-3" onClick={() => {
+            toast.dismiss(t.id);
+            setNewRepliesCount(0);
+            bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+          }}>
+            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-black flex items-center justify-center shrink-0">
+              {payload.author_name?.slice(0, 1).toUpperCase() ?? '?'}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-800">{payload.author_name} replied</p>
+              <p className="text-xs text-slate-500 truncate max-w-[200px]">{payload.body_preview}</p>
+            </div>
+          </div>
+        ),
+        { duration: 5000, icon: undefined, style: { padding: '8px 12px', cursor: 'pointer' } },
+      );
+    });
+
+    // Mark as live after short delay (connection established)
+    const timer = setTimeout(() => setIsLive(true), 1500);
+
+    return () => {
+      connected = false;
+      clearTimeout(timer);
+      unsub();
+      setIsLive(false);
+    };
+  }, [uuid, qc]);
 
   const [replyBody, setReplyBody] = useState('');
   const [replyingTo, setReplyingTo] = useState<{ id: number; name: string } | null>(null);
@@ -30,8 +78,10 @@ export default function ThreadDetailPage() {
     mutationFn: () => forumApi.reply(uuid, replyBody, replyingTo?.id),
     onSuccess: () => {
       setReplyBody(''); setReplyingTo(null);
+      setNewRepliesCount(0);
       toast.success('Reply posted');
       qc.invalidateQueries({ queryKey: ['forum', 'thread', uuid] });
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 300);
     },
     onError: (e: any) => toast.error(e?.response?.data?.message ?? 'Failed to reply'),
   });
@@ -71,7 +121,7 @@ export default function ThreadDetailPage() {
   if (isLoading || !data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="h-24 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#4f46e5 100%)' }} />
+        <div className="h-36 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#4f46e5 100%)' }} />
         <div className="max-w-4xl mx-auto px-8 py-8 space-y-4">
           <div className="h-48 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           {[...Array(3)].map((_, i) => (
@@ -89,16 +139,30 @@ export default function ThreadDetailPage() {
   return (
     <div className="min-h-screen bg-slate-50">
 
-      {/* ── MINI HEADER ── */}
+      {/* ── HERO HEADER ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 60%, #4f46e5 100%)' }}>
-        <div className="max-w-4xl mx-auto px-8 py-6">
-          <Link href={`/forum/${thread.category.slug}`}
-            className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm mb-4 transition">
-            <ArrowLeft className="w-4 h-4" /> {thread.category.name}
-          </Link>
+        <div className="max-w-4xl mx-auto px-8 py-7">
+          <div className="flex items-center justify-between mb-4">
+            <Link href={`/forum/${thread.category.slug}`}
+              className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm transition-colors">
+              <ArrowLeft className="w-4 h-4" /> {thread.category.name}
+            </Link>
+
+            {/* Live indicator */}
+            <div className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-full border transition-all ${
+              isLive
+                ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-300'
+                : 'bg-white/10 border-white/20 text-white/50'
+            }`}>
+              {isLive
+                ? <><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> LIVE</>
+                : <><WifiOff className="w-2.5 h-2.5" /> CONNECTING</>
+              }
+            </div>
+          </div>
 
           {/* Badges */}
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+          <div className="flex items-center gap-2 flex-wrap mb-3">
             {thread.is_pinned && (
               <span className="inline-flex items-center gap-1 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300">
                 <Pin className="w-2.5 h-2.5" /> Pinned
@@ -124,28 +188,49 @@ export default function ThreadDetailPage() {
             )}
           </div>
 
-          <h1 className="text-2xl font-black text-white leading-snug">{thread.title}</h1>
-          <div className="flex items-center gap-4 mt-2 text-indigo-300 text-xs">
+          <h1 className="text-2xl font-black text-white leading-snug mb-3">{thread.title}</h1>
+
+          <div className="flex items-center gap-4 text-indigo-300 text-xs flex-wrap">
             <span className="font-semibold text-white/80">{thread.author?.name ?? 'Unknown'}</span>
-            {thread.created_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>}
-            <span className="flex items-center gap-1"><Eye className="w-3 h-3" />{thread.views_count.toLocaleString()} views</span>
-            <span className="flex items-center gap-1"><MessageCircle className="w-3 h-3" />{posts.length} replies</span>
+            {thread.created_at && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />{timeAgo(thread.created_at)}
+              </span>
+            )}
+            <span className="flex items-center gap-1">
+              <Eye className="w-3 h-3" />{thread.views_count.toLocaleString()} views
+            </span>
+            <span className="flex items-center gap-1">
+              <MessageCircle className="w-3 h-3" />{posts.length} replies
+            </span>
           </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-8 py-6 space-y-4">
 
+        {/* ── NEW REPLIES BANNER ── */}
+        {newRepliesCount > 0 && (
+          <button
+            onClick={() => {
+              setNewRepliesCount(0);
+              bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all animate-fade-in shadow-lg"
+          >
+            <Bell className="w-4 h-4" />
+            {newRepliesCount} new {newRepliesCount === 1 ? 'reply' : 'replies'} — click to view
+          </button>
+        )}
+
         {/* ── THREAD BODY ── */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="flex gap-0">
-            {/* Vote sidebar */}
             <VoteBar
               score={thread.votes_score}
               myVote={thread.my_vote}
               onVote={(v) => voteThreadMut.mutate(v)}
             />
-            {/* Body */}
             <div className="flex-1 min-w-0 p-6">
               {thread.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-4">
@@ -163,7 +248,11 @@ export default function ThreadDetailPage() {
 
               <footer className="mt-6 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
                 <AuthorChip name={thread.author?.name} />
-                {thread.created_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(thread.created_at)}</span>}
+                {thread.created_at && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />{timeAgo(thread.created_at)}
+                  </span>
+                )}
                 <button
                   onClick={() => reportMut.mutate({ type: 'thread', id: thread.uuid })}
                   className="ml-auto inline-flex items-center gap-1 text-red-500 hover:text-red-700 font-semibold transition">
@@ -171,7 +260,6 @@ export default function ThreadDetailPage() {
                 </button>
               </footer>
 
-              {/* Moderator controls */}
               {permissions.can_moderate && (
                 <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap gap-2">
                   <button onClick={() => moderateMut.mutate({ is_pinned: !thread.is_pinned })}
@@ -201,6 +289,11 @@ export default function ThreadDetailPage() {
           {thread.category.supports_accepted_answer && !acceptedPost && permissions.can_accept_answer && (
             <span className="text-xs bg-amber-100 text-amber-800 border border-amber-200 px-2.5 py-1 rounded-full font-semibold">
               No accepted answer yet
+            </span>
+          )}
+          {isLive && (
+            <span className="ml-auto text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+              <Wifi className="w-3 h-3" /> Updates live
             </span>
           )}
         </div>
@@ -236,12 +329,20 @@ export default function ThreadDetailPage() {
           />
         ))}
 
+        <div ref={bottomRef} />
+
         {/* ── REPLY BOX ── */}
         {permissions.can_reply ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+            <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/60 to-slate-50/60">
               <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
                 <MessageCircle className="w-4 h-4 text-indigo-500" /> Your reply
+                {isLive && (
+                  <span className="ml-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live thread
+                  </span>
+                )}
               </div>
             </div>
             <div className="p-5">
@@ -256,11 +357,11 @@ export default function ThreadDetailPage() {
               <textarea
                 value={replyBody}
                 onChange={(e) => setReplyBody(e.target.value)}
-                className="w-full min-h-[140px] px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none text-sm leading-relaxed resize-y"
+                className="w-full min-h-[140px] px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none text-sm leading-relaxed resize-y transition"
                 placeholder="Write a helpful, thoughtful reply… Use @name to mention someone."
               />
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-slate-400">{replyBody.length} chars</span>
+                <span className="text-xs text-slate-400">{replyBody.length} / 20,000</span>
                 <button
                   disabled={replyBody.trim().length < 2 || replyMut.isPending}
                   onClick={() => replyMut.mutate()}
@@ -300,10 +401,10 @@ function PostCard({
   onReport: () => void;
 }) {
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
       post.is_accepted_answer
         ? 'border-l-4 border-l-emerald-500 border-emerald-200'
-        : 'border-slate-200'
+        : 'border-slate-200 hover:border-indigo-200 hover:shadow-md'
     }`}>
       {post.is_accepted_answer && (
         <div className="px-5 py-2.5 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2">
@@ -319,8 +420,12 @@ function PostCard({
           </div>
           <footer className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-400">
             <AuthorChip name={post.author?.name} />
-            {post.created_at && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{timeAgo(post.created_at)}</span>}
-            {post.edited_at && <span className="italic">edited</span>}
+            {post.created_at && (
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3" />{timeAgo(post.created_at)}
+              </span>
+            )}
+            {post.edited_at && <span className="italic text-slate-400">edited</span>}
 
             <div className="ml-auto flex items-center gap-3">
               <button onClick={onReply}
@@ -358,22 +463,22 @@ function VoteBar({ score, myVote, onVote }: {
     <div className="flex flex-col items-center justify-start gap-1.5 px-4 pt-5 bg-slate-50 border-r border-slate-100 shrink-0">
       <button
         onClick={() => onVote(myVote === 1 ? 0 : 1)}
-        className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${
-          myVote === 1 ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600'
+        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+          myVote === 1 ? 'bg-indigo-100 text-indigo-700 scale-110' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-105'
         }`}
         aria-label="Upvote"
       >
         <ChevronUp className="w-5 h-5 stroke-[2.5]" />
       </button>
-      <div className={`text-base font-black tabular-nums text-center leading-none ${
+      <div className={`text-base font-black tabular-nums text-center leading-none transition-colors ${
         score > 0 ? 'text-indigo-700' : score < 0 ? 'text-red-600' : 'text-slate-600'
       }`}>
         {score}
       </div>
       <button
         onClick={() => onVote(myVote === -1 ? 0 : -1)}
-        className={`w-9 h-9 rounded-xl flex items-center justify-center transition ${
-          myVote === -1 ? 'bg-red-100 text-red-700' : 'text-slate-400 hover:bg-red-50 hover:text-red-600'
+        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+          myVote === -1 ? 'bg-red-100 text-red-700 scale-110' : 'text-slate-400 hover:bg-red-50 hover:text-red-600 hover:scale-105'
         }`}
         aria-label="Downvote"
       >

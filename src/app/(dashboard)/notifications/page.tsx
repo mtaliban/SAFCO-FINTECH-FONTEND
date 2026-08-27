@@ -102,7 +102,7 @@ export default function NotificationsInboxPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #6366f1 100%)' }}>
-        <div className="max-w-3xl mx-auto px-8 py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-bold uppercase tracking-widest mb-3">
@@ -137,7 +137,7 @@ export default function NotificationsInboxPage() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-8 py-6 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
 
         {/* Toolbar */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex items-center justify-between gap-3">

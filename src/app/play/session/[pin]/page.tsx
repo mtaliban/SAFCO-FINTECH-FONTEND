@@ -325,17 +325,17 @@ function WaitScreen({ participant }: { participant: Participant }) {
 /* ── Per-question result ── */
 function ResultScreen({ result, participant }: { result: AnswerResult; participant: Participant }) {
   return (
-    <main className={`fixed inset-0 flex flex-col items-center justify-center text-white p-8 ${
+    <main className={`fixed inset-0 flex flex-col items-center justify-center text-white p-4 md:p-8 overflow-y-auto ${
       result.is_correct
         ? 'bg-gradient-to-br from-green-500 to-emerald-700'
         : 'bg-gradient-to-br from-red-500 to-red-800'
     }`}>
-      <div className="text-center animate-fade-in">
+      <div className="text-center animate-fade-in w-full max-w-sm mx-auto">
         {result.is_correct ? (
           <>
-            <CheckCircle2 className="w-28 h-28 mx-auto mb-3" strokeWidth={2} />
-            <h1 className="text-5xl font-black mb-4">Sahihi! 🎉</h1>
-            <div className="text-7xl font-black text-yellow-200 font-mono mb-4">
+            <CheckCircle2 className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-3" strokeWidth={2} />
+            <h1 className="text-3xl md:text-5xl font-black mb-3">Sahihi! 🎉</h1>
+            <div className="text-5xl md:text-7xl font-black text-yellow-200 font-mono mb-4">
               +{result.points_earned.toLocaleString()}
             </div>
             <div className="flex items-center justify-center gap-2 flex-wrap">
@@ -353,14 +353,14 @@ function ResultScreen({ result, participant }: { result: AnswerResult; participa
           </>
         ) : (
           <>
-            <XCircle className="w-28 h-28 mx-auto mb-3" strokeWidth={2} />
-            <h1 className="text-5xl font-black mb-4">Sio Sahihi 😬</h1>
+            <XCircle className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-3" strokeWidth={2} />
+            <h1 className="text-3xl md:text-5xl font-black mb-3">Sio Sahihi 😬</h1>
           </>
         )}
 
-        <div className="mt-8 bg-white/15 rounded-2xl px-8 py-4 inline-block">
+        <div className="mt-6 bg-white/15 rounded-2xl px-6 py-4 inline-block">
           <p className="text-xs uppercase tracking-widest text-white/60">Jumla ya Alama</p>
-          <p className="text-4xl font-black font-mono">{result.total_score.toLocaleString()}</p>
+          <p className="text-3xl md:text-4xl font-black font-mono">{result.total_score.toLocaleString()}</p>
         </div>
 
         {result.current_streak >= 2 && (
@@ -370,7 +370,7 @@ function ResultScreen({ result, participant }: { result: AnswerResult; participa
           </div>
         )}
 
-        <p className="mt-8 text-white/40 text-xs">Subiri swali linalofuata…</p>
+        <p className="mt-6 text-white/40 text-xs">Subiri swali linalofuata…</p>
       </div>
     </main>
   );
