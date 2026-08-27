@@ -25,17 +25,15 @@ export default function TrainerPortalPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="h-56 animate-pulse" style={{ background: 'linear-gradient(135deg,#064e3b 0%,#065f46 50%,#047857 100%)' }} />
-        <div className="max-w-5xl mx-auto px-6 py-6 space-y-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-white rounded-xl border border-slate-200 animate-pulse" />
-            ))}
-          </div>
-          <div className="h-12 bg-white rounded-xl border border-slate-200 animate-pulse" />
-          <div className="h-64 bg-white rounded-xl border border-slate-200 animate-pulse" />
+      <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
+        <div className="h-20 bg-white rounded-xl border border-slate-200 animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-20 bg-white rounded-xl border border-slate-200 animate-pulse" />
+          ))}
         </div>
+        <div className="h-12 bg-white rounded-xl border border-slate-200 animate-pulse" />
+        <div className="h-64 bg-white rounded-xl border border-slate-200 animate-pulse" />
       </div>
     );
   }
@@ -45,69 +43,58 @@ export default function TrainerPortalPage() {
     ? 'bg-emerald-400' : p.availability_status === 'busy' ? 'bg-amber-400' : 'bg-slate-400';
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6 animate-fade-in">
 
-      {/* ── HERO BANNER ── */}
-      <div style={{ background: 'linear-gradient(135deg, #064e3b 0%, #065f46 40%, #0d9488 100%)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-10">
-          <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
-            <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-xl shrink-0">
-                {p.slug ? p.slug.slice(0, 1).toUpperCase() : 'T'}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <div className="text-[11px] font-bold uppercase tracking-widest text-emerald-300">
-                    SAFCO FINTECH LMS · Certified Trainer Portal
-                  </div>
-                </div>
-                {p.headline ? (
-                  <h1 className="text-2xl font-black text-white">{p.headline}</h1>
-                ) : (
-                  <h1 className="text-2xl font-black text-white/60 italic">Add your headline…</h1>
-                )}
-                <div className="flex items-center gap-3 mt-2 flex-wrap">
-                  {p.is_verified && (
-                    <span className="inline-flex items-center gap-1 bg-emerald-400/20 border border-emerald-400/40 text-emerald-200 px-2.5 py-1 rounded-full text-xs font-bold">
-                      <BadgeCheck className="w-3.5 h-3.5" /> Certified Trainer
-                    </span>
-                  )}
-                  <span className="inline-flex items-center gap-1.5 text-white/70 text-xs">
-                    <span className={`w-2 h-2 rounded-full ${availColor}`} />
-                    {p.availability_status === 'available' ? 'Available' : p.availability_status === 'busy' ? 'Limited availability' : 'Unavailable'}
-                  </span>
-                  {p.is_public ? (
-                    <span className="inline-flex items-center gap-1 text-white/70 text-xs"><Globe className="w-3 h-3" /> Public profile</span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 text-white/50 text-xs"><EyeOff className="w-3 h-3" /> Hidden from directory</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href={`/trainers/${p.slug}`} target="_blank" rel="noopener"
-                className="flex items-center gap-2 bg-white/15 hover:bg-white/25 border border-white/30 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-              >
-                <ExternalLink className="w-4 h-4" /> Preview profile
-              </Link>
-            </div>
+      {/* ── PAGE HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-200">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200 flex items-center justify-center text-2xl font-black text-orange-600 shrink-0">
+            {p.slug ? p.slug.slice(0, 1).toUpperCase() : 'T'}
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <HeroChip icon={<Star className="w-4 h-4" />} label="Rating" value={p.rating_avg !== null ? p.rating_avg.toFixed(1) : '—'} suffix={p.rating_avg !== null ? '★' : ''} />
-            <HeroChip icon={<MessageSquare className="w-4 h-4" />} label="Reviews" value={p.rating_count} />
-            <HeroChip icon={<Users className="w-4 h-4" />} label="Students Taught" value={p.students_taught} />
-            <HeroChip icon={<Clock className="w-4 h-4" />} label="Years Exp." value={p.years_experience ?? '—'} />
+          <div>
+            <div className="flex items-center gap-1.5 text-orange-500 text-[11px] font-bold uppercase tracking-widest mb-1">
+              <ShieldCheck className="w-3.5 h-3.5" /> Trainer Portal
+            </div>
+            {p.headline ? (
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">{p.headline}</h1>
+            ) : (
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-400 italic">Add your headline in Profile tab…</h1>
+            )}
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              {p.is_verified && (
+                <span className="inline-flex items-center gap-1 bg-emerald-100 border border-emerald-200 text-emerald-700 px-2.5 py-0.5 rounded-full text-xs font-bold">
+                  <BadgeCheck className="w-3 h-3" /> Certified
+                </span>
+              )}
+              <span className="inline-flex items-center gap-1.5 text-slate-500 text-xs">
+                <span className={`w-2 h-2 rounded-full ${availColor}`} />
+                {p.availability_status === 'available' ? 'Available' : p.availability_status === 'busy' ? 'Limited' : 'Unavailable'}
+              </span>
+              {p.is_public ? (
+                <span className="inline-flex items-center gap-1 text-slate-500 text-xs"><Globe className="w-3 h-3" /> Public</span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-slate-400 text-xs"><EyeOff className="w-3 h-3" /> Hidden</span>
+              )}
+            </div>
           </div>
         </div>
+        <Link
+          href={`/trainers/${p.slug}`} target="_blank" rel="noopener"
+          className="self-start flex items-center gap-2 bg-white border border-slate-200 hover:border-orange-300 hover:text-orange-600 text-slate-700 text-sm font-semibold px-4 py-2 rounded-xl transition shadow-sm"
+        >
+          <ExternalLink className="w-4 h-4" /> Preview profile
+        </Link>
       </div>
 
-      {/* ── CONTENT ── */}
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
+      {/* ── KPI CHIPS ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatChip icon={<Star className="w-4 h-4 text-amber-500" />} label="Rating" value={p.rating_avg !== null ? p.rating_avg.toFixed(1) + ' ★' : '—'} />
+        <StatChip icon={<MessageSquare className="w-4 h-4 text-orange-500" />} label="Reviews" value={p.rating_count} />
+        <StatChip icon={<Users className="w-4 h-4 text-emerald-600" />} label="Students Taught" value={p.students_taught} />
+        <StatChip icon={<Clock className="w-4 h-4 text-slate-500" />} label="Years Exp." value={p.years_experience ?? '—'} />
+      </div>
 
-        {/* Tab bar */}
+      {/* Tab bar */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex gap-1 p-1.5 overflow-x-auto">
           {([
             ['profile', 'Profile', null],
@@ -145,19 +132,17 @@ export default function TrainerPortalPage() {
         {tab === 'courses' && <CoursesDeliveredTab items={data.courses ?? []} />}
         {tab === 'reviews' && <ReviewsTab />}
 
-      </div>
     </div>
   );
 }
 
-function HeroChip({ icon, label, value, suffix }: { icon: React.ReactNode; label: string; value: string | number; suffix?: string }) {
+function StatChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-3 flex flex-col gap-1">
-      <div className="flex items-center gap-1.5 text-white/60 text-[10px] font-bold uppercase tracking-widest">
-        {icon} {label}
-      </div>
-      <div className="text-xl font-black text-white tabular-nums">
-        {value}{suffix && <span className="text-sm ml-0.5 font-semibold text-white/70">{suffix}</span>}
+    <div className="bg-white border border-slate-200 shadow-sm rounded-xl p-4 flex items-center gap-3">
+      <div className="w-9 h-9 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">{icon}</div>
+      <div>
+        <div className="text-[10px] uppercase font-bold tracking-widest text-slate-400">{label}</div>
+        <div className="text-xl font-black text-slate-900 tabular-nums leading-tight">{value}</div>
       </div>
     </div>
   );
