@@ -1,53 +1,76 @@
-/**
- * Shared MQTT WebSocket client for real-time SAFCO LMS events.
- * Connects to Mosquitto over ws://localhost:9002 (exposed by safco-mqtt container).
- *
- * Frontend uses this for:
- *   - safco/lms/material/{uuid}/status  (Module 3 async processing)
- *   - safco/lms/quiz/session/{pin}/*    (Module 7 live quiz)
- *
- * The client is a singleton: one WebSocket connection per browser tab.
- */
 'use client';
 
 import mqtt, { MqttClient } from 'mqtt';
 
 let client: MqttClient | null = null;
+let disabled = false;
 const listeners = new Map<string, Set<(payload: unknown) => void>>();
 
-function getClient(): MqttClient {
-  if (client && client.connected) return client;
-  if (client) return client;
+function getClient(): MqttClient | null {
+  if (disabled) return null;
+  if (client && (client.connected || client.reconnecting)) return client;
 
-  const url = process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9002/mqtt';
-  client = mqtt.connect(url, {
-    clientId: `safco-fe-${Math.random().toString(36).slice(2, 10)}`,
-    keepalive: 30,
-    reconnectPeriod: 3000,
-    connectTimeout: 5000,
-  });
+  let url = process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9002/mqtt';
 
-  client.on('connect', () => {
-    // Re-subscribe to all active topics after (re)connect
-    for (const topic of listeners.keys()) {
-      client!.subscribe(topic, { qos: 0 });
-    }
-  });
+  // Browsers block ws:// from https:// pages (Mixed Content).
+  // Auto-upgrade to wss:// so the connection attempt is at least valid.
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    url = url.replace(/^ws:\/\//, 'wss://');
+  }
 
-  client.on('message', (topic, payload) => {
-    const handlers = listeners.get(topic);
-    if (!handlers) return;
-    let parsed: unknown = payload.toString();
-    try { parsed = JSON.parse(payload.toString()); } catch { /* raw string */ }
-    handlers.forEach((fn) => fn(parsed));
-  });
+  try {
+    client = mqtt.connect(url, {
+      clientId: `safco-fe-${Math.random().toString(36).slice(2, 10)}`,
+      keepalive: 30,
+      reconnectPeriod: 5000,
+      connectTimeout: 8000,
+    });
 
-  return client;
+    client.on('connect', () => {
+      for (const topic of listeners.keys()) {
+        client!.subscribe(topic, { qos: 0 });
+      }
+    });
+
+    client.on('error', (err) => {
+      // Silently disable MQTT if the broker is unreachable (polling fallback takes over)
+      if (
+        err.message?.includes('WebSocket') ||
+        err.message?.includes('ECONNREFUSED') ||
+        err.message?.includes('getaddrinfo')
+      ) {
+        disabled = true;
+        client?.end(true);
+        client = null;
+      }
+    });
+
+    client.on('message', (topic, payload) => {
+      const handlers = listeners.get(topic);
+      if (!handlers) return;
+      let parsed: unknown = payload.toString();
+      try { parsed = JSON.parse(payload.toString()); } catch { /* raw string */ }
+      handlers.forEach((fn) => fn(parsed));
+    });
+
+    return client;
+  } catch {
+    // SecurityError or any other connection error — disable MQTT gracefully
+    disabled = true;
+    client = null;
+    return null;
+  }
 }
 
-/** Subscribe to a topic. Returns unsubscribe function. */
+/** Subscribe to a topic. Returns an unsubscribe function. Falls back silently if MQTT unavailable. */
 export function subscribe(topic: string, handler: (payload: unknown) => void): () => void {
   const c = getClient();
+
+  if (!c) {
+    // MQTT disabled — return no-op cleanup; polling fallback handles updates
+    return () => {};
+  }
+
   if (!listeners.has(topic)) {
     listeners.set(topic, new Set());
     if (c.connected) c.subscribe(topic, { qos: 0 });
@@ -60,7 +83,7 @@ export function subscribe(topic: string, handler: (payload: unknown) => void): (
     set.delete(handler);
     if (set.size === 0) {
       listeners.delete(topic);
-      c.unsubscribe(topic);
+      try { c.unsubscribe(topic); } catch { /* ignore */ }
     }
   };
 }
