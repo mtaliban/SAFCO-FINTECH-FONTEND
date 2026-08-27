@@ -7,15 +7,11 @@ interface LogoProps {
   href?: string;
   width?: number;
   height?: number;
-  showText?: boolean; // false = icon only (for tight spaces)
-  variant?: 'default' | 'white'; // 'white' assumes dark background
+  showText?: boolean;
+  variant?: 'default' | 'white';
+  priority?: boolean;
 }
 
-/**
- * Official SAFCO FinTech logo. Sourced from /public/logo.png.
- * Always use this component rather than embedding <img> tags so that
- * a future logo update is a one-file change.
- */
 export function Logo({
   className,
   href = '/',
@@ -23,6 +19,7 @@ export function Logo({
   height = 48,
   showText = true,
   variant = 'default',
+  priority = false,
 }: LogoProps) {
   const img = (
     <Image
@@ -30,7 +27,7 @@ export function Logo({
       alt="SAFCO FinTech"
       width={width}
       height={height}
-      priority
+      priority={priority}
       className={cn(
         'object-contain',
         variant === 'white' && 'brightness-0 invert'

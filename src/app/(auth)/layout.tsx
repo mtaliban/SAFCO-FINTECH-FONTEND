@@ -39,7 +39,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         {/* Logo */}
         <div className="relative">
-          <Logo variant="white" width={150} height={44} className="mb-12" />
+          <Logo variant="white" width={150} height={44} className="mb-12" priority />
 
           <h1 className="text-3xl xl:text-4xl font-black text-white leading-tight mb-4">
             Anza safari yako ya{' '}
