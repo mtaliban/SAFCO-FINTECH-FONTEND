@@ -21,7 +21,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
 const ROLE_HOME: Record<string, string> = {
   system_admin:     '/admin',
   trainer:          '/trainer',
-  facilitator:      '/trainer',
+  facilitator:      '/trainer/sessions',
   student:          '/student',
   corporate_client: '/corporate',
 };

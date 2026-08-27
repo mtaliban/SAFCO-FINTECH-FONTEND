@@ -43,8 +43,7 @@ const trainerNav: NavItem[] = [
 ];
 
 const facilitatorNav: NavItem[] = [
-  { href: '/dashboard',                  label: 'Dashboard',            icon: Home },
-  { href: '/trainer/sessions',           label: 'Live Sessions',        icon: ClipboardList },
+  { href: '/trainer/sessions',           label: 'Dashboard',            icon: Home },
   { href: '/dashboard/profile',          label: 'My Profile',           icon: User },
 ];
 

@@ -10,7 +10,7 @@ import {
 import { useAuthStore } from '@/store/auth';
 import { dashboardApi, type WindowDays } from '@/lib/dashboard/api';
 import {
-  HeroMetric, StatCard, DashBarChart, DashDonut, DashPanel, RingProgress,
+  StatCard, DashBarChart, DashDonut, DashPanel, RingProgress,
   ProgressBar, EmptyChart, WindowPicker, StatCardSkeleton, ChartSkeleton, COLORS,
 } from '@/components/dashboard';
 
@@ -35,14 +35,12 @@ export default function CorporateDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-50">
-        <div className="h-56 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e3a8a 0%,#1d4ed8 100%)' }} />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-          <StatCardSkeleton count={5} />
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2"><ChartSkeleton height={280} /></div>
-            <ChartSkeleton height={280} />
-          </div>
+      <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
+        <div className="h-20 bg-white rounded-xl border border-slate-200 animate-pulse" />
+        <StatCardSkeleton count={5} />
+        <div className="grid lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2"><ChartSkeleton height={280} /></div>
+          <ChartSkeleton height={280} />
         </div>
       </div>
     );
@@ -78,53 +76,38 @@ export default function CorporateDashboardPage() {
   const overallCompletion = h.completion_percent;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
 
-      {/* ── HERO BANNER ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0f2656 0%, #1e3a8a 50%, #1d4ed8 100%)' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
-            <div>
-              <div className="flex items-center gap-2 text-navy-500 text-[11px] font-bold uppercase tracking-widest mb-2">
-                <Building2 className="w-3.5 h-3.5" /> SAFCO FINTECH LMS · {orgName}
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-black text-white">Karibu, {firstName}!</h1>
-              <div className="flex items-center gap-1.5 text-navy-500 text-sm mt-1">
-                <Calendar className="w-3.5 h-3.5" /> {today}
-              </div>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <WindowPicker value={days} onChange={setDays} variant="dark" />
-              <Link
-                href="/corporate/invite"
-                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 border border-white/30 text-white text-sm font-semibold px-4 py-2 rounded-lg transition"
-              >
-                <UserPlus className="w-4 h-4" /> Invite Employee
-              </Link>
-            </div>
+      {/* ── PAGE HEADER ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+        <div>
+          <div className="flex items-center gap-1.5 text-orange-500 text-[11px] font-bold uppercase tracking-widest mb-1">
+            <Building2 className="w-3.5 h-3.5" /> Corporate Portal · {orgName}
           </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <HeroMetric icon={<Users className="w-4 h-4" />} label="Employees" value={h.employees_total} />
-            <HeroMetric icon={<CheckCircle2 className="w-4 h-4" />} label="Trained" value={h.employees_trained} />
-            <HeroMetric icon={<TrendingUp className="w-4 h-4" />} label="Completion" value={h.completion_percent} suffix="%" />
-            <HeroMetric icon={<BarChart3 className="w-4 h-4" />} label="Avg Score" value={h.avg_score_percent} suffix="%" />
-            <HeroMetric icon={<Award className="w-4 h-4" />} label="Certificates" value={h.certificates_earned} />
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900">Karibu, {firstName}!</h1>
+          <div className="flex items-center gap-1.5 text-slate-400 text-sm mt-1">
+            <Calendar className="w-3.5 h-3.5" /> {today}
           </div>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <WindowPicker value={days} onChange={setDays} variant="light" />
+          <Link
+            href="/corporate/invite"
+            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-4 py-2 rounded-lg transition shadow-sm"
+          >
+            <UserPlus className="w-4 h-4" /> Invite Employee
+          </Link>
         </div>
       </div>
 
-      {/* ── CONTENT ── */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
-
-        {/* KPI row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 lg:grid-cols-5 gap-4">
-          <StatCard label="Employees" value={h.employees_total} icon={<Users className="w-4 h-4" />} accent="brand" />
-          <StatCard label="Employees Trained" value={h.employees_trained} icon={<CheckCircle2 className="w-4 h-4" />} accent="green" />
-          <StatCard label="Completion" value={h.completion_percent} suffix="%" icon={<TrendingUp className="w-4 h-4" />} accent="navy" />
-          <StatCard label="Avg Score" value={h.avg_score_percent} suffix="%" icon={<BarChart3 className="w-4 h-4" />} accent="purple" />
-          <StatCard label="Certificates" value={h.certificates_earned} icon={<Award className="w-4 h-4" />} accent="amber" />
-        </div>
+      {/* ── KPI CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard label="Employees"        value={h.employees_total}    icon={<Users className="w-4 h-4" />}        accent="brand" />
+        <StatCard label="Employees Trained" value={h.employees_trained} icon={<CheckCircle2 className="w-4 h-4" />} accent="green" />
+        <StatCard label="Completion"       value={h.completion_percent} suffix="%" icon={<TrendingUp className="w-4 h-4" />} accent="brand" />
+        <StatCard label="Avg Score"        value={h.avg_score_percent}  suffix="%" icon={<BarChart3 className="w-4 h-4" />}  accent="amber" />
+        <StatCard label="Certificates"     value={h.certificates_earned} icon={<Award className="w-4 h-4" />}       accent="amber" />
+      </div>
 
         {/* Completion ring + status donut */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -169,13 +152,13 @@ export default function CorporateDashboardPage() {
             <DashPanel
               title="Department Performance"
               subtitle="Employees · Avg progress · Avg score by department"
-              accent="navy"
+              accent="brand"
             >
               {deptChartData.length === 0
                 ? <EmptyChart msg="No departments found. Have employees set their department in their profile." />
                 : <DashBarChart data={deptChartData} xKey="label" height={280} bars={[
                     { dataKey: 'Employees', color: COLORS.brand },
-                    { dataKey: 'Avg Progress %', color: COLORS.navy },
+                    { dataKey: 'Avg Progress %', color: COLORS.amber },
                     { dataKey: 'Avg Score %', color: COLORS.green },
                   ]} />}
             </DashPanel>
@@ -212,7 +195,7 @@ export default function CorporateDashboardPage() {
                             {medal ?? (i + 1)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold text-slate-900 truncate text-sm group-hover:text-navy-600 transition">
+                            <div className="font-semibold text-slate-900 truncate text-sm group-hover:text-orange-700 transition">
                               {p.name}
                             </div>
                             <div className="text-xs text-slate-400 mt-0.5">
@@ -253,7 +236,7 @@ export default function CorporateDashboardPage() {
                           <td className="py-3 w-32">
                             <div className="flex items-center gap-2">
                               <div className="flex-1">
-                                <ProgressBar percent={d.avg_progress} colorClass="bg-navy-500" />
+                                <ProgressBar percent={d.avg_progress} colorClass="bg-orange-500" />
                               </div>
                               <span className="text-[10px] font-mono text-slate-500 w-8 text-right">{d.avg_progress}%</span>
                             </div>
@@ -324,13 +307,12 @@ export default function CorporateDashboardPage() {
         <div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <QuickLink href="/corporate/employees" icon={<Building2 className="w-5 h-5" />} title="Manage Employees" subtitle="View profiles and progress" color="bg-navy-50 text-navy-500" />
+            <QuickLink href="/corporate/employees" icon={<Building2 className="w-5 h-5" />} title="Manage Employees" subtitle="View profiles and progress" color="bg-orange-50 text-orange-500" />
             <QuickLink href="/corporate/invite" icon={<UserPlus className="w-5 h-5" />} title="Invite Employee" subtitle="Onboard new team members" color="bg-orange-50 text-orange-600" />
             <QuickLink href="/corporate/reports" icon={<BarChart3 className="w-5 h-5" />} title="Full Reports" subtitle="Download CSV analytics" color="bg-emerald-50 text-emerald-600" />
           </div>
         </div>
 
-      </div>
     </div>
   );
 }
@@ -339,7 +321,7 @@ function QuickLink({ href, icon, title, subtitle, color }: {
   href: string; icon: React.ReactNode; title: string; subtitle: string; color: string;
 }) {
   return (
-    <Link href={href} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-navy-200 transition group flex items-center gap-4">
+    <Link href={href} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md hover:border-orange-200 transition group flex items-center gap-4">
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${color} group-hover:scale-110 transition-transform`}>
         {icon}
       </div>
@@ -347,7 +329,7 @@ function QuickLink({ href, icon, title, subtitle, color }: {
         <div className="font-bold text-slate-900 text-sm">{title}</div>
         <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>
       </div>
-      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-navy-500 transition" />
+      <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-orange-500 transition" />
     </Link>
   );
 }
