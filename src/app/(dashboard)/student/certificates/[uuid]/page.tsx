@@ -51,7 +51,7 @@ export default function CertificateDetailPage() {
   const active = c.status === 'active';
 
   return (
-    <div className="p-8 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
       <Link href="/student/certificates" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Certificates
       </Link>
@@ -62,13 +62,13 @@ export default function CertificateDetailPage() {
 
         {!active && (
           <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
-            <div className="text-red-600/40 text-6xl font-black border-8 border-red-600/40 px-8 py-3 -rotate-12">
+            <div className="text-red-600/40 text-6xl font-black border-8 border-red-600/40 px-4 sm:px-6 lg:px-8 py-3 -rotate-12">
               REVOKED
             </div>
           </div>
         )}
 
-        <div className="relative p-8 md:p-14 text-center">
+        <div className="relative p-4 sm:p-6 lg:p-8 md:p-14 text-center">
           <div className="text-xs uppercase font-bold tracking-widest text-orange-500 mb-1">SAFCO FINTECH</div>
           <div className="text-sm text-slate-700 mb-8">Learning Management System</div>
 
@@ -80,7 +80,7 @@ export default function CertificateDetailPage() {
           </div>
 
           <p className="text-slate-700">has successfully completed the course</p>
-          <div className="text-xl md:text-2xl font-bold text-blue-800 mt-2 mb-4">{c.course.title}</div>
+          <div className="text-xl md:text-2xl font-bold text-navy-500 mt-2 mb-4">{c.course.title}</div>
 
           {c.score_percentage !== null && (
             <div className="text-slate-600 mb-8">
@@ -114,7 +114,7 @@ export default function CertificateDetailPage() {
               <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Certificate Number</div>
               <div className="text-sm font-mono font-bold text-slate-900 mt-1">{c.cert_number}</div>
               <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-3">Verify At</div>
-              <div className="text-[10px] text-blue-700 mt-1 break-all">{c.verify_url}</div>
+              <div className="text-[10px] text-navy-600 mt-1 break-all">{c.verify_url}</div>
             </div>
           </div>
         </div>

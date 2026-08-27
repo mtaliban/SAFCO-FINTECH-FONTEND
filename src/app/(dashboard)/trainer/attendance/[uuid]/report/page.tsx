@@ -36,19 +36,19 @@ export default function AttendanceReportPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (isLoading || !data) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+  if (isLoading || !data) return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
 
   const t = data.totals;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       <button onClick={() => router.push(`/trainer/attendance/${uuid}`)} className="text-sm text-brand-600 hover:underline flex items-center gap-1 mb-4">
         <ChevronLeft className="w-4 h-4" /> Rudi kwenye session
       </button>
 
       <div className="mb-6 flex justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{data.session.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{data.session.title}</h1>
           <p className="text-slate-600 mt-1">Attendance Report · {new Date(data.session.starts_at).toLocaleString('sw-TZ')}</p>
         </div>
         <button onClick={exportCsv} className="btn-secondary text-sm">
@@ -57,7 +57,7 @@ export default function AttendanceReportPage() {
       </div>
 
       {/* Big percentage + counters */}
-      <div className="grid md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="card p-5 md:col-span-1 text-center">
           <div className="text-4xl font-black text-brand-600 mb-1">{data.attendance_percentage}%</div>
           <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Attendance</div>
@@ -76,7 +76,7 @@ export default function AttendanceReportPage() {
               <div className="bg-green-500" style={{ width: `${(t.present / t.expected) * 100}%` }} title={`Present ${t.present}`} />
               <div className="bg-amber-500" style={{ width: `${(t.late / t.expected) * 100}%` }} title={`Late ${t.late}`} />
               <div className="bg-red-500" style={{ width: `${(t.absent / t.expected) * 100}%` }} title={`Absent ${t.absent}`} />
-              <div className="bg-blue-500" style={{ width: `${(t.excused / t.expected) * 100}%` }} title={`Excused ${t.excused}`} />
+              <div className="bg-navy-500" style={{ width: `${(t.excused / t.expected) * 100}%` }} title={`Excused ${t.excused}`} />
             </>
           )}
         </div>
@@ -84,7 +84,7 @@ export default function AttendanceReportPage() {
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-green-500 rounded-sm inline-block" /> Present {t.present}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-amber-500 rounded-sm inline-block" /> Late {t.late}</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 bg-red-500 rounded-sm inline-block" /> Absent {t.absent}</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-blue-500 rounded-sm inline-block" /> Excused {t.excused}</span>
+          <span className="flex items-center gap-1"><span className="w-3 h-3 bg-navy-500 rounded-sm inline-block" /> Excused {t.excused}</span>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function AttendanceReportPage() {
 }
 
 function Counter({ icon: Icon, label, value, accent }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number; accent: 'green' | 'amber' | 'red' | 'blue' }) {
-  const bg = { green: 'bg-green-50 text-green-600', amber: 'bg-amber-50 text-amber-600', red: 'bg-red-50 text-red-600', blue: 'bg-blue-50 text-blue-600' }[accent];
+  const bg = { green: 'bg-green-50 text-green-600', amber: 'bg-amber-50 text-amber-600', red: 'bg-red-50 text-red-600', blue: 'bg-navy-50 text-navy-500' }[accent];
   return (
     <div className="card p-5">
       <div className={`inline-flex w-10 h-10 rounded-lg items-center justify-center ${bg}`}><Icon className="w-5 h-5" /></div>

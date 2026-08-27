@@ -39,7 +39,7 @@ export default function GradingPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       <Link href={`/trainer/courses`} className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Courses
       </Link>

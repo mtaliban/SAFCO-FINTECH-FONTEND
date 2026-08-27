@@ -12,7 +12,7 @@ type Status = NonNullable<Assignment['my_status']>;
 const STATUS_META: Record<Status, { label: string; color: string; bg: string }> = {
   pending: { label: 'Pending', color: 'text-slate-700', bg: 'bg-slate-100' },
   overdue: { label: 'Overdue', color: 'text-red-700', bg: 'bg-red-100' },
-  submitted: { label: 'Submitted', color: 'text-blue-700', bg: 'bg-blue-100' },
+  submitted: { label: 'Submitted', color: 'text-navy-600', bg: 'bg-navy-100' },
   graded: { label: 'Graded', color: 'text-emerald-700', bg: 'bg-emerald-100' },
   returned: { label: 'Returned', color: 'text-amber-700', bg: 'bg-amber-100' },
 };
@@ -28,9 +28,9 @@ export default function StudentAssignmentsListPage() {
   for (const a of data) groups[(a.my_status ?? 'pending') as Status].push(a);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <ClipboardList className="w-7 h-7 text-orange-500" /> Assignments
         </h1>
         <p className="text-slate-600 mt-1">Download briefs, upload your answers, get feedback (SRS Module 9).</p>

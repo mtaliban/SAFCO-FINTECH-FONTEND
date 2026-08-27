@@ -68,9 +68,9 @@ export default function NewQuizPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Tengeneza Quiz Mpya</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Tengeneza Quiz Mpya</h1>
         <p className="text-slate-600 mt-1">Anza kwa kuweka SRS settings. Baadaye utaongeza maswali (attach kutoka Bank au create inline).</p>
       </div>
 
@@ -111,7 +111,7 @@ export default function NewQuizPage() {
 
         {/* -------- SECTION 2: Mode -------- */}
         <Section icon={<Zap className="w-4 h-4" />} title="Mode">
-          <div className="grid md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <ModeCard value="live_kahoot" register={register('mode')} current={mode} title="SAFCO Live" desc="Real-time, students join with PIN, live leaderboard." />
             <ModeCard value="self_paced" register={register('mode')} current={mode} title="Self-Paced" desc="Students take it any time; retry as allowed." />
             <ModeCard value="exam" register={register('mode')} current={mode} title="Exam" desc="Strict; timer enforced; single attempt (unless overridden)." />
@@ -147,7 +147,7 @@ export default function NewQuizPage() {
 
         {/* -------- SECTION 4: Grading -------- */}
         <Section icon={<Target className="w-4 h-4" />} title="Grading & Attempts">
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="label">Number of Questions</label>
               <input

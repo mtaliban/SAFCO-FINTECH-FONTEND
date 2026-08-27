@@ -28,9 +28,9 @@ export default function AdminUsersPage() {
   const { page: slice, lastPage, currentPage, totalItems } = usePagedSlice(data?.data, page, PAGE_SIZE);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <Users className="w-7 h-7 text-orange-500" /> Users
         </h1>
         <p className="text-slate-600 mt-1">Kila mtumiaji kwenye mfumo (SRS 3.1).</p>

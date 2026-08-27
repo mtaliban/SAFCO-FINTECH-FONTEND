@@ -88,7 +88,7 @@ export function AiTutorWidget({ context }: Props) {
           style={{ maxHeight: 'calc(100vh - 120px)', height: '520px' }}>
 
           {/* Header */}
-          <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%)' }}
+          <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #0f2a50 100%)' }}
             className="flex items-center gap-3 px-4 py-3 shrink-0">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
@@ -96,13 +96,13 @@ export function AiTutorWidget({ context }: Props) {
             <div className="flex-1 min-w-0">
               <div className="text-sm font-black text-white">SAFCO AI Tutor</div>
               {context?.lesson && (
-                <div className="text-[10px] text-indigo-300 truncate">{context.lesson}</div>
+                <div className="text-[10px] text-orange-300 truncate">{context.lesson}</div>
               )}
               {!context?.lesson && context?.course && (
-                <div className="text-[10px] text-indigo-300 truncate">{context.course}</div>
+                <div className="text-[10px] text-orange-300 truncate">{context.course}</div>
               )}
               {!context?.lesson && !context?.course && (
-                <div className="text-[10px] text-indigo-300">Ask me anything — I am here to help</div>
+                <div className="text-[10px] text-orange-300">Ask me anything — I am here to help</div>
               )}
             </div>
             <div className="flex gap-1">
@@ -121,8 +121,8 @@ export function AiTutorWidget({ context }: Props) {
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
               <div className="text-center py-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center mx-auto mb-3">
-                  <Sparkles className="w-7 h-7 text-indigo-600" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-navy-50 to-orange-50 flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="w-7 h-7 text-navy-500" />
                 </div>
                 <p className="text-slate-800 font-bold text-sm">Hello! I am your AI Tutor</p>
                 <p className="text-slate-500 text-xs mt-1 leading-relaxed">
@@ -134,14 +134,14 @@ export function AiTutorWidget({ context }: Props) {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-navy-500 to-navy-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
                     <Sparkles className="w-3 h-3 text-white" />
                   </div>
                 )}
                 <div
                   className={`relative group max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                     m.role === 'user'
-                      ? 'bg-indigo-600 text-white rounded-tr-sm'
+                      ? 'bg-navy-500 text-white rounded-tr-sm'
                       : 'bg-slate-100 text-slate-800 rounded-tl-sm'
                   }`}
                 >
@@ -157,7 +157,7 @@ export function AiTutorWidget({ context }: Props) {
 
             {loading && (
               <div className="flex justify-start">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-navy-500 to-navy-600 flex items-center justify-center shrink-0 mr-2 mt-0.5">
                   <Sparkles className="w-3 h-3 text-white" />
                 </div>
                 <div className="bg-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
@@ -178,7 +178,7 @@ export function AiTutorWidget({ context }: Props) {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  className="text-[11px] px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 font-semibold hover:bg-indigo-100 transition border border-indigo-200"
+                  className="text-[11px] px-3 py-1.5 rounded-full bg-navy-50 text-navy-600 font-semibold hover:bg-navy-100 transition border border-navy-200"
                 >
                   {s}
                 </button>
@@ -188,7 +188,7 @@ export function AiTutorWidget({ context }: Props) {
 
           {/* Input */}
           <div className="px-3 pb-3 pt-1 border-t border-slate-100 shrink-0">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-300 focus-within:border-indigo-300 transition">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus-within:ring-2 focus-within:ring-navy-300 focus-within:border-navy-300 transition">
               <input
                 ref={inputRef}
                 value={input}
@@ -201,7 +201,7 @@ export function AiTutorWidget({ context }: Props) {
               <button
                 onClick={() => send()}
                 disabled={!input.trim() || loading}
-                className="w-7 h-7 rounded-lg bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition shrink-0"
+                className="w-7 h-7 rounded-lg bg-navy-500 hover:bg-navy-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition shrink-0"
               >
                 {loading ? <Loader2 className="w-3.5 h-3.5 text-white animate-spin" /> : <Send className="w-3.5 h-3.5 text-white" />}
               </button>
@@ -221,7 +221,7 @@ export function AiTutorWidget({ context }: Props) {
             ? 'bg-slate-700 hover:bg-slate-800'
             : 'hover:shadow-xl hover:scale-105'
         }`}
-        style={open ? {} : { background: 'linear-gradient(135deg, #4338ca, #7c3aed)' }}
+        style={open ? {} : { background: 'linear-gradient(135deg, #0f2a50, #f5a623)' }}
         title="AI Tutor"
       >
         {open ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}

@@ -14,11 +14,11 @@ const CHANNEL_CFG: Record<Channel, {
   icon: React.ElementType; label: string;
   activeBg: string; activeText: string; activeBorder: string;
 }> = {
-  email:    { icon: Mail,           label: 'Email',     activeBg: 'bg-blue-100',    activeText: 'text-blue-800',    activeBorder: 'ring-blue-400' },
-  in_app:   { icon: Bell,           label: 'In-App',    activeBg: 'bg-indigo-100',  activeText: 'text-indigo-800',  activeBorder: 'ring-indigo-400' },
+  email:    { icon: Mail,           label: 'Email',     activeBg: 'bg-navy-100',    activeText: 'text-navy-500',    activeBorder: 'ring-blue-400' },
+  in_app:   { icon: Bell,           label: 'In-App',    activeBg: 'bg-navy-100',  activeText: 'text-navy-500',  activeBorder: 'ring-navy-300' },
   whatsapp: { icon: MessageCircle,  label: 'WhatsApp',  activeBg: 'bg-emerald-100', activeText: 'text-emerald-800', activeBorder: 'ring-emerald-400' },
   push:     { icon: Smartphone,     label: 'Push',      activeBg: 'bg-orange-100',  activeText: 'text-orange-800',  activeBorder: 'ring-orange-400' },
-  sms:      { icon: MessageSquare,  label: 'SMS',       activeBg: 'bg-teal-100',    activeText: 'text-teal-800',    activeBorder: 'ring-teal-400' },
+  sms:      { icon: MessageSquare,  label: 'SMS',       activeBg: 'bg-orange-100',    activeText: 'text-orange-600',    activeBorder: 'ring-teal-400' },
 };
 
 export default function NotificationSettingsPage() {
@@ -63,7 +63,7 @@ export default function NotificationSettingsPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="h-36 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#6366f1 100%)' }} />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
           {[...Array(4)].map((_, i) => <div key={i} className="h-32 bg-white rounded-xl border border-slate-200 animate-pulse" />)}
         </div>
       </div>
@@ -94,25 +94,25 @@ export default function NotificationSettingsPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #6366f1 100%)' }}>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 md:py-10">
           <Link href="/notifications"
-            className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm mb-4 transition">
+            className="inline-flex items-center gap-1.5 text-navy-500 hover:text-white font-semibold text-sm mb-4 transition">
             <ArrowLeft className="w-4 h-4" /> Notification Inbox
           </Link>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-bold uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-2 text-navy-500 text-[11px] font-bold uppercase tracking-widest mb-2">
                 <Bell className="w-4 h-4" /> SAFCO FINTECH LMS · Notification Preferences
               </div>
-              <h1 className="text-3xl font-black text-white">Notification Settings</h1>
-              <p className="text-indigo-200 text-sm mt-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-white">Notification Settings</h1>
+              <p className="text-navy-500 text-sm mt-1">
                 Choose exactly what you receive on each channel. Required notifications cannot be disabled.
               </p>
             </div>
             <button
               disabled={dirtyCount === 0 || saveMut.isPending}
               onClick={() => saveMut.mutate()}
-              className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:cursor-not-allowed font-bold px-5 py-2.5 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
+              className="flex items-center gap-2 bg-white text-navy-600 hover:bg-navy-50 disabled:opacity-50 disabled:cursor-not-allowed font-bold px-5 py-2.5 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
             >
               {saveMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save changes {dirtyCount > 0 && <span className="ml-1 opacity-70 text-xs">({dirtyCount})</span>}
@@ -121,7 +121,7 @@ export default function NotificationSettingsPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
 
         {/* Channel legend */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
@@ -251,7 +251,7 @@ export default function NotificationSettingsPage() {
                 <button
                   onClick={() => saveMut.mutate()}
                   disabled={saveMut.isPending}
-                  className="flex items-center gap-1.5 text-xs font-bold bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-1.5 rounded-lg transition"
+                  className="flex items-center gap-1.5 text-xs font-bold bg-navy-500 hover:bg-navy-50 text-white px-4 py-1.5 rounded-lg transition"
                 >
                   {saveMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   Save now

@@ -98,7 +98,7 @@ export default function LessonViewPage() {
 
   if (!lesson) {
     return (
-      <div className="p-8">
+      <div className="p-4 sm:p-6 lg:p-8">
         <Link href={`/student/courses/${uuid}`} className="text-brand-600 hover:underline">← Rudi</Link>
         <p className="mt-4 text-slate-500">Lesson haipatikani.</p>
       </div>
@@ -198,7 +198,7 @@ export default function LessonViewPage() {
 
         {/* Scrollable lesson body */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 md:px-8 py-6">
+          <div className="max-w-3xl mx-auto px-4 md:px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 
             {/* Lesson header */}
             <div className="mb-6">
@@ -506,7 +506,7 @@ function VideoMaterial({ material }: { material: LessonMaterial }) {
           </span>
         )}
         {isVimeo && (
-          <span className="flex items-center gap-1 text-[11px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
+          <span className="flex items-center gap-1 text-[11px] font-bold bg-navy-100 text-navy-600 px-2 py-0.5 rounded-full uppercase tracking-wide shrink-0">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M23.977 6.416c-.105 2.338-1.739 5.543-4.894 9.609-3.268 4.247-6.026 6.37-8.29 6.37-1.409 0-2.578-1.294-3.553-3.881L5.322 11.4C4.603 8.816 3.834 7.522 3.01 7.522c-.179 0-.806.378-1.881 1.132L0 7.197c1.185-1.044 2.351-2.084 3.501-3.128C5.08 2.701 6.266 1.984 7.055 1.91c1.867-.18 3.016 1.1 3.447 3.834.465 2.954.789 4.789.971 5.507.539 2.45 1.131 3.674 1.776 3.674.502 0 1.256-.796 2.265-2.385 1.004-1.589 1.54-2.797 1.612-3.628.144-1.371-.395-2.061-1.614-2.061-.574 0-1.167.121-1.777.391 1.186-3.868 3.434-5.757 6.762-5.637 2.473.06 3.628 1.664 3.48 4.811z"/></svg>
             Vimeo
           </span>
@@ -727,10 +727,10 @@ function InteractiveMaterial({ material, onComplete }: { material: LessonMateria
     if (notReady) {
       return (
         <div className="card p-6 flex flex-col items-center gap-3 text-center">
-          <FileArchive className="w-10 h-10 text-purple-400" />
+          <FileArchive className="w-10 h-10 text-navy-500" />
           <p className="font-semibold text-slate-800">{material.title}</p>
           <p className="text-sm text-slate-500">SCORM package inashughulikiwa... Subiri dakika chache kisha refresh.</p>
-          <Loader2 className="w-5 h-5 animate-spin text-purple-500 mt-1" />
+          <Loader2 className="w-5 h-5 animate-spin text-navy-500 mt-1" />
         </div>
       );
     }
@@ -739,7 +739,7 @@ function InteractiveMaterial({ material, onComplete }: { material: LessonMateria
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold text-slate-800">{material.title}</p>
-          <span className="text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">SCORM</span>
+          <span className="text-xs bg-navy-100 text-navy-600 font-semibold px-2 py-0.5 rounded-full">SCORM</span>
         </div>
         <div className="rounded-xl overflow-hidden border-2 border-purple-200 shadow-lg bg-white" style={{ height: 620 }}>
           <iframe src={scormSrc} className="w-full h-full" title={material.title} allow="fullscreen" />
@@ -777,7 +777,7 @@ function InteractiveMaterial({ material, onComplete }: { material: LessonMateria
   const url       = streamUrl ?? material.url;
   return (
     <div className="card p-4 flex items-center gap-3">
-      <FileArchive className="w-6 h-6 text-purple-600 shrink-0" />
+      <FileArchive className="w-6 h-6 text-navy-500 shrink-0" />
       <div className="flex-1">
         <p className="font-semibold text-slate-900">{material.title}</p>
         <p className="text-xs text-slate-500">
@@ -813,7 +813,7 @@ function extractEmbed(url: string): string | null {
 function docMeta(type: MaterialType): { label: string; bgClass: string; textClass: string; borderClass: string } {
   const map: Partial<Record<MaterialType, { label: string; bgClass: string; textClass: string; borderClass: string }>> = {
     document_pdf:        { label: 'PDF',        bgClass: 'bg-red-50',    textClass: 'text-red-600',    borderClass: 'border-red-100' },
-    document_word:       { label: 'Word',        bgClass: 'bg-blue-50',   textClass: 'text-blue-700',   borderClass: 'border-blue-100' },
+    document_word:       { label: 'Word',        bgClass: 'bg-navy-50',   textClass: 'text-navy-600',   borderClass: 'border-navy-200' },
     document_excel:      { label: 'Excel',       bgClass: 'bg-green-50',  textClass: 'text-green-700',  borderClass: 'border-green-100' },
     document_powerpoint: { label: 'PowerPoint',  bgClass: 'bg-orange-50', textClass: 'text-orange-600', borderClass: 'border-orange-100' },
   };

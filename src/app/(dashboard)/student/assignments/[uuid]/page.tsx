@@ -59,7 +59,7 @@ export default function StudentAssignmentDetailPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
       <Link href="/student/assignments" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Assignments
       </Link>
@@ -72,7 +72,7 @@ export default function StudentAssignmentDetailPage() {
             {a.course && <p className="text-sm text-slate-500 mt-1">📚 {a.course.title}{a.lesson ? ` · ${a.lesson.title}` : ''}</p>}
           </div>
           <div className="text-right shrink-0">
-            <div className="text-3xl font-black text-slate-700">{a.max_points}</div>
+            <div className="text-2xl sm:text-3xl font-black text-slate-700">{a.max_points}</div>
             <div className="text-[10px] uppercase font-semibold text-slate-500">points</div>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function StudentAssignmentDetailPage() {
             <Trophy className="w-8 h-8 text-emerald-600" />
             <div>
               <div className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Graded</div>
-              <div className="text-3xl font-black text-emerald-900">{sub.grade} / {a.max_points}</div>
+              <div className="text-2xl sm:text-3xl font-black text-emerald-900">{sub.grade} / {a.max_points}</div>
             </div>
           </div>
           {sub.feedback && (
@@ -140,12 +140,12 @@ export default function StudentAssignmentDetailPage() {
 
       {/* Prior submission */}
       {sub && !graded && (
-        <div className="card p-4 mb-4 border-l-4 border-blue-500 bg-blue-50/50">
-          <div className="text-xs font-semibold uppercase text-blue-700 mb-1 flex items-center gap-1">
+        <div className="card p-4 mb-4 border-l-4 border-navy-200 bg-navy-50/50">
+          <div className="text-xs font-semibold uppercase text-navy-600 mb-1 flex items-center gap-1">
             <CheckCircle2 className="w-3 h-3" /> Submitted {new Date(sub.submitted_at).toLocaleString()}
           </div>
           {sub.file_name && sub.file_url && (
-            <a href={sub.file_url} target="_blank" rel="noopener noreferrer" className="text-blue-700 hover:underline text-sm">
+            <a href={sub.file_url} target="_blank" rel="noopener noreferrer" className="text-navy-600 hover:underline text-sm">
               📎 {sub.file_name} ({fmtSize(sub.file_size ?? 0)})
             </a>
           )}

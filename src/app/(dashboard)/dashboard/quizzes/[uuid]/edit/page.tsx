@@ -98,14 +98,14 @@ export default function QuizEditPage() {
   }
 
   if (isLoading || !quiz) {
-    return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+    return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6 flex justify-between items-start gap-4">
         <div className="min-w-0">
-          <h1 className="text-3xl font-bold text-slate-900 truncate">{quiz.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 truncate">{quiz.name}</h1>
           <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
             <StatusBadge status={quiz.status} />
             <span className="text-slate-500">
@@ -386,7 +386,7 @@ function SettingsPanel({ quiz, onSaved }: { quiz: Quiz; onSaved: () => Promise<v
       </div>
 
       <SectionHeader title="Grading & Attempts" />
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <label className="label">Number of Questions</label>
           <input

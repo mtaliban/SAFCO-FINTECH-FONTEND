@@ -24,7 +24,7 @@ export default function EmployeeReportPage() {
 
   if (isLoading) {
     return (
-      <div className="p-8 max-w-4xl mx-auto space-y-4">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-4">
         <div className="h-8 w-64 bg-slate-200 rounded animate-pulse" />
         <StatCardSkeleton count={3} />
       </div>
@@ -32,7 +32,7 @@ export default function EmployeeReportPage() {
   }
   if (isError || !data) {
     return (
-      <div className="p-8 max-w-4xl mx-auto card p-8 text-center text-slate-500">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto card p-4 sm:p-6 lg:p-8 text-center text-slate-500">
         Employee not found — they may not be in your organization.
       </div>
     );
@@ -46,7 +46,7 @@ export default function EmployeeReportPage() {
     : 0;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       <Link href="/corporate" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand-700">
         <ArrowLeft className="w-4 h-4" /> Back to dashboard
       </Link>
@@ -68,7 +68,7 @@ export default function EmployeeReportPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Courses" value={totalCourses} icon={<BookOpen className="w-5 h-5" />} accent="brand" />
         <StatCard label="Completed" value={completed} icon={<CheckCircle2 className="w-5 h-5" />} accent="green" />
         <StatCard label="Avg Progress" value={avgProgress} suffix="%" accent="navy" />

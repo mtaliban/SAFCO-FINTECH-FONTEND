@@ -21,7 +21,7 @@ export default function AttemptResultPage() {
   }
   if (!data || !('passed' in data)) {
     return (
-      <div className="p-8 max-w-3xl mx-auto card p-8 text-center text-slate-500">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto card p-4 sm:p-6 lg:p-8 text-center text-slate-500">
         Result not available (attempt might still be in progress).
       </div>
     );
@@ -31,13 +31,13 @@ export default function AttemptResultPage() {
   const pct = summary.percentage;
 
   return (
-    <div className="p-8 max-w-4xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto animate-fade-in">
       <Link href="/student/exams" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Exams
       </Link>
 
       {/* Big pass/fail banner */}
-      <div className={`rounded-2xl p-8 text-white text-center mb-6 ${
+      <div className={`rounded-2xl p-4 sm:p-6 lg:p-8 text-white text-center mb-6 ${
         passed ? 'bg-gradient-to-br from-emerald-500 to-emerald-800' : 'bg-gradient-to-br from-red-500 to-red-800'
       }`}>
         {passed ? <Trophy className="w-16 h-16 mx-auto mb-3 text-yellow-300" /> : <XCircle className="w-16 h-16 mx-auto mb-3" />}
@@ -200,7 +200,7 @@ function ReviewCard({ index, row }: { index: number; row: NonNullable<AttemptSum
       )}
 
       {row.explanation && (
-        <div className="mt-3 ml-7 p-2 bg-blue-50 border-l-4 border-blue-400 rounded text-sm text-blue-900">
+        <div className="mt-3 ml-7 p-2 bg-navy-50 border-l-4 border-navy-200 rounded text-sm text-navy-500">
           <strong>Explanation:</strong> {row.explanation}
         </div>
       )}

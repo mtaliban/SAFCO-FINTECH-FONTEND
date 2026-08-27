@@ -20,10 +20,10 @@ const CATEGORY_THEME: Record<string, {
   badge: string; badgeText: string; border: string;
 }> = {
   blue:    {
-    gradient:  'from-blue-600 to-indigo-700',
-    iconBg:    'bg-blue-100/80',    iconText: 'text-blue-700',
-    badge:     'bg-blue-100',       badgeText: 'text-blue-800',
-    border:    'border-blue-200',
+    gradient:  'from-navy-500 to-navy-600',
+    iconBg:    'bg-navy-100/80',    iconText: 'text-navy-600',
+    badge:     'bg-navy-100',       badgeText: 'text-navy-500',
+    border:    'border-navy-200',
   },
   amber:   {
     gradient:  'from-amber-500 to-orange-600',
@@ -32,7 +32,7 @@ const CATEGORY_THEME: Record<string, {
     border:    'border-amber-200',
   },
   emerald: {
-    gradient:  'from-emerald-600 to-teal-700',
+    gradient:  'from-emerald-600 to-orange-600',
     iconBg:    'bg-emerald-100/80', iconText: 'text-emerald-700',
     badge:     'bg-emerald-100',    badgeText: 'text-emerald-800',
     border:    'border-emerald-200',
@@ -57,22 +57,22 @@ export default function ForumHomePage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4f46e5 100%)' }}>
-        <div className="max-w-6xl mx-auto px-8 py-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-bold uppercase tracking-widest mb-3">
+              <div className="flex items-center gap-2 text-navy-500 text-[11px] font-bold uppercase tracking-widest mb-3">
                 <MessagesSquare className="w-4 h-4" /> SAFCO FINTECH LMS · Academic Discussion Forum
               </div>
               <h1 className="text-4xl font-black text-white mb-2">
                 Knowledge begins with a question.
               </h1>
-              <p className="text-indigo-200 text-base max-w-xl">
+              <p className="text-navy-500 text-base max-w-xl">
                 Ask questions, share ideas, and collaborate with peers and instructors in a professional academic environment.
               </p>
             </div>
             <Link
               href="/forum/new"
-              className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-5 py-3 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
+              className="flex items-center gap-2 bg-white text-navy-600 hover:bg-navy-50 font-bold px-5 py-3 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
             >
               <Plus className="w-4 h-4" /> Start a discussion
             </Link>
@@ -81,37 +81,37 @@ export default function ForumHomePage() {
           {/* Stats chips */}
           <div className="flex flex-wrap gap-4 mt-8">
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-indigo-300" />
+              <MessageSquare className="w-5 h-5 text-navy-500" />
               <div>
                 <div className="text-xl font-black text-white tabular-nums">{totalThreads.toLocaleString()}</div>
-                <div className="text-[10px] uppercase text-indigo-300 font-bold tracking-widest">Discussions</div>
+                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Discussions</div>
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-indigo-300" />
+              <TrendingUp className="w-5 h-5 text-navy-500" />
               <div>
                 <div className="text-xl font-black text-white tabular-nums">
                   {recentData?.meta.total.toLocaleString() ?? '—'}
                 </div>
-                <div className="text-[10px] uppercase text-indigo-300 font-bold tracking-widest">Total threads</div>
+                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Total threads</div>
               </div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <Users className="w-5 h-5 text-indigo-300" />
+              <Users className="w-5 h-5 text-navy-500" />
               <div>
                 <div className="text-xl font-black text-white">{catData?.categories.length ?? 3}</div>
-                <div className="text-[10px] uppercase text-indigo-300 font-bold tracking-widest">Categories</div>
+                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Categories</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 py-8 space-y-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-10">
 
         {/* Category tiles */}
         {catLoading ? (
-          <div className="grid md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="h-44 bg-white rounded-2xl border border-slate-200 animate-pulse" />
             ))}
@@ -119,7 +119,7 @@ export default function ForumHomePage() {
         ) : (
           <section>
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Browse by category</h2>
-            <div className="grid md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {catData?.categories.map((c: ForumCategory) => {
                 const Icon = iconFor(c.icon);
                 const theme = CATEGORY_THEME[c.color ?? ''] ?? defaultTheme;
@@ -127,7 +127,7 @@ export default function ForumHomePage() {
                   <Link
                     key={c.slug}
                     href={`/forum/${c.slug}`}
-                    className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all duration-200 overflow-hidden flex flex-col"
+                    className="group bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-navy-200 transition-all duration-200 overflow-hidden flex flex-col"
                   >
                     {/* Color bar header */}
                     <div className={`bg-gradient-to-r ${theme.gradient} px-5 py-4 flex items-center gap-3`}>
@@ -144,7 +144,7 @@ export default function ForumHomePage() {
 
                     <div className="flex-1 px-5 py-4 flex flex-col justify-between">
                       <p className="text-sm text-slate-600 leading-relaxed">{c.description}</p>
-                      <div className="mt-4 flex items-center gap-1 text-sm font-bold text-indigo-600 group-hover:gap-2 transition-all">
+                      <div className="mt-4 flex items-center gap-1 text-sm font-bold text-navy-500 group-hover:gap-2 transition-all">
                         Browse discussions <ArrowRight className="w-4 h-4" />
                       </div>
                     </div>
@@ -159,7 +159,7 @@ export default function ForumHomePage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400">Recent activity</h2>
-            <Link href="/forum/questions" className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
+            <Link href="/forum/questions" className="text-xs text-navy-500 hover:text-navy-600 font-semibold">
               View all →
             </Link>
           </div>
@@ -175,7 +175,7 @@ export default function ForumHomePage() {
               <div className="font-semibold text-slate-500">No discussions yet.</div>
               <div className="text-sm text-slate-400 mt-1">
                 Be the first to{' '}
-                <Link href="/forum/new" className="text-indigo-600 font-semibold hover:underline">start a conversation</Link>.
+                <Link href="/forum/new" className="text-navy-500 font-semibold hover:underline">start a conversation</Link>.
               </div>
             </div>
           ) : (

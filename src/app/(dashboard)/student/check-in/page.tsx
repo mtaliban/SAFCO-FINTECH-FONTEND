@@ -80,9 +80,9 @@ export default function StudentCheckInPage() {
   useEffect(() => () => stopScan(), []);
 
   return (
-    <div className="p-8 max-w-2xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <QrCode className="w-7 h-7 text-orange-500" /> Check-in
         </h1>
         <p className="text-slate-600 mt-1">Scan QR ya trainer au paste token.</p>
@@ -136,15 +136,15 @@ function ResultCard({ result, onAgain }: { result: NonNullable<Result>; onAgain:
     present: { c: 'from-green-500 to-emerald-600', Icon: CheckCircle2, label: 'PRESENT 🎉' },
     late: { c: 'from-amber-500 to-orange-600', Icon: Clock, label: 'LATE ⏰' },
     absent: { c: 'from-red-500 to-red-700', Icon: XCircle, label: 'ABSENT' },
-    excused: { c: 'from-blue-500 to-blue-700', Icon: CheckCircle2, label: 'EXCUSED' },
+    excused: { c: 'from-navy-500 to-navy-600', Icon: CheckCircle2, label: 'EXCUSED' },
   } as const;
   const st = styleMap[result.status];
   const Icon = st.Icon;
   return (
     <div className="card overflow-hidden">
-      <div className={`bg-gradient-to-br ${st.c} text-white p-8 text-center`}>
+      <div className={`bg-gradient-to-br ${st.c} text-white p-4 sm:p-6 lg:p-8 text-center`}>
         <Icon className="w-16 h-16 mx-auto mb-3" />
-        <div className="text-3xl font-black mb-2">{st.label}</div>
+        <div className="text-2xl sm:text-3xl font-black mb-2">{st.label}</div>
         <div className="text-white/80">{result.session.title}</div>
         {result.session.location && <div className="text-white/60 text-sm mt-1">📍 {result.session.location}</div>}
       </div>

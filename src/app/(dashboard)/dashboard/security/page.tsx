@@ -47,9 +47,9 @@ export default function SecurityPage() {
   const enabled = user?.two_factor?.enabled;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Security</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Security</h1>
         <p className="text-slate-600 mt-1">Simamia usalama wa akaunti yako.</p>
       </div>
 

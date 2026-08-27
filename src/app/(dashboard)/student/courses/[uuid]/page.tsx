@@ -60,7 +60,7 @@ export default function CourseDetailPage() {
 
   if (isLoading || !course) {
     return (
-      <div className="p-8 flex justify-center">
+      <div className="p-4 sm:p-6 lg:p-8 flex justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-brand-600" />
       </div>
     );
@@ -72,14 +72,14 @@ export default function CourseDetailPage() {
     <div className="p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
 
       {/* ── Header grid ── */}
-      <div className="grid md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
 
         {/* Left: course info */}
         <div className="md:col-span-2">
           <div className="text-xs text-orange-600 font-bold uppercase tracking-wider mb-2">
             {CATEGORY_LABEL[course.category]} · {course.level}
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-3 leading-tight">{course.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3 leading-tight">{course.title}</h1>
           {course.description && (
             <p className="text-slate-600 mb-4 leading-relaxed">{course.description}</p>
           )}

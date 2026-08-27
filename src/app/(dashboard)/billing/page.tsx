@@ -42,9 +42,9 @@ export default function BillingPage() {
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <CreditCard className="w-7 h-7 text-orange-500" /> Billing & Payments
         </h1>
         <p className="text-slate-600 mt-1">
@@ -55,13 +55,13 @@ export default function BillingPage() {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="card p-4 border-emerald-200 bg-emerald-50">
           <div className="text-xs uppercase font-bold text-emerald-700 tracking-widest">Total Paid</div>
-          <div className="text-3xl font-black text-emerald-900 mt-1 font-mono">
+          <div className="text-2xl sm:text-3xl font-black text-emerald-900 mt-1 font-mono">
             TZS {formatTzs(totals.paid)}
           </div>
         </div>
         <div className="card p-4 border-amber-200 bg-amber-50">
           <div className="text-xs uppercase font-bold text-amber-700 tracking-widest">Outstanding</div>
-          <div className="text-3xl font-black text-amber-900 mt-1 font-mono">
+          <div className="text-2xl sm:text-3xl font-black text-amber-900 mt-1 font-mono">
             TZS {formatTzs(totals.outstanding)}
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function BillingPage() {
         </div>
 
         {invoices.length === 0 ? (
-          <div className="p-8 text-center text-sm text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
+          <div className="p-4 sm:p-6 lg:p-8 text-center text-sm text-slate-500 border-2 border-dashed border-slate-200 rounded-lg">
             No invoices yet. Enrolling in a paid course will create one.
           </div>
         ) : (
@@ -162,7 +162,7 @@ function StatusPill({ status }: { status: string }) {
     paid: 'bg-emerald-100 text-emerald-800',
     void: 'bg-red-100 text-red-800',
     refunded: 'bg-slate-100 text-slate-700',
-    partially_refunded: 'bg-purple-100 text-purple-800',
+    partially_refunded: 'bg-navy-100 text-navy-500',
   };
   return (
     <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase tracking-widest ${styles[status] ?? 'bg-slate-100 text-slate-700'}`}>

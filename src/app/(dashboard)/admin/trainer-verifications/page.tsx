@@ -66,9 +66,9 @@ export default function AdminTrainerVerificationsPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <ShieldCheck className="w-7 h-7 text-orange-500" /> Trainer Verifications
         </h1>
         <p className="text-slate-600 mt-1">
@@ -80,11 +80,11 @@ export default function AdminTrainerVerificationsPage() {
       <div className="grid grid-cols-2 gap-3">
         <div className="card p-4">
           <div className="text-xs uppercase font-bold text-slate-500 tracking-widest">Pending Qualifications</div>
-          <div className="text-3xl font-black text-amber-700 mt-1">{data.totals.pending_qualifications}</div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-700 mt-1">{data.totals.pending_qualifications}</div>
         </div>
         <div className="card p-4">
           <div className="text-xs uppercase font-bold text-slate-500 tracking-widest">Pending Certifications</div>
-          <div className="text-3xl font-black text-amber-700 mt-1">{data.totals.pending_certifications}</div>
+          <div className="text-2xl sm:text-3xl font-black text-amber-700 mt-1">{data.totals.pending_certifications}</div>
         </div>
       </div>
 
@@ -94,7 +94,7 @@ export default function AdminTrainerVerificationsPage() {
           <GraduationCap className="w-5 h-5 text-brand-500" /> Pending qualifications
         </h2>
         {qSlice.totalItems === 0 ? (
-          <div className="card p-8 text-center text-sm text-slate-500">Nothing pending.</div>
+          <div className="card p-4 sm:p-6 lg:p-8 text-center text-sm text-slate-500">Nothing pending.</div>
         ) : (
           <ul className="space-y-2">
             {qSlice.page.map((q: any) => (
@@ -149,7 +149,7 @@ export default function AdminTrainerVerificationsPage() {
           <Award className="w-5 h-5 text-amber-500" /> Pending certifications
         </h2>
         {cSlice.totalItems === 0 ? (
-          <div className="card p-8 text-center text-sm text-slate-500">Nothing pending.</div>
+          <div className="card p-4 sm:p-6 lg:p-8 text-center text-sm text-slate-500">Nothing pending.</div>
         ) : (
           <ul className="space-y-2">
             {cSlice.page.map((c: any) => (

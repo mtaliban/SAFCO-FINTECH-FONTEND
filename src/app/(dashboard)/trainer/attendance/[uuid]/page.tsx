@@ -83,7 +83,7 @@ export default function LiveAttendanceSessionPage() {
     qc.invalidateQueries({ queryKey: ['attendance-session', uuid] });
   }
 
-  if (isLoading || !session) return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+  if (isLoading || !session) return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
 
   const recordedByStudent = new Map(session.records.map((r) => [r.student.uuid, r]));
   const expected = session.expected_students;
@@ -91,10 +91,10 @@ export default function LiveAttendanceSessionPage() {
   const isClosed = session.status === 'closed';
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6 flex justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{session.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{session.title}</h1>
           <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
             <SessionStatusBadge status={session.status} />
             {session.course && <span className="text-slate-500">{session.course.title}</span>}
@@ -219,7 +219,7 @@ function RosterRow({ student, record, canMark, onMark }: {
     present: { c: 'text-green-700 bg-green-100', icon: CheckCircle2, label: 'Present' },
     late: { c: 'text-amber-700 bg-amber-100', icon: Clock, label: 'Late' },
     absent: { c: 'text-red-700 bg-red-100', icon: XCircle, label: 'Absent' },
-    excused: { c: 'text-blue-700 bg-blue-100', icon: AlertCircle, label: 'Excused' },
+    excused: { c: 'text-navy-600 bg-navy-100', icon: AlertCircle, label: 'Excused' },
   };
   const style = st ? statusMap[st] : null;
   const Icon = style?.icon;
@@ -249,7 +249,7 @@ function RosterRow({ student, record, canMark, onMark }: {
           <button onClick={() => onMark('present')} title="Mark present" className="p-1.5 rounded hover:bg-green-100 text-green-600"><CheckCircle2 className="w-4 h-4" /></button>
           <button onClick={() => onMark('late')} title="Mark late" className="p-1.5 rounded hover:bg-amber-100 text-amber-600"><Clock className="w-4 h-4" /></button>
           <button onClick={() => onMark('absent')} title="Mark absent" className="p-1.5 rounded hover:bg-red-100 text-red-600"><XCircle className="w-4 h-4" /></button>
-          <button onClick={() => onMark('excused')} title="Mark excused" className="p-1.5 rounded hover:bg-blue-100 text-blue-600"><AlertCircle className="w-4 h-4" /></button>
+          <button onClick={() => onMark('excused')} title="Mark excused" className="p-1.5 rounded hover:bg-navy-100 text-navy-500"><AlertCircle className="w-4 h-4" /></button>
         </div>
       )}
     </div>

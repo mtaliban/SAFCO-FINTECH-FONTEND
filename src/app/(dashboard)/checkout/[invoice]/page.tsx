@@ -87,14 +87,14 @@ export default function CheckoutPage() {
     return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>;
   }
   if (invoiceQ.isError || !invoiceQ.data) {
-    return <div className="p-8 card p-8 max-w-2xl mx-auto text-center text-slate-500">Invoice not found.</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 card p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto text-center text-slate-500">Invoice not found.</div>;
   }
 
   const inv = invoiceQ.data;
   const paymentStatus = statusQ.data?.payment?.status;
 
   return (
-    <div className="p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
       <Link href="/billing" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-brand-700">
         <ArrowLeft className="w-4 h-4" /> Back to billing
       </Link>
@@ -111,7 +111,7 @@ export default function CheckoutPage() {
         <div className="mt-4 text-sm text-slate-700">{inv.description}</div>
         <div className="mt-4 pt-4 border-t border-slate-100 flex items-baseline justify-between">
           <div className="text-xs text-slate-500">TOTAL DUE</div>
-          <div className="text-3xl font-black text-slate-900 font-mono">
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
             {inv.currency} {formatTzs(inv.total_tzs)}
           </div>
         </div>

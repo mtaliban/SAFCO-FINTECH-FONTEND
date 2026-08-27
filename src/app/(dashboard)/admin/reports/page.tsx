@@ -44,9 +44,9 @@ export default function AdminReportsPage() {
   ];
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <BarChart3 className="w-7 h-7 text-orange-500" /> System Reports
         </h1>
         <p className="text-slate-600 mt-1">Platform-wide health snapshot (SRS Module 11 · 3.1).</p>
@@ -73,7 +73,7 @@ export default function AdminReportsPage() {
         </DashPanel>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <QuickLink href="/admin/certificates" icon={<Award className="w-5 h-5" />} title="All Certificates" subtitle="Search + revoke" />
         <QuickLink href="/admin/course-approvals" icon={<BookOpen className="w-5 h-5" />} title="Course Approvals" subtitle="Review pending submissions" />
         <QuickLink href="/admin/audit-log" icon={<Activity className="w-5 h-5" />} title="Audit Log" subtitle="Security + admin actions" />

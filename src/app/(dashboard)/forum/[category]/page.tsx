@@ -64,7 +64,7 @@ export default function CategoryThreadsPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: heroBg }}>
-        <div className="max-w-6xl mx-auto px-8 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <Link href="/forum"
             className="inline-flex items-center gap-1.5 text-white/70 hover:text-white font-semibold text-sm mb-5 transition">
             <ArrowLeft className="w-4 h-4" /> Discussion Forum
@@ -75,14 +75,14 @@ export default function CategoryThreadsPage() {
                 <Icon className="w-7 h-7 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-white">{category?.name ?? slug}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-white">{category?.name ?? slug}</h1>
                 {category?.description && (
                   <p className="text-white/70 text-sm mt-0.5">{category.description}</p>
                 )}
               </div>
             </div>
             <Link href={`/forum/new?category=${slug}`}
-              className="flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-5 py-2.5 rounded-xl transition shadow-lg text-sm whitespace-nowrap">
+              className="flex items-center gap-2 bg-white text-navy-600 hover:bg-navy-50 font-bold px-5 py-2.5 rounded-xl transition shadow-lg text-sm whitespace-nowrap">
               <Plus className="w-4 h-4" /> {newLabel}
             </Link>
           </div>
@@ -97,7 +97,7 @@ export default function CategoryThreadsPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
 
         {/* Filter bar */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex flex-wrap items-center gap-3">
@@ -109,7 +109,7 @@ export default function CategoryThreadsPage() {
               onChange={(e) => setInputQ(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && applySearch()}
               placeholder={`Search ${category?.name ?? 'threads'}…`}
-              className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none text-sm"
+              className="w-full pl-9 pr-8 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-navy-300 focus:border-transparent outline-none text-sm"
             />
             {inputQ && (
               <button onClick={clearSearch} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
@@ -123,7 +123,7 @@ export default function CategoryThreadsPage() {
             <select
               value={sort}
               onChange={(e) => { setSort(e.target.value as typeof sort); setPage(1); }}
-              className="rounded-lg border border-slate-200 py-2 px-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="rounded-lg border border-slate-200 py-2 px-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-navy-300"
             >
               <option value="recent">Most recent</option>
               <option value="top">Highest voted</option>
@@ -132,9 +132,9 @@ export default function CategoryThreadsPage() {
           </div>
 
           {category?.supports_accepted_answer && (
-            <label className="flex items-center gap-2 text-sm cursor-pointer select-none px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-200 transition">
+            <label className="flex items-center gap-2 text-sm cursor-pointer select-none px-3 py-2 rounded-lg border border-slate-200 hover:border-navy-200 transition">
               <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition ${
-                unanswered ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300'
+                unanswered ? 'bg-navy-500 border-navy-200' : 'border-slate-300'
               }`}>
                 {unanswered && <CheckCircle2 className="w-3 h-3 text-white" />}
               </div>
@@ -167,7 +167,7 @@ export default function CategoryThreadsPage() {
               {q ? `No threads found for "${q}"` : 'Nothing here yet.'}
             </div>
             <div className="text-sm text-slate-400 mt-1">
-              <Link href={`/forum/new?category=${slug}`} className="text-indigo-600 font-semibold hover:underline">
+              <Link href={`/forum/new?category=${slug}`} className="text-navy-500 font-semibold hover:underline">
                 {newLabel}
               </Link>{' '}to get the conversation going.
             </div>

@@ -164,7 +164,7 @@ export default function HostSessionPage() {
           </button>
         )}
         {status === 'question_active' && (
-          <button onClick={endQuestion} className="btn-primary text-base px-6 py-3 bg-blue-600 hover:bg-blue-700">
+          <button onClick={endQuestion} className="btn-primary text-base px-6 py-3 bg-navy-500 hover:bg-navy-600">
             <Pause className="w-5 h-5" /> Reveal Answer Now
           </button>
         )}
@@ -174,7 +174,7 @@ export default function HostSessionPage() {
           </button>
         )}
         {(status === 'question_ended' || status === 'showing_leaderboard') && isLast && (
-          <button onClick={complete} className="btn-primary text-base px-6 py-3 bg-purple-600 hover:bg-purple-700">
+          <button onClick={complete} className="btn-primary text-base px-6 py-3 bg-navy-500 hover:bg-navy-50">
             <Trophy className="w-5 h-5" /> Malizia Quiz
           </button>
         )}
@@ -269,9 +269,9 @@ function StatusBadge({ status }: { status: SessionStatus }) {
     waiting: { bg: 'bg-amber-500', label: 'Waiting for players' },
     starting: { bg: 'bg-amber-500', label: 'Starting' },
     question_active: { bg: 'bg-green-500', label: 'Question Active' },
-    question_ended: { bg: 'bg-blue-500', label: 'Answer Revealed' },
-    showing_leaderboard: { bg: 'bg-blue-500', label: 'Leaderboard' },
-    completed: { bg: 'bg-purple-500', label: 'Completed' },
+    question_ended: { bg: 'bg-navy-500', label: 'Answer Revealed' },
+    showing_leaderboard: { bg: 'bg-navy-500', label: 'Leaderboard' },
+    completed: { bg: 'bg-navy-500', label: 'Completed' },
     cancelled: { bg: 'bg-red-500', label: 'Cancelled' },
   };
   const m = map[status];
@@ -453,9 +453,9 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
       )}
 
       {q.explanation && (
-        <div className="mt-4 p-3 bg-blue-900/30 border-l-4 border-blue-400 rounded-r-xl">
-          <div className="text-xs font-semibold text-blue-300 mb-1">Maelezo</div>
-          <div className="text-sm text-blue-100">{q.explanation}</div>
+        <div className="mt-4 p-3 bg-navy-50/30 border-l-4 border-blue-400 rounded-r-xl">
+          <div className="text-xs font-semibold text-navy-500 mb-1">Maelezo</div>
+          <div className="text-sm text-navy-500">{q.explanation}</div>
         </div>
       )}
     </div>
@@ -474,7 +474,7 @@ function StatCard({ label, value, total, accent }: { label: string; value: numbe
     : 'bg-white/10 text-white border border-white/10';
   return (
     <div className={`rounded-xl p-3 text-center ${cls}`}>
-      <div className="text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-50"> / {total}</span>}</div>
+      <div className="text-2xl sm:text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-50"> / {total}</span>}</div>
       <div className="text-xs font-semibold uppercase tracking-wider opacity-70 mt-1">{label}</div>
     </div>
   );
@@ -527,7 +527,7 @@ function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
     <div className="bg-white/5 rounded-2xl border border-white/10 p-6 text-center">
       <div className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-1">Matokeo ya Mwisho</div>
-      <div className="text-3xl font-black text-white mb-6">🏆 SAFCO Live — Mabingwa</div>
+      <div className="text-2xl sm:text-3xl font-black text-white mb-6">🏆 SAFCO Live — Mabingwa</div>
 
       <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 items-end max-w-2xl mx-auto">
         <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-400" emoji="🥈" />

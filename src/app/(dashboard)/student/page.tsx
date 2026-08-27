@@ -33,7 +33,7 @@ export default function StudentDashboardPage() {
       <div className="min-h-screen bg-slate-50">
         {/* Hero skeleton */}
         <div className="h-52 animate-pulse" style={{ background: 'linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%)' }} />
-        <div className="max-w-6xl mx-auto px-8 py-6 space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
           <StatCardSkeleton count={4} />
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2"><ChartSkeleton height={260} /></div>
@@ -58,14 +58,14 @@ export default function StudentDashboardPage() {
 
       {/* ── HERO BANNER ── */}
       <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)' }}>
-        <div className="max-w-6xl mx-auto px-8 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
             <div>
               <div className="flex items-center gap-2 text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-2">
                 <GraduationCap className="w-3.5 h-3.5" /> SAFCO FINTECH LMS · Student Portal
               </div>
-              <h1 className="text-3xl font-black text-white">Karibu, {firstName}!</h1>
-              <div className="flex items-center gap-1.5 text-blue-200 text-sm mt-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-white">Karibu, {firstName}!</h1>
+              <div className="flex items-center gap-1.5 text-navy-500 text-sm mt-1">
                 <Calendar className="w-3.5 h-3.5" /> {today}
               </div>
             </div>
@@ -87,7 +87,7 @@ export default function StudentDashboardPage() {
       </div>
 
       {/* ── CONTENT ── */}
-      <div className="max-w-6xl mx-auto px-8 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
 
         {/* KPI row */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -164,7 +164,7 @@ export default function StudentDashboardPage() {
         </div>
 
         {/* Completion overview */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 flex items-center gap-5">
             <RingProgress percent={completionRate} size={72} strokeWidth={7} color={COLORS.green} />
             <div>
@@ -265,8 +265,8 @@ export default function StudentDashboardPage() {
         {/* Quick actions */}
         <div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</h2>
-          <div className="grid md:grid-cols-3 gap-3">
-            <QuickLink href="/student/courses" icon={<BookOpen className="w-5 h-5" />} title="Browse Courses" subtitle="Angalia kozi mpya zilizopo" color="bg-blue-50 text-blue-600" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <QuickLink href="/student/courses" icon={<BookOpen className="w-5 h-5" />} title="Browse Courses" subtitle="Angalia kozi mpya zilizopo" color="bg-navy-50 text-navy-500" />
             <QuickLink href="/student/exams" icon={<GraduationCap className="w-5 h-5" />} title="Take an Exam" subtitle="Practice · Mock · Final Certification" color="bg-orange-50 text-orange-600" />
             <QuickLink href="/play" icon={<Zap className="w-5 h-5" />} title="Join Live Quiz" subtitle="Ingiza PIN kutoka kwa mwalimu" color="bg-emerald-50 text-emerald-600" />
           </div>

@@ -12,10 +12,10 @@ export default function QuizzesListPage() {
   });
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-8 flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Quizzes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Quizzes</h1>
           <p className="text-slate-600 mt-1">Tengeneza na host SAFCO Live Quizzes.</p>
         </div>
         <Link href="/dashboard/quizzes/new" className="btn-primary">

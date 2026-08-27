@@ -20,24 +20,24 @@ export default function AdminDashboard() {
   });
 
   if (isLoading || !data) {
-    return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+    return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">System Administrator</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
+      <div className="mb-6 lg:mb-8">
+        <h1 className="text-2xl sm:text-2xl sm:text-3xl font-bold text-slate-900">System Administrator</h1>
         <p className="text-slate-600 mt-1">Simamia mfumo mzima wa SAFCO FINTECH LMS.</p>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 lg:mb-8">
         <StatCard label="Total Users" value={data.users.total} icon={Users} accent="brand" />
         <StatCard label="Active Users" value={data.users.active} icon={Users} accent="green" />
         <StatCard label="Total Quizzes" value={data.quizzes.total} icon={Zap} accent="amber" />
         <StatCard label="Organizations" value={data.organizations} icon={Building2} accent="slate" />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mb-8">
+      <div className="grid md:grid-cols-2 gap-4 mb-6 lg:mb-8">
         <div className="card p-6">
           <h2 className="text-lg font-bold text-slate-900 mb-3">Users by Role</h2>
           <div className="space-y-2">
@@ -60,7 +60,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <QuickLink href="/admin/users" icon={Users} title="Manage Users" desc="View, activate, change roles" />
         <QuickLink href="/admin/audit-log" icon={Activity} title="Audit Log" desc="Every login, IP + device" />
         <QuickLink href="/admin/quizzes" icon={Layers} title="All Quizzes" desc="System-wide read-only view" />

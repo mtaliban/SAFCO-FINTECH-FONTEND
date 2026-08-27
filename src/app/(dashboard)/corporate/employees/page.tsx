@@ -27,9 +27,9 @@ export default function CorporateEmployeesPage() {
   const { page: rows, lastPage, currentPage, totalItems } = usePagedSlice(data?.data, page, PAGE_SIZE);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <Building2 className="w-7 h-7 text-orange-500" /> My Employees
         </h1>
         <p className="text-slate-600 mt-1">Wafanyakazi wa organization yako (SRS 3.4).</p>

@@ -54,8 +54,8 @@ export default function NewAttendanceSessionPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto animate-fade-in">
-      <h1 className="text-3xl font-bold text-slate-900 mb-2">New Attendance Session</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in">
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">New Attendance Session</h1>
       <p className="text-slate-600 mb-6">SRS 4 — Record attendance, QR scan, late detection.</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="card p-6 space-y-5">

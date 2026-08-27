@@ -307,7 +307,7 @@ function InstructionsScreen({ quiz, onBegin }: { quiz: Quiz; onBegin: () => void
   const examType = quiz.exam_type;
   return (
     <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
-      <div className="card p-8 max-w-2xl w-full">
+      <div className="card p-4 sm:p-6 lg:p-8 max-w-2xl w-full">
         <div className="flex items-center gap-2 mb-2">
           <Lock className="w-5 h-5 text-red-600" />
           <span className="text-xs font-semibold uppercase tracking-widest text-red-700">Exam Instructions</span>

@@ -5,7 +5,7 @@ import { CheckCircle2, MessageSquare, Eye, Pin, Lock, Tag } from 'lucide-react';
 import { type ThreadSummary } from '@/lib/forum/api';
 
 const CATEGORY_CFG: Record<string, { bg: string; text: string; border: string }> = {
-  blue:    { bg: 'bg-blue-100',    text: 'text-blue-700',    border: 'border-blue-200' },
+  blue:    { bg: 'bg-navy-100',    text: 'text-navy-600',    border: 'border-navy-200' },
   amber:   { bg: 'bg-amber-100',   text: 'text-amber-800',   border: 'border-amber-200' },
   emerald: { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
 };
@@ -23,7 +23,7 @@ export function ThreadRow({ thread }: { thread: ThreadSummary }) {
     <Link
       href={`/forum/thread/${thread.uuid}`}
       className={`group block bg-white border rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden ${
-        solved ? 'border-l-4 border-l-emerald-500 border-slate-200' : 'border-slate-200 hover:border-indigo-200'
+        solved ? 'border-l-4 border-l-emerald-500 border-slate-200' : 'border-slate-200 hover:border-navy-200'
       }`}
     >
       <div className="flex items-stretch">
@@ -31,7 +31,7 @@ export function ThreadRow({ thread }: { thread: ThreadSummary }) {
         <div className="flex flex-col items-center justify-center gap-3 px-5 py-5 bg-slate-50 border-r border-slate-100 shrink-0 min-w-[80px]">
           <div className="text-center">
             <div className={`text-xl font-black tabular-nums ${
-              thread.votes_score > 0 ? 'text-indigo-700' : thread.votes_score < 0 ? 'text-red-600' : 'text-slate-700'
+              thread.votes_score > 0 ? 'text-navy-600' : thread.votes_score < 0 ? 'text-red-600' : 'text-slate-700'
             }`}>
               {thread.votes_score}
             </div>
@@ -75,7 +75,7 @@ export function ThreadRow({ thread }: { thread: ThreadSummary }) {
           </div>
 
           {/* Title */}
-          <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-indigo-700 transition-colors line-clamp-2">
+          <h3 className="font-bold text-slate-900 text-base leading-snug group-hover:text-navy-600 transition-colors line-clamp-2">
             {thread.title}
           </h3>
 
@@ -88,7 +88,7 @@ export function ThreadRow({ thread }: { thread: ThreadSummary }) {
           {thread.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2.5">
               {thread.tags.map((t) => (
-                <span key={t} className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 font-semibold border border-indigo-100">
+                <span key={t} className="inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-md bg-navy-50 text-navy-500 font-semibold border border-navy-200">
                   <Tag className="w-2.5 h-2.5" />{t}
                 </span>
               ))}
@@ -111,7 +111,7 @@ export function ThreadRow({ thread }: { thread: ThreadSummary }) {
               <span>active {timeAgo(thread.last_activity_at)}</span>
             )}
             {thread.course && (
-              <span className="text-indigo-600 font-medium truncate max-w-[160px]">
+              <span className="text-navy-500 font-medium truncate max-w-[160px]">
                 {thread.course.title}
               </span>
             )}

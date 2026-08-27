@@ -80,9 +80,9 @@ export default function AdminAnnouncementsPage() {
   });
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
           <Megaphone className="w-7 h-7 text-brand-600" /> Broadcast Announcements
         </h1>
         <p className="text-slate-600 mt-1">

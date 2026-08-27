@@ -94,19 +94,19 @@ export default function NewThreadPage() {
 
       {/* ── HEADER ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4f46e5 100%)' }}>
-        <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
           <Link href="/forum"
-            className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm mb-4 transition">
+            className="inline-flex items-center gap-1.5 text-navy-500 hover:text-white font-semibold text-sm mb-4 transition">
             <ArrowLeft className="w-4 h-4" /> Back to forum
           </Link>
-          <h1 className="text-3xl font-black text-white">Start a discussion</h1>
-          <p className="text-indigo-200 text-sm mt-1">
+          <h1 className="text-2xl sm:text-3xl font-black text-white">Start a discussion</h1>
+          <p className="text-navy-500 text-sm mt-1">
             Share your question or idea with the SAFCO FINTECH learning community.
           </p>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <div className="grid lg:grid-cols-3 gap-8">
 
           {/* ── FORM ── */}
@@ -127,12 +127,12 @@ export default function NewThreadPage() {
                       onClick={() => setCategory(c.slug as CategorySlug)}
                       className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 text-center transition ${
                         active
-                          ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                          : 'border-slate-200 hover:border-indigo-200 hover:bg-indigo-50/50 text-slate-600'
+                          ? 'border-navy-200 bg-navy-50 text-navy-600'
+                          : 'border-slate-200 hover:border-navy-200 hover:bg-navy-50/50 text-slate-600'
                       }`}
                     >
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                        active ? 'bg-indigo-100' : 'bg-slate-100'
+                        active ? 'bg-navy-100' : 'bg-slate-100'
                       }`}>
                         <Icon className="w-5 h-5" />
                       </div>
@@ -161,7 +161,7 @@ export default function NewThreadPage() {
                       type="text"
                       value={assignmentUuid}
                       onChange={(e) => setAssignmentUuid(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:ring-2 focus:ring-navy-300 text-sm"
                       placeholder="Assignment UUID (open from an assignment page to prefill)"
                     />
                   )}
@@ -183,7 +183,7 @@ export default function NewThreadPage() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-medium"
+                    className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-navy-300 text-sm font-medium"
                     placeholder={
                       category === 'questions' ? 'What is your question? Be specific and clear.'
                       : category === 'ideas' ? 'Summarize your idea in one sentence.'
@@ -201,7 +201,7 @@ export default function NewThreadPage() {
                   <textarea
                     value={body}
                     onChange={(e) => setBody(e.target.value)}
-                    className="w-full min-h-[260px] rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-400 text-sm leading-relaxed resize-y"
+                    className="w-full min-h-[260px] rounded-xl border border-slate-200 px-4 py-3 outline-none focus:ring-2 focus:ring-navy-300 text-sm leading-relaxed resize-y"
                     placeholder={
                       category === 'questions'
                         ? 'Describe the problem in detail:\n• What have you tried?\n• What did you expect to happen?\n• What actually happened?\n• Include any relevant error messages.'
@@ -220,9 +220,9 @@ export default function NewThreadPage() {
               <div className="text-[11px] uppercase font-bold text-slate-400 tracking-widest mb-3">Tags (optional, max 6)</div>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {tags.map((t) => (
-                  <span key={t} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-indigo-100 text-indigo-700 font-semibold border border-indigo-200">
+                  <span key={t} className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg bg-navy-100 text-navy-600 font-semibold border border-navy-200">
                     <Tag className="w-3 h-3" />{t}
-                    <button onClick={() => setTags((prev) => prev.filter((x) => x !== t))} className="ml-0.5 text-indigo-400 hover:text-indigo-700">
+                    <button onClick={() => setTags((prev) => prev.filter((x) => x !== t))} className="ml-0.5 text-navy-500 hover:text-navy-600">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -239,7 +239,7 @@ export default function NewThreadPage() {
                       addTag(tagInput);
                     }
                   }}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+                  className="w-full rounded-xl border border-slate-200 px-4 py-2.5 outline-none focus:ring-2 focus:ring-navy-300 text-sm"
                   placeholder="e.g. excel, pivot-tables, vlookup — press Enter to add"
                 />
               )}
@@ -253,7 +253,7 @@ export default function NewThreadPage() {
               <button
                 disabled={!canSubmit}
                 onClick={() => createMut.mutate()}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-7 py-3 rounded-xl transition shadow-sm text-sm"
+                className="flex items-center gap-2 bg-navy-500 hover:bg-navy-50 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-7 py-3 rounded-xl transition shadow-sm text-sm"
               >
                 {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 Post discussion
@@ -263,14 +263,14 @@ export default function NewThreadPage() {
 
           {/* ── TIPS SIDEBAR ── */}
           <div className="space-y-4">
-            <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-5">
-              <div className="flex items-center gap-2 font-bold text-indigo-900 mb-3 text-sm">
-                <TipIcon className="w-4 h-4 text-indigo-600" /> Tips for a great post
+            <div className="bg-navy-50 border border-navy-200 rounded-2xl p-5">
+              <div className="flex items-center gap-2 font-bold text-navy-500 mb-3 text-sm">
+                <TipIcon className="w-4 h-4 text-navy-500" /> Tips for a great post
               </div>
               <ul className="space-y-2.5">
                 {tips.map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs text-indigo-800 leading-relaxed">
-                    <span className="w-4 h-4 rounded-full bg-indigo-200 text-indigo-700 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
+                  <li key={i} className="flex items-start gap-2 text-xs text-navy-500 leading-relaxed">
+                    <span className="w-4 h-4 rounded-full bg-navy-50 text-navy-600 font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">
                       {i + 1}
                     </span>
                     {tip}

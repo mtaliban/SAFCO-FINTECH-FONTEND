@@ -43,7 +43,7 @@ export default function CorporateReportsPage() {
     return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>;
   }
   if (isError || !data) {
-    return <div className="p-8 card p-8 max-w-4xl mx-auto text-center text-slate-500">Reports unavailable — your account isn't linked to an organization.</div>;
+    return <div className="p-4 sm:p-6 lg:p-8 card p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto text-center text-slate-500">Reports unavailable — your account isn't linked to an organization.</div>;
   }
 
   const h = data.headline;
@@ -56,10 +56,10 @@ export default function CorporateReportsPage() {
   }));
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <BarChart3 className="w-7 h-7 text-orange-500" /> Progress Reports
           </h1>
           <p className="text-slate-600 mt-1">Downloadable analytics for your organization (SRS Module 11 · 3.4).</p>

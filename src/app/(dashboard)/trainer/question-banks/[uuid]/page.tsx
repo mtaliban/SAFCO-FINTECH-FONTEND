@@ -28,9 +28,9 @@ const TYPE_ICON: Record<QuestionType, React.ComponentType<{ className?: string }
 };
 
 const TYPE_COLOR: Record<QuestionType, string> = {
-  multiple_choice: 'bg-blue-100 text-blue-700',
+  multiple_choice: 'bg-navy-100 text-navy-600',
   true_false: 'bg-emerald-100 text-emerald-700',
-  multiple_select: 'bg-purple-100 text-purple-700',
+  multiple_select: 'bg-navy-100 text-navy-600',
   fill_in_blank: 'bg-amber-100 text-amber-700',
   matching: 'bg-pink-100 text-pink-700',
   short_answer: 'bg-slate-200 text-slate-700',
@@ -80,7 +80,7 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ u
   }
 
   return (
-    <div className="p-8 max-w-6xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
       <Link href="/trainer/question-banks" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-600 mb-4">
         <ArrowLeft className="w-4 h-4" /> Back to Question Banks
       </Link>
@@ -102,7 +102,7 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ u
                     {bank.difficulty}
                   </span>
                 </div>
-                <h1 className="text-3xl font-bold text-slate-900 mb-1">{bank.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">{bank.name}</h1>
                 {bank.description && <p className="text-slate-600">{bank.description}</p>}
                 <div className="mt-3 text-sm text-slate-500">
                   <span className="font-semibold text-slate-700">{qs?.meta?.total ?? bank.total_questions ?? 0}</span> total questions

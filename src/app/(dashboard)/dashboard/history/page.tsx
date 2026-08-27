@@ -13,17 +13,17 @@ export default function LoginHistoryPage() {
   });
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">Login History</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Login History</h1>
         <p className="text-slate-600 mt-1">Angalia ni wapi na wakati gani umeingia kwenye akaunti yako.</p>
       </div>
 
       <div className="card overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-slate-500">Inapakia...</div>
+          <div className="p-4 sm:p-6 lg:p-8 text-center text-slate-500">Inapakia...</div>
         ) : !data?.data?.length ? (
-          <div className="p-8 text-center text-slate-500">Hakuna login history bado.</div>
+          <div className="p-4 sm:p-6 lg:p-8 text-center text-slate-500">Hakuna login history bado.</div>
         ) : (
           <table className="w-full">
             <thead className="bg-slate-50 border-b border-slate-200">

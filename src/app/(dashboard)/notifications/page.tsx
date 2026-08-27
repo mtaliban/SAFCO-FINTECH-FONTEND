@@ -26,13 +26,13 @@ function iconForEvent(key: string | null): React.ElementType {
 
 function colorForEvent(key: string | null): string {
   if (!key) return 'bg-slate-100 text-slate-600';
-  if (key.startsWith('course') || key.startsWith('enrollment')) return 'bg-blue-100 text-blue-700';
-  if (key.startsWith('forum'))       return 'bg-indigo-100 text-indigo-700';
+  if (key.startsWith('course') || key.startsWith('enrollment')) return 'bg-navy-100 text-navy-600';
+  if (key.startsWith('forum'))       return 'bg-navy-100 text-navy-600';
   if (key.startsWith('quiz') || key.startsWith('attempt')) return 'bg-orange-100 text-orange-700';
   if (key.startsWith('certificate')) return 'bg-amber-100 text-amber-700';
   if (key.startsWith('payment') || key.startsWith('invoice')) return 'bg-emerald-100 text-emerald-700';
-  if (key.startsWith('trainer'))     return 'bg-teal-100 text-teal-700';
-  if (key.startsWith('assignment'))  return 'bg-purple-100 text-purple-700';
+  if (key.startsWith('trainer'))     return 'bg-orange-100 text-orange-700';
+  if (key.startsWith('assignment'))  return 'bg-navy-100 text-navy-600';
   return 'bg-slate-100 text-slate-600';
 }
 
@@ -102,14 +102,14 @@ export default function NotificationsInboxPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #6366f1 100%)' }}>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 md:py-10">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-indigo-300 text-[11px] font-bold uppercase tracking-widest mb-3">
+              <div className="flex items-center gap-2 text-navy-500 text-[11px] font-bold uppercase tracking-widest mb-3">
                 <Bell className="w-4 h-4" /> SAFCO FINTECH LMS · Notification Centre
               </div>
-              <h1 className="text-3xl font-black text-white">Notifications</h1>
-              <p className="text-indigo-200 text-sm mt-1">
+              <h1 className="text-2xl sm:text-3xl font-black text-white">Notifications</h1>
+              <p className="text-navy-500 text-sm mt-1">
                 {unreadCount > 0
                   ? `You have ${unreadCount} unread notification${unreadCount === 1 ? '' : 's'}`
                   : 'All caught up — no new notifications'}
@@ -127,17 +127,17 @@ export default function NotificationsInboxPage() {
           <div className="flex gap-3 mt-6">
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3">
               <div className="text-2xl font-black text-white tabular-nums">{all.length}</div>
-              <div className="text-[10px] uppercase text-indigo-300 font-bold tracking-widest mt-0.5">Total</div>
+              <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest mt-0.5">Total</div>
             </div>
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3">
               <div className="text-2xl font-black text-white tabular-nums">{unreadCount}</div>
-              <div className="text-[10px] uppercase text-indigo-300 font-bold tracking-widest mt-0.5">Unread</div>
+              <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest mt-0.5">Unread</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
 
         {/* Toolbar */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-3 flex items-center justify-between gap-3">
@@ -162,7 +162,7 @@ export default function NotificationsInboxPage() {
             <button
               onClick={() => markAllMut.mutate()}
               disabled={markAllMut.isPending}
-              className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition"
+              className="flex items-center gap-1.5 text-xs font-bold text-navy-500 hover:text-navy-500 px-3 py-2 rounded-lg hover:bg-navy-50 transition"
             >
               {markAllMut.isPending
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -201,7 +201,7 @@ export default function NotificationsInboxPage() {
                 <div
                   key={item.id}
                   className={`bg-white rounded-xl border shadow-sm overflow-hidden group transition-all hover:shadow-md ${
-                    isUnread ? 'border-indigo-200' : 'border-slate-200'
+                    isUnread ? 'border-navy-200' : 'border-slate-200'
                   }`}
                 >
                   <div className="flex items-start gap-4 p-4">
@@ -216,7 +216,7 @@ export default function NotificationsInboxPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2">
                         {isUnread && (
-                          <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-indigo-500" />
+                          <span className="shrink-0 mt-1.5 w-2 h-2 rounded-full bg-navy-500" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className={`font-bold text-sm leading-snug ${isUnread ? 'text-slate-900' : 'text-slate-600'}`}>
@@ -232,7 +232,7 @@ export default function NotificationsInboxPage() {
                             {item.action_url && (
                               <button
                                 onClick={() => handleItemClick(item)}
-                                className="inline-flex items-center gap-1 text-[11px] text-indigo-600 hover:text-indigo-800 font-bold transition"
+                                className="inline-flex items-center gap-1 text-[11px] text-navy-500 hover:text-navy-500 font-bold transition"
                               >
                                 View details <ArrowRight className="w-3 h-3" />
                               </button>
@@ -247,7 +247,7 @@ export default function NotificationsInboxPage() {
                       {item.action_url && (
                         <button
                           onClick={() => handleItemClick(item)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-navy-500 hover:bg-navy-50 transition"
                           title="Open"
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
@@ -273,7 +273,7 @@ export default function NotificationsInboxPage() {
         <div className="text-center pt-4">
           <Link
             href="/settings/notifications"
-            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 font-semibold transition"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-navy-500 font-semibold transition"
           >
             <Settings className="w-4 h-4" /> Manage notification preferences
           </Link>

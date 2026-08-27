@@ -36,8 +36,8 @@ export default function NewCoursePage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto animate-fade-in">
-      <h1 className="text-3xl font-bold text-slate-900 mb-2">Tengeneza Course Mpya</h1>
+    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto animate-fade-in">
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">Tengeneza Course Mpya</h1>
       <p className="text-slate-600 mb-6">Anza na taarifa za msingi. Modules na lessons utaongeza baadaye (SRS 4.2).</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="card p-6 space-y-5">

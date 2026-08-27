@@ -42,16 +42,16 @@ export default function DashboardPage() {
 
       {/* ── HERO ── */}
       <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1e4080 50%, #0f2a50 100%)' }}>
-        <div className="max-w-6xl mx-auto px-8 py-10">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 lg:py-10">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <div className="flex items-center gap-2 text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-2">
                 <GraduationCap className="w-3.5 h-3.5" /> SAFCO FINTECH LMS
               </div>
-              <h1 className="text-3xl font-black text-white leading-tight">
+              <h1 className="text-2xl sm:text-2xl sm:text-3xl font-black text-white leading-tight">
                 Karibu, {firstName}!
               </h1>
-              <p className="text-blue-200 text-sm mt-1">
+              <p className="text-white/70 text-sm mt-1">
                 {new Date().toLocaleDateString('sw-TZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </p>
             </div>
@@ -107,10 +107,10 @@ export default function DashboardPage() {
       </div>
 
       {/* ── QUICK-ACCESS TILES ── */}
-      <div className="max-w-6xl mx-auto px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-5">Quick access</h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {tiles.map((tile) => (
             <Link
               key={tile.href}
@@ -154,8 +154,8 @@ export default function DashboardPage() {
 
 function getRoleTiles(role: string) {
   const common = [
-    { href: '/notifications', label: 'Notifications', desc: 'Arifa na ujumbe', icon: Bell, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
-    { href: '/forum', label: 'Forum', desc: 'Maswali na majadiliano', icon: MessageSquare, iconBg: 'bg-violet-50', iconColor: 'text-violet-600' },
+    { href: '/notifications', label: 'Notifications', desc: 'Arifa na ujumbe', icon: Bell, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
+    { href: '/forum', label: 'Forum', desc: 'Maswali na majadiliano', icon: MessageSquare, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
     { href: '/dashboard/profile', label: 'My Profile', desc: 'Taarifa za kibinafsi', icon: User, iconBg: 'bg-slate-100', iconColor: 'text-slate-600' },
     { href: '/dashboard/security', label: 'Security', desc: '2FA na usalama', icon: ShieldCheck, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
   ];
@@ -163,37 +163,37 @@ function getRoleTiles(role: string) {
   const byRole: Record<string, typeof common> = {
     student: [
       { href: '/student', label: 'My Dashboard', desc: 'Maendeleo na takwimu', icon: BarChart2, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
-      { href: '/student/courses', label: 'Browse Courses', desc: 'Tafuta kozi mpya', icon: BookOpen, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
-      { href: '/student/my-courses', label: 'My Courses', desc: 'Kozi ulizojiandikisha', icon: GraduationCap, iconBg: 'bg-indigo-50', iconColor: 'text-indigo-600' },
+      { href: '/student/courses', label: 'Browse Courses', desc: 'Tafuta kozi mpya', icon: BookOpen, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
+      { href: '/student/my-courses', label: 'My Courses', desc: 'Kozi ulizojiandikisha', icon: GraduationCap, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
       { href: '/student/exams', label: 'Exams', desc: 'Majaribio na mitihani', icon: ClipboardList, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
-      { href: '/student/assignments', label: 'Assignments', desc: 'Kazi za ziada', icon: Briefcase, iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
+      { href: '/student/assignments', label: 'Assignments', desc: 'Kazi za ziada', icon: Briefcase, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
       { href: '/student/certificates', label: 'Certificates', desc: 'Vyeti vyako', icon: Trophy, iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
-      { href: '/play', label: 'Live Quiz', desc: 'Ingia kwa PIN', icon: Zap, iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600' },
-      { href: '/billing', label: 'Billing', desc: 'Ankara na malipo', icon: CreditCard, iconBg: 'bg-teal-50', iconColor: 'text-teal-600' },
+      { href: '/play', label: 'Live Quiz', desc: 'Ingia kwa PIN', icon: Zap, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
+      { href: '/billing', label: 'Billing', desc: 'Ankara na malipo', icon: CreditCard, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
     ],
     trainer: [
       { href: '/trainer', label: 'Trainer Dashboard', desc: 'Muhtasari wa shughuli', icon: BarChart2, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
-      { href: '/trainer/courses', label: 'My Courses', desc: 'Dhibiti kozi zako', icon: BookOpen, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+      { href: '/trainer/courses', label: 'My Courses', desc: 'Dhibiti kozi zako', icon: BookOpen, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
       { href: '/trainer/quizzes', label: 'Quizzes', desc: 'Unda na simamia', icon: ClipboardList, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
-      { href: '/trainer/question-banks', label: 'Question Banks', desc: 'Hifadhi ya maswali', icon: Briefcase, iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
-      { href: '/trainer/attendance', label: 'Attendance', desc: 'Hali ya washiriki', icon: Calendar, iconBg: 'bg-teal-50', iconColor: 'text-teal-600' },
-      { href: '/trainer/sessions', label: 'Live Sessions', desc: 'Historia ya quiz live', icon: Zap, iconBg: 'bg-yellow-50', iconColor: 'text-yellow-600' },
+      { href: '/trainer/question-banks', label: 'Question Banks', desc: 'Hifadhi ya maswali', icon: Briefcase, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
+      { href: '/trainer/attendance', label: 'Attendance', desc: 'Hali ya washiriki', icon: Calendar, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
+      { href: '/trainer/sessions', label: 'Live Sessions', desc: 'Historia ya quiz live', icon: Zap, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
       { href: '/trainer/portal', label: 'Trainer Profile', desc: 'Sifa na vyeti', icon: Trophy, iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
     ],
     system_admin: [
       { href: '/admin', label: 'Admin Overview', desc: 'Takwimu za mfumo', icon: BarChart2, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
-      { href: '/admin/users', label: 'Users', desc: 'Dhibiti watumiaji', icon: User, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+      { href: '/admin/users', label: 'Users', desc: 'Dhibiti watumiaji', icon: User, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
       { href: '/admin/course-approvals', label: 'Approvals', desc: 'Kozi zinazongoja', icon: CheckCircle2, iconBg: 'bg-emerald-50', iconColor: 'text-emerald-600' },
       { href: '/admin/certificates', label: 'Certificates', desc: 'Vyeti vyote', icon: Trophy, iconBg: 'bg-amber-50', iconColor: 'text-amber-600' },
-      { href: '/admin/trainer-verifications', label: 'Verifications', desc: 'Thibitisha washauri', icon: ShieldCheck, iconBg: 'bg-purple-50', iconColor: 'text-purple-600' },
+      { href: '/admin/trainer-verifications', label: 'Verifications', desc: 'Thibitisha washauri', icon: ShieldCheck, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
       { href: '/admin/reports', label: 'Reports', desc: 'Ripoti za mfumo', icon: ClipboardList, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
-      { href: '/admin/announcements', label: 'Announcements', desc: 'Matangazo kwa wote', icon: Bell, iconBg: 'bg-red-50', iconColor: 'text-red-600' },
+      { href: '/admin/announcements', label: 'Announcements', desc: 'Matangazo kwa wote', icon: Bell, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
     ],
     corporate_client: [
       { href: '/corporate', label: 'Corporate Dashboard', desc: 'Takwimu za shirika', icon: BarChart2, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
-      { href: '/corporate/employees', label: 'Employees', desc: 'Wafanyakazi wote', icon: User, iconBg: 'bg-blue-50', iconColor: 'text-blue-600' },
+      { href: '/corporate/employees', label: 'Employees', desc: 'Wafanyakazi wote', icon: User, iconBg: 'bg-navy-50', iconColor: 'text-navy-600' },
       { href: '/corporate/reports', label: 'Reports', desc: 'Ripoti za idara', icon: ClipboardList, iconBg: 'bg-orange-50', iconColor: 'text-orange-600' },
-      { href: '/billing', label: 'Billing', desc: 'Ankara za kampuni', icon: CreditCard, iconBg: 'bg-teal-50', iconColor: 'text-teal-600' },
+      { href: '/billing', label: 'Billing', desc: 'Ankara za kampuni', icon: CreditCard, iconBg: 'bg-navy-50', iconColor: 'text-navy-500' },
     ],
   };
 

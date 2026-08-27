@@ -47,7 +47,7 @@ export default function ThreadDetailPage() {
             setNewRepliesCount(0);
             bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
           }}>
-            <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 text-sm font-black flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-full bg-navy-100 text-navy-600 text-sm font-black flex items-center justify-center shrink-0">
               {payload.author_name?.slice(0, 1).toUpperCase() ?? '?'}
             </div>
             <div className="min-w-0">
@@ -122,7 +122,7 @@ export default function ThreadDetailPage() {
     return (
       <div className="min-h-screen bg-slate-50">
         <div className="h-36 animate-pulse" style={{ background: 'linear-gradient(135deg,#1e1b4b 0%,#4f46e5 100%)' }} />
-        <div className="max-w-4xl mx-auto px-8 py-8 space-y-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-4">
           <div className="h-48 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           {[...Array(3)].map((_, i) => (
             <div key={i} className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
@@ -141,10 +141,10 @@ export default function ThreadDetailPage() {
 
       {/* ── HERO HEADER ── */}
       <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 60%, #4f46e5 100%)' }}>
-        <div className="max-w-4xl mx-auto px-8 py-7">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-7">
           <div className="flex items-center justify-between mb-4">
             <Link href={`/forum/${thread.category.slug}`}
-              className="inline-flex items-center gap-1.5 text-indigo-300 hover:text-white font-semibold text-sm transition-colors">
+              className="inline-flex items-center gap-1.5 text-navy-500 hover:text-white font-semibold text-sm transition-colors">
               <ArrowLeft className="w-4 h-4" /> {thread.category.name}
             </Link>
 
@@ -190,7 +190,7 @@ export default function ThreadDetailPage() {
 
           <h1 className="text-2xl font-black text-white leading-snug mb-3">{thread.title}</h1>
 
-          <div className="flex items-center gap-4 text-indigo-300 text-xs flex-wrap">
+          <div className="flex items-center gap-4 text-navy-500 text-xs flex-wrap">
             <span className="font-semibold text-white/80">{thread.author?.name ?? 'Unknown'}</span>
             {thread.created_at && (
               <span className="flex items-center gap-1">
@@ -207,7 +207,7 @@ export default function ThreadDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-8 py-6 space-y-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
 
         {/* ── NEW REPLIES BANNER ── */}
         {newRepliesCount > 0 && (
@@ -216,7 +216,7 @@ export default function ThreadDetailPage() {
               setNewRepliesCount(0);
               bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all animate-fade-in shadow-lg"
+            className="w-full flex items-center justify-center gap-2 bg-navy-500 hover:bg-navy-50 text-white text-sm font-bold py-2.5 px-4 rounded-xl transition-all animate-fade-in shadow-lg"
           >
             <Bell className="w-4 h-4" />
             {newRepliesCount} new {newRepliesCount === 1 ? 'reply' : 'replies'} — click to view
@@ -235,7 +235,7 @@ export default function ThreadDetailPage() {
               {thread.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {thread.tags.map((t) => (
-                    <span key={t} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-600 font-semibold border border-indigo-100">
+                    <span key={t} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md bg-navy-50 text-navy-500 font-semibold border border-navy-200">
                       <Tag className="w-2.5 h-2.5" />{t}
                     </span>
                   ))}
@@ -283,7 +283,7 @@ export default function ThreadDetailPage() {
         {/* ── REPLIES HEADER ── */}
         <div className="flex items-center gap-3 py-1">
           <div className="flex items-center gap-2 font-bold text-slate-700">
-            <MessageCircle className="w-5 h-5 text-indigo-500" />
+            <MessageCircle className="w-5 h-5 text-navy-500" />
             {posts.length} {posts.length === 1 ? 'Reply' : 'Replies'}
           </div>
           {thread.category.supports_accepted_answer && !acceptedPost && permissions.can_accept_answer && (
@@ -336,7 +336,7 @@ export default function ThreadDetailPage() {
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-gradient-to-r from-indigo-50/60 to-slate-50/60">
               <div className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <MessageCircle className="w-4 h-4 text-indigo-500" /> Your reply
+                <MessageCircle className="w-4 h-4 text-navy-500" /> Your reply
                 {isLive && (
                   <span className="ml-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -347,17 +347,17 @@ export default function ThreadDetailPage() {
             </div>
             <div className="p-5">
               {replyingTo && (
-                <div className="flex items-center gap-2 text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2 mb-3">
+                <div className="flex items-center gap-2 text-xs text-navy-600 bg-navy-50 border border-navy-200 rounded-lg px-3 py-2 mb-3">
                   <CornerDownRight className="w-3.5 h-3.5 shrink-0" />
                   Replying to <strong>{replyingTo.name}</strong>
                   <button onClick={() => setReplyingTo(null)}
-                    className="ml-auto text-indigo-400 hover:text-indigo-700 font-bold text-xs">cancel</button>
+                    className="ml-auto text-navy-500 hover:text-navy-600 font-bold text-xs">cancel</button>
                 </div>
               )}
               <textarea
                 value={replyBody}
                 onChange={(e) => setReplyBody(e.target.value)}
-                className="w-full min-h-[140px] px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none text-sm leading-relaxed resize-y transition"
+                className="w-full min-h-[140px] px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-navy-300 focus:border-transparent outline-none text-sm leading-relaxed resize-y transition"
                 placeholder="Write a helpful, thoughtful reply… Use @name to mention someone."
               />
               <div className="mt-3 flex items-center justify-between">
@@ -365,7 +365,7 @@ export default function ThreadDetailPage() {
                 <button
                   disabled={replyBody.trim().length < 2 || replyMut.isPending}
                   onClick={() => replyMut.mutate()}
-                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition text-sm shadow-sm"
+                  className="flex items-center gap-2 bg-navy-500 hover:bg-navy-50 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold px-5 py-2.5 rounded-xl transition text-sm shadow-sm"
                 >
                   {replyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Post reply
@@ -404,7 +404,7 @@ function PostCard({
     <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden transition-all ${
       post.is_accepted_answer
         ? 'border-l-4 border-l-emerald-500 border-emerald-200'
-        : 'border-slate-200 hover:border-indigo-200 hover:shadow-md'
+        : 'border-slate-200 hover:border-navy-200 hover:shadow-md'
     }`}>
       {post.is_accepted_answer && (
         <div className="px-5 py-2.5 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2">
@@ -429,7 +429,7 @@ function PostCard({
 
             <div className="ml-auto flex items-center gap-3">
               <button onClick={onReply}
-                className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-semibold transition">
+                className="inline-flex items-center gap-1 text-navy-500 hover:text-navy-500 font-semibold transition">
                 <CornerDownRight className="w-3.5 h-3.5" /> Reply
               </button>
               {supportsAccepted && canAccept && !post.is_accepted_answer && (
@@ -464,14 +464,14 @@ function VoteBar({ score, myVote, onVote }: {
       <button
         onClick={() => onVote(myVote === 1 ? 0 : 1)}
         className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-          myVote === 1 ? 'bg-indigo-100 text-indigo-700 scale-110' : 'text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 hover:scale-105'
+          myVote === 1 ? 'bg-navy-100 text-navy-600 scale-110' : 'text-slate-400 hover:bg-navy-50 hover:text-navy-500 hover:scale-105'
         }`}
         aria-label="Upvote"
       >
         <ChevronUp className="w-5 h-5 stroke-[2.5]" />
       </button>
       <div className={`text-base font-black tabular-nums text-center leading-none transition-colors ${
-        score > 0 ? 'text-indigo-700' : score < 0 ? 'text-red-600' : 'text-slate-600'
+        score > 0 ? 'text-navy-600' : score < 0 ? 'text-red-600' : 'text-slate-600'
       }`}>
         {score}
       </div>
@@ -492,7 +492,7 @@ function AuthorChip({ name }: { name?: string | null }) {
   const initial = name?.slice(0, 1).toUpperCase() ?? '?';
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[10px] font-black flex items-center justify-center">
+      <span className="w-5 h-5 rounded-full bg-navy-100 text-navy-600 text-[10px] font-black flex items-center justify-center">
         {initial}
       </span>
       <span className="font-semibold text-slate-600">{name ?? 'Unknown'}</span>

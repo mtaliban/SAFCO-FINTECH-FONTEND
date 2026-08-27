@@ -47,7 +47,7 @@ const COUNT_OPTS = [5, 10, 15, 20, 25, 30];
 const TYPE_BADGE: Record<string, string> = {
   multiple_choice: 'bg-blue-100 text-blue-700',
   true_false: 'bg-emerald-100 text-emerald-700',
-  short_answer: 'bg-violet-100 text-violet-700',
+  short_answer: 'bg-navy-50 text-navy-500',
   fill_in_blank: 'bg-amber-100 text-amber-700',
 };
 
@@ -178,7 +178,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
             </div>
             <div>
               <h2 className="text-white font-black text-lg">AI Question Generator</h2>
-              <p className="text-indigo-200 text-xs">Generate MCQs, Exams & Assignments from any source</p>
+              <p className="text-navy-500 text-xs">Generate MCQs, Exams & Assignments from any source</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/15 transition">
@@ -204,7 +204,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                     key={key}
                     onClick={() => setTab(key)}
                     className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-bold transition ${
-                      tab === key ? 'bg-white shadow text-indigo-700' : 'text-slate-500 hover:text-slate-700'
+                      tab === key ? 'bg-white shadow text-navy-500' : 'text-slate-500 hover:text-slate-700'
                     }`}
                   >
                     {icon} {label}
@@ -220,7 +220,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                   Topic or Subject
                 </label>
                 <input
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-navy-300 focus:border-navy-200 outline-none transition"
                   placeholder="e.g. SUMIFS function in Excel, IFRS 9 Financial Instruments, ERP Module Configuration..."
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
@@ -235,7 +235,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                 </label>
                 <textarea
                   rows={7}
-                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none transition resize-none"
+                  className="w-full border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-navy-300 focus:border-navy-200 outline-none transition resize-none"
                   placeholder="Paste lecture notes, textbook excerpts, course content, or any text here…"
                   value={text}
                   onChange={(e) => setText(e.target.value)}
@@ -252,14 +252,14 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                 <button
                   onClick={() => fileRef.current?.click()}
                   className={`w-full border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-2 transition ${
-                    file ? 'border-indigo-300 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'
+                    file ? 'border-navy-200 bg-navy-50' : 'border-slate-300 hover:border-navy-200 hover:bg-slate-50'
                   }`}
                 >
                   {file ? (
                     <>
-                      <FileText className="w-8 h-8 text-indigo-500" />
-                      <div className="text-sm font-bold text-indigo-700">{file.name}</div>
-                      <div className="text-xs text-indigo-500">{(file.size / 1024).toFixed(0)} KB · Click to change</div>
+                      <FileText className="w-8 h-8 text-navy-500" />
+                      <div className="text-sm font-bold text-navy-500">{file.name}</div>
+                      <div className="text-xs text-navy-500">{(file.size / 1024).toFixed(0)} KB · Click to change</div>
                     </>
                   ) : (
                     <>
@@ -284,7 +284,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Question Type</label>
                 <select
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 outline-none"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
                   value={qType}
                   onChange={(e) => setQType(e.target.value as QType)}
                 >
@@ -294,7 +294,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Count</label>
                 <select
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 outline-none"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
                   value={count}
                   onChange={(e) => setCount(Number(e.target.value))}
                 >
@@ -304,7 +304,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Difficulty</label>
                 <select
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 outline-none"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
                   value={difficulty}
                   onChange={(e) => setDifficulty(e.target.value as Difficulty)}
                 >
@@ -314,7 +314,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">Language</label>
                 <select
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 outline-none"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
                   value={language}
                   onChange={(e) => setLanguage(e.target.value as 'en' | 'sw')}
                 >
@@ -335,9 +335,9 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
             </button>
 
             {/* Model note */}
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-indigo-50 border border-indigo-100">
-              <AlertCircle className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-indigo-700 leading-relaxed">
+            <div className="flex items-start gap-2 p-3 rounded-xl bg-navy-50 border border-navy-200">
+              <AlertCircle className="w-4 h-4 text-navy-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-navy-500 leading-relaxed">
                 Questions are AI-generated and may need review. Always verify accuracy before publishing.
               </p>
             </div>
@@ -350,7 +350,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                 Generated Questions {questions.length > 0 && `(${selected.length} / ${questions.length} selected)`}
               </div>
               {questions.length > 0 && (
-                <button onClick={toggleAll} className="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                <button onClick={toggleAll} className="text-xs font-bold text-navy-500 hover:text-navy-500">
                   {allSelected ? 'Deselect all' : 'Select all'}
                 </button>
               )}
@@ -360,8 +360,8 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
               <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
                 {generating ? (
                   <>
-                    <div className="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-4 animate-pulse">
-                      <Sparkles className="w-8 h-8 text-indigo-500" />
+                    <div className="w-16 h-16 rounded-full bg-navy-50 flex items-center justify-center mb-4 animate-pulse">
+                      <Sparkles className="w-8 h-8 text-navy-500" />
                     </div>
                     <p className="font-bold text-slate-700">AI is generating questions…</p>
                     <p className="text-sm text-slate-400 mt-1">This may take 10–30 seconds</p>
@@ -382,14 +382,14 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                   <div
                     key={q._id}
                     className={`border rounded-xl transition ${
-                      q.selected ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200 bg-white opacity-60'
+                      q.selected ? 'border-navy-200 bg-navy-50/50' : 'border-slate-200 bg-white opacity-60'
                     }`}
                   >
                     <div className="flex items-start gap-3 p-3">
                       <button
                         onClick={() => toggleOne(q._id)}
                         className={`mt-0.5 w-5 h-5 rounded flex items-center justify-center shrink-0 transition border-2 ${
-                          q.selected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'
+                          q.selected ? 'bg-navy-50 border-navy-200' : 'border-slate-300 bg-white'
                         }`}
                       >
                         {q.selected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
@@ -458,7 +458,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                     Save to Question Bank
                   </label>
                   <select
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-indigo-300 outline-none"
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
                     value={bankUuid}
                     onChange={(e) => setBankUuid(e.target.value)}
                   >
@@ -471,7 +471,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
                 <button
                   onClick={saveAndAttach}
                   disabled={saving || selected.length === 0 || !bankUuid}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-navy-50 hover:bg-navy-100 text-white font-bold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                   {saving ? 'Saving…' : `Import ${selected.length} Question${selected.length === 1 ? '' : 's'} to Quiz`}

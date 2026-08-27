@@ -52,7 +52,7 @@ export default function TrainerPortalPage() {
         <div className="max-w-5xl mx-auto px-6 py-10">
           <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
             <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-3xl font-black text-white shadow-xl shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-xl shrink-0">
                 {p.slug ? p.slug.slice(0, 1).toUpperCase() : 'T'}
               </div>
               <div>
@@ -342,8 +342,8 @@ function QualificationsTab({ items, onChanged }: { items: MyTrainerPortal['quali
           {items.map((q, idx) => (
             <div key={q.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex gap-4 group hover:border-teal-200 transition">
               <div className="relative shrink-0">
-                <div className="w-11 h-11 rounded-xl bg-teal-50 flex items-center justify-center">
-                  <GraduationCap className="w-5 h-5 text-teal-600" />
+                <div className="w-11 h-11 rounded-xl bg-orange-50 flex items-center justify-center">
+                  <GraduationCap className="w-5 h-5 text-orange-600" />
                 </div>
                 {idx < items.length - 1 && (
                   <div className="absolute left-1/2 -translate-x-1/2 top-11 w-0.5 h-6 bg-slate-200" />
@@ -355,7 +355,7 @@ function QualificationsTab({ items, onChanged }: { items: MyTrainerPortal['quali
                   {q.field_of_study && <span className="text-sm text-slate-500">— {q.field_of_study}</span>}
                   <VerificationBadge status={q.verification_status} />
                 </div>
-                <div className="text-sm font-semibold text-teal-700">{q.institution}</div>
+                <div className="text-sm font-semibold text-orange-700">{q.institution}</div>
                 <div className="text-xs text-slate-500 mt-0.5">
                   {q.start_year ?? '?'} – {q.end_year ?? 'Present'}
                   {q.has_proof && <> · <span className="text-emerald-600 font-semibold">proof uploaded</span></>}
@@ -411,7 +411,7 @@ function AddQualificationForm({ onDone, onCancel }: { onDone: () => void; onCanc
         </div>
       </div>
       <Field label="Proof document" hint="PDF or image, max 8 MB — diploma, transcript, or official letter (reviewed by admin)">
-        <input type="file" accept=".pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 transition" />
+        <input type="file" accept=".pdf,image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-sm text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 transition" />
       </Field>
       <div className="flex gap-3">
         <button type="submit" disabled={mut.isPending}
@@ -570,8 +570,8 @@ function ExperienceTab({ items, onChanged }: { items: MyTrainerPortal['experienc
           {items.map((e, idx) => (
             <div key={e.id} className="p-5 flex gap-4 group hover:bg-slate-50 transition">
               <div className="relative shrink-0 flex flex-col items-center">
-                <div className="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-blue-600" />
+                <div className="w-11 h-11 rounded-xl bg-navy-50 flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-navy-500" />
                 </div>
                 {idx < items.length - 1 && (
                   <div className="w-0.5 flex-1 mt-3 bg-slate-200 min-h-[24px]" />
@@ -581,7 +581,7 @@ function ExperienceTab({ items, onChanged }: { items: MyTrainerPortal['experienc
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-bold text-slate-900">{e.title}</div>
-                    <div className="text-sm font-semibold text-blue-700">{e.company}{e.location && <span className="text-slate-500 font-normal"> · {e.location}</span>}</div>
+                    <div className="text-sm font-semibold text-navy-600">{e.company}{e.location && <span className="text-slate-500 font-normal"> · {e.location}</span>}</div>
                     <div className="text-xs text-slate-500 mt-0.5">
                       {new Date(e.start_date).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })}
                       {' – '}
@@ -623,7 +623,7 @@ function AddExperienceForm({ onDone, onCancel }: { onDone: () => void; onCancel:
 
   return (
     <form onSubmit={(e) => { e.preventDefault(); mut.mutate(); }}
-      className="bg-white rounded-xl border border-blue-200 shadow-sm p-6 space-y-4">
+      className="bg-white rounded-xl border border-navy-200 shadow-sm p-6 space-y-4">
       <h3 className="font-bold text-slate-900 text-sm border-b border-slate-100 pb-3">New Work Experience</h3>
       <div className="grid md:grid-cols-2 gap-4">
         <Field label="Job title *"><input required className="input" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} placeholder="Senior Trainer, Financial Analyst..." /></Field>
@@ -716,7 +716,7 @@ function ReviewsTab() {
   });
 
   if (isLoading || !data) {
-    return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-teal-600 mx-auto" /></div>;
+    return <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-orange-600 mx-auto" /></div>;
   }
 
   return (
@@ -731,7 +731,7 @@ function ReviewsTab() {
         </div>
         <div className="text-right">
           <div className="text-xs uppercase text-slate-400 font-bold tracking-widest">Total Reviews</div>
-          <div className="text-3xl font-black text-slate-900 tabular-nums">{data.meta.count}</div>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">{data.meta.count}</div>
           <div className="text-xs text-slate-500 mt-1">from students</div>
         </div>
       </div>

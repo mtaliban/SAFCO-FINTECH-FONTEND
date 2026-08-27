@@ -113,7 +113,7 @@ export default function EditCoursePage() {
   }
 
   if (isLoading || !course) {
-    return <div className="p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
+    return <div className="p-4 sm:p-6 lg:p-8 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600" /></div>;
   }
 
   const isDraft = course.status === 'draft';
@@ -121,10 +121,10 @@ export default function EditCoursePage() {
   const isEditable = isDraft || isRejected;
 
   return (
-    <div className="p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
       <div className="mb-6 flex justify-between items-start gap-4">
         <div className="flex-1">
-          <h1 className="text-3xl font-bold text-slate-900">{course.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{course.title}</h1>
           <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
             <StatusBadge status={course.status} />
             <span className="text-slate-500">{CATEGORY_LABEL[course.category]}</span>
@@ -457,7 +457,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
       {editable && (
         <div className="ml-14 mt-2 flex flex-wrap gap-2">
           {/* Video upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold transition">
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition">
             <Film className="w-3.5 h-3.5" /> Upload Video
             <input
               ref={videoRef}
@@ -493,7 +493,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           </label>
 
           {/* SCORM upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-semibold transition">
+          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition">
             <FileArchive className="w-3.5 h-3.5" /> Upload SCORM (.zip)
             <input
               type="file"
@@ -639,7 +639,7 @@ function fmtSize(bytes: number): string {
 
 function MaterialRow({ material, editable, onDeleted }: { material: LessonMaterial; editable: boolean; onDeleted: () => void }) {
   const Icon = materialIcon(material.type);
-  const colorClass = material.category === 'documents' ? 'text-red-600' : material.category === 'videos' ? 'text-blue-600' : 'text-purple-600';
+  const colorClass = material.category === 'documents' ? 'text-red-600' : material.category === 'videos' ? 'text-navy-500' : 'text-navy-500';
 
   // Real-time processing status via MQTT (falls back to poll)
   const status = useMaterialStatus(material.uuid, {
