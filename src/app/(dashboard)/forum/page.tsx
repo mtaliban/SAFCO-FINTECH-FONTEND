@@ -56,58 +56,58 @@ export default function ForumHomePage() {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── HERO ── */}
-      <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #3730a3 50%, #4f46e5 100%)' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1a3f72 55%, #0d2040 100%)' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-navy-500 text-[11px] font-bold uppercase tracking-widest mb-3">
-                <MessagesSquare className="w-4 h-4" /> SAFCO FINTECH LMS · Academic Discussion Forum
+              <div className="flex items-center gap-2 text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-3">
+                <MessagesSquare className="w-4 h-4" /> SAFCO FINTECH LMS · Discussion Forum
               </div>
-              <h1 className="text-4xl font-black text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-black text-white mb-2 leading-tight">
                 Knowledge begins with a question.
               </h1>
-              <p className="text-navy-500 text-base max-w-xl">
-                Ask questions, share ideas, and collaborate with peers and instructors in a professional academic environment.
+              <p className="text-white/65 text-sm sm:text-base max-w-xl leading-relaxed">
+                Ask questions, share ideas, and collaborate with peers and instructors.
               </p>
             </div>
             <Link
               href="/forum/new"
-              className="flex items-center gap-2 bg-white text-navy-600 hover:bg-navy-50 font-bold px-5 py-3 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
+              className="self-start flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-bold px-5 py-3 rounded-xl transition shadow-lg text-sm whitespace-nowrap"
             >
               <Plus className="w-4 h-4" /> Start a discussion
             </Link>
           </div>
 
           {/* Stats chips */}
-          <div className="flex flex-wrap gap-4 mt-8">
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <MessageSquare className="w-5 h-5 text-navy-500" />
+          <div className="flex flex-wrap gap-3 mt-6">
+            <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <MessageSquare className="w-4 h-4 text-orange-400" />
               <div>
-                <div className="text-xl font-black text-white tabular-nums">{totalThreads.toLocaleString()}</div>
-                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Discussions</div>
+                <div className="text-lg font-black text-white tabular-nums">{totalThreads.toLocaleString()}</div>
+                <div className="text-[10px] uppercase text-white/50 font-bold tracking-widest">Discussions</div>
               </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-navy-500" />
+            <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <TrendingUp className="w-4 h-4 text-orange-400" />
               <div>
-                <div className="text-xl font-black text-white tabular-nums">
+                <div className="text-lg font-black text-white tabular-nums">
                   {recentData?.meta.total.toLocaleString() ?? '—'}
                 </div>
-                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Total threads</div>
+                <div className="text-[10px] uppercase text-white/50 font-bold tracking-widest">Total threads</div>
               </div>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-5 py-3 flex items-center gap-3">
-              <Users className="w-5 h-5 text-navy-500" />
+            <div className="bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 flex items-center gap-3">
+              <Users className="w-4 h-4 text-orange-400" />
               <div>
-                <div className="text-xl font-black text-white">{catData?.categories.length ?? 3}</div>
-                <div className="text-[10px] uppercase text-navy-500 font-bold tracking-widest">Categories</div>
+                <div className="text-lg font-black text-white">{catData?.categories.length ?? 3}</div>
+                <div className="text-[10px] uppercase text-white/50 font-bold tracking-widest">Categories</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 space-y-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8 space-y-8">
 
         {/* Category tiles */}
         {catLoading ? (
