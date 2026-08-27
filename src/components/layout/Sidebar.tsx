@@ -148,20 +148,20 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               className={cn(
                 'group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                 active
-                  ? 'bg-orange-500 text-white shadow-sm'
-                  : 'text-slate-600 hover:bg-orange-50 hover:text-orange-600',
+                  ? 'bg-white shadow-sm border border-orange-200 text-orange-600 font-semibold'
+                  : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
               )}
             >
               <Icon className={cn(
                 'w-[18px] h-[18px] shrink-0 transition-colors',
-                active ? 'text-white' : 'text-slate-400 group-hover:text-orange-500',
+                active ? 'text-orange-500' : 'text-slate-400 group-hover:text-slate-600',
               )} />
               <span className="flex-1 truncate">{label}</span>
               {badge > 0 && (
                 <span className={cn(
                   'shrink-0 text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] text-center leading-none',
                   active
-                    ? 'bg-navy-500 text-white'
+                    ? 'bg-orange-500 text-white'
                     : 'bg-red-500 text-white',
                 )}>
                   {badge > 99 ? '99+' : badge}
