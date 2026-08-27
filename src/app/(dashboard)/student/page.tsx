@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BookOpen, Award, GraduationCap, TrendingUp, ArrowRight,
@@ -17,6 +17,11 @@ import {
 export default function StudentDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [days, setDays] = useState<WindowDays>(null);
+  const [today, setToday] = useState('');
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'student', days],
@@ -26,7 +31,6 @@ export default function StudentDashboardPage() {
   });
 
   const firstName = user?.profile?.first_name ?? 'Mwanafunzi';
-  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   if (isLoading || !data) {
     return (

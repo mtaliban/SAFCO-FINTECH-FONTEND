@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BookOpen, Users, Zap, TrendingUp, ArrowRight, Plus,
@@ -18,6 +18,11 @@ import {
 export default function TrainerDashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [days, setDays] = useState<WindowDays>(null);
+  const [today, setToday] = useState('');
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', 'trainer', days],
@@ -27,7 +32,6 @@ export default function TrainerDashboardPage() {
   });
 
   const firstName = user?.profile?.first_name ?? 'Mwalimu';
-  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   if (isLoading || !data) {
     return (

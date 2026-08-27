@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Home, User, History, LogOut, GraduationCap,
+  Home, User, LogOut, GraduationCap,
   Zap, Users, Activity, BarChart3, BookOpen, Award, Building2,
   ClipboardList, UserPlus, Layers, QrCode, Library, CreditCard, Star,
   MessagesSquare, X, ShieldCheck,
@@ -62,7 +62,6 @@ const studentNav: NavItem[] = [
   { href: '/forum',                      label: 'Discussion Forum',     icon: MessagesSquare },
   { href: '/billing',                    label: 'Billing',              icon: CreditCard },
   { href: '/dashboard/profile',          label: 'My Profile',           icon: User },
-  { href: '/dashboard/history',          label: 'Login History',        icon: History },
 ];
 
 const corporateNav: NavItem[] = [
