@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store/auth';
 const ROLE_REDIRECTS: Record<string, string> = {
   student:          '/student',
   trainer:          '/trainer',
-  facilitator:      '/trainer/sessions',
+  
   system_admin:     '/admin',
   corporate_client: '/corporate',
 };

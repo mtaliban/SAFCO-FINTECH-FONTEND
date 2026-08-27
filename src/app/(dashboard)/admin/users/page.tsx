@@ -33,7 +33,7 @@ type UserRow = {
 type Meta = { total: number; per_page: number; current_page: number; last_page: number };
 type UsersResponse = { data: UserRow[]; meta: Meta };
 
-const ROLES = ['student', 'trainer', 'facilitator', 'corporate_client', 'system_admin'];
+const ROLES = ['student', 'trainer', 'corporate_client', 'system_admin'];
 const STATUSES = ['active', 'pending', 'suspended', 'inactive'];
 const PER_PAGE = 15;
 

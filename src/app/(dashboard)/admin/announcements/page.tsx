@@ -158,7 +158,6 @@ export default function AdminAnnouncementsPage() {
               <option value="">All active users</option>
               <option value="student">Students only</option>
               <option value="trainer">Trainers only</option>
-              <option value="facilitator">Facilitators only</option>
               <option value="corporate_client">Corporate clients only</option>
               <option value="system_admin">System admins only</option>
             </select>

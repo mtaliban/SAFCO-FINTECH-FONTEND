@@ -14,14 +14,13 @@ const PROTECTED_PREFIXES = [
 const ROLE_ROUTES: Record<string, string[]> = {
   '/admin':     ['system_admin'],
   '/corporate': ['corporate_client', 'system_admin'],
-  '/trainer':   ['trainer', 'facilitator', 'system_admin'],
+  '/trainer':   ['trainer', 'system_admin'],
   '/student':   ['student', 'system_admin'],
 };
 
 const ROLE_HOME: Record<string, string> = {
   system_admin:     '/admin',
   trainer:          '/trainer',
-  facilitator:      '/trainer/sessions',
   student:          '/student',
   corporate_client: '/corporate',
 };

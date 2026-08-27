@@ -42,7 +42,7 @@ function CallbackHandler() {
       const landing: Record<string, string> = {
         system_admin:     '/admin',
         trainer:          '/trainer',
-        facilitator:      '/trainer/sessions',
+        
         student:          '/student',
         corporate_client: '/corporate',
       };

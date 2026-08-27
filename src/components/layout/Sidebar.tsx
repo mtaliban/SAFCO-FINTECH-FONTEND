@@ -43,11 +43,6 @@ const trainerNav: NavItem[] = [
   { href: '/dashboard/profile',          label: 'My Profile',           icon: User },
 ];
 
-const facilitatorNav: NavItem[] = [
-  { href: '/trainer/sessions',           label: 'Dashboard',            icon: Home },
-  { href: '/dashboard/profile',          label: 'My Profile',           icon: User },
-];
-
 const studentNav: NavItem[] = [
   { href: '/student',                    label: 'Dashboard',            icon: Home },
   { href: '/student/courses',            label: 'Browse Courses',       icon: BookOpen },
@@ -79,7 +74,6 @@ function navForRole(role?: string): NavItem[] {
   switch (role) {
     case 'system_admin':     return adminNav;
     case 'trainer':          return trainerNav;
-    case 'facilitator':      return facilitatorNav;
     case 'student':          return studentNav;
     case 'corporate_client': return corporateNav;
     default: return [
