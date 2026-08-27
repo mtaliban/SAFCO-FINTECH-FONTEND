@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -22,6 +22,11 @@ export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const role = user?.roles?.[0] ?? 'student';
+  const [today, setToday] = useState('');
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('sw-TZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+  }, []);
 
   // Auto-redirect role-specific dashboard users
   useEffect(() => {
@@ -52,7 +57,7 @@ export default function DashboardPage() {
                 Karibu, {firstName}!
               </h1>
               <p className="text-white/70 text-sm mt-1">
-                {new Date().toLocaleDateString('sw-TZ', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {today}
               </p>
             </div>
 

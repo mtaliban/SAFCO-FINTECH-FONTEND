@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Users, UserPlus, Building2, Award, TrendingUp, ArrowRight,
@@ -27,7 +27,11 @@ export default function CorporateDashboardPage() {
 
   const firstName = user?.profile?.first_name ?? 'Manager';
   const orgName = user?.organization?.name ?? 'Organization';
-  const today = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const [today, setToday] = useState('');
+
+  useEffect(() => {
+    setToday(new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }));
+  }, []);
 
   if (isLoading) {
     return (

@@ -72,7 +72,7 @@ export function middleware(request: NextRequest) {
 
         // Check if the current path requires a specific role
         for (const [prefix, allowedRoles] of Object.entries(ROLE_ROUTES)) {
-          if (pathname.startsWith(prefix) && role && !allowedRoles.includes(role)) {
+          if ((pathname === prefix || pathname.startsWith(prefix + '/')) && role && !allowedRoles.includes(role)) {
             // Redirect to the user's correct home instead of showing a 403 toast
             const url = request.nextUrl.clone();
             url.pathname = ROLE_HOME[role] ?? '/dashboard';
