@@ -44,7 +44,7 @@ export default function AdminDashboard() {
             {Object.entries(data.users.by_role).map(([role, count]) => (
               <div key={role} className="flex justify-between items-center py-1 border-b border-slate-100 last:border-0">
                 <span className="text-sm text-slate-700 capitalize">{role.replace('_', ' ')}</span>
-                <span className="font-bold text-navy-700">{count}</span>
+                <span className="font-bold text-slate-900">{count}</span>
               </div>
             ))}
           </div>
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
 }
 
 function StatCard({ label, value, icon: Icon, accent }: { label: string; value: number; icon: React.ComponentType<{ className?: string }>; accent: 'brand' | 'green' | 'amber' | 'slate' }) {
-  const bg = { brand: 'bg-brand-50 text-brand-600', green: 'bg-green-50 text-green-600', amber: 'bg-amber-50 text-amber-600', slate: 'bg-slate-100 text-slate-600' }[accent];
+  const bg = { brand: 'bg-orange-50 text-orange-500', green: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600', slate: 'bg-slate-100 text-slate-500' }[accent];
   return (
     <div className="card p-5">
       <div className={`inline-flex w-10 h-10 rounded-lg items-center justify-center ${bg}`}>
@@ -82,12 +82,12 @@ function StatCard({ label, value, icon: Icon, accent }: { label: string; value: 
   );
 }
 function Row({ label, value }: { label: string; value: number }) {
-  return <div className="flex justify-between py-1 border-b border-slate-100 last:border-0"><span className="text-slate-700">{label}</span><span className="font-bold text-navy-700">{value}</span></div>;
+  return <div className="flex justify-between py-1 border-b border-slate-100 last:border-0"><span className="text-slate-700">{label}</span><span className="font-bold text-slate-900">{value}</span></div>;
 }
 function QuickLink({ href, icon: Icon, title, desc }: { href: string; icon: React.ComponentType<{ className?: string }>; title: string; desc: string }) {
   return (
-    <Link href={href} className="card p-5 hover:shadow-md hover:border-brand-300 transition group">
-      <Icon className="w-6 h-6 text-brand-600 mb-3 group-hover:scale-110 transition" />
+    <Link href={href} className="card p-5 hover:shadow-md hover:border-orange-200 transition group">
+      <Icon className="w-6 h-6 text-orange-500 mb-3 group-hover:scale-110 transition" />
       <div className="font-bold text-slate-900">{title}</div>
       <div className="text-sm text-slate-500">{desc}</div>
     </Link>

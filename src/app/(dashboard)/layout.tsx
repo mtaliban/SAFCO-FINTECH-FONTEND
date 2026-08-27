@@ -2,13 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useAuthStore } from '@/store/auth';
 import { isAuthenticated } from '@/lib/auth';
-import { Loader2, Menu, Bell } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
-import { useNotifications } from '@/lib/notifications/hook';
 import { AiTutorWidget } from '@/components/ai/AiTutorWidget';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,7 +14,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchMe = useAuthStore((s) => s.fetchMe);
   const user = useAuthStore((s) => s.user);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { unreadCount } = useNotifications();
   const role = user?.roles?.[0];
 
   useEffect(() => {
@@ -62,18 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Logo width={100} height={30} href="/dashboard" />
           </div>
 
-          <Link
-            href="/notifications"
-            className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition"
-            aria-label="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-orange-500 text-white text-[10px] font-black flex items-center justify-center px-1 leading-none">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </Link>
+          <div className="w-9" />
         </div>
 
         <main className="flex-1 overflow-y-auto">{children}</main>

@@ -32,7 +32,7 @@ export default function TrainerDashboardPage() {
   if (isLoading || !data) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <div className="h-52 animate-pulse" style={{ background: 'linear-gradient(135deg,#7c2d12 0%,#c2410c 100%)' }} />
+        <div className="h-52 animate-pulse" style={{ background: 'linear-gradient(135deg,#0f2a50 0%,#1a3f72 100%)' }} />
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6">
           <StatCardSkeleton count={4} />
           <div className="grid lg:grid-cols-3 gap-6">
@@ -66,15 +66,15 @@ export default function TrainerDashboardPage() {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── HERO BANNER ── */}
-      <div style={{ background: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #ea580c 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1a3f72 55%, #0d2040 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-orange-200 text-[11px] font-bold uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-2 text-orange-400 text-[11px] font-bold uppercase tracking-widest mb-2">
                 <GraduationCap className="w-3.5 h-3.5" /> SAFCO FINTECH LMS · Trainer Dashboard
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-white">Karibu, {firstName}!</h1>
-              <div className="flex items-center gap-1.5 text-orange-200 text-sm mt-1">
+              <div className="flex items-center gap-1.5 text-white/60 text-sm mt-1">
                 <Calendar className="w-3.5 h-3.5" /> {today}
               </div>
             </div>
@@ -107,8 +107,8 @@ export default function TrainerDashboardPage() {
         {/* KPI row */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Active Courses" value={h.active_courses} icon={<BookOpen className="w-4 h-4" />} accent="brand" />
-          <StatCard label="Total Courses" value={h.total_courses} icon={<GraduationCap className="w-4 h-4" />} accent="navy" />
-          <StatCard label="Student Count" value={h.student_count} icon={<Users className="w-4 h-4" />} accent="purple" />
+          <StatCard label="Total Courses" value={h.total_courses} icon={<GraduationCap className="w-4 h-4" />} accent="amber" />
+          <StatCard label="Student Count" value={h.student_count} icon={<Users className="w-4 h-4" />} accent="green" />
           <StatCard
             label="Quiz Performance"
             value={h.avg_quiz_score_percent !== null ? h.avg_quiz_score_percent.toFixed(1) : null}
@@ -135,7 +135,7 @@ export default function TrainerDashboardPage() {
                 ? <EmptyChart msg="No enrolled students yet. Publish a course and share it with learners." />
                 : <DashBarChart data={perCourseData} xKey="label" height={260} bars={[
                     { dataKey: 'students', name: 'Students', color: COLORS.brand },
-                    { dataKey: 'Avg Progress %', name: 'Avg Progress %', color: COLORS.navy },
+                    { dataKey: 'Avg Progress %', name: 'Avg Progress %', color: COLORS.amber },
                   ]} />}
             </DashPanel>
           </div>
@@ -162,7 +162,7 @@ export default function TrainerDashboardPage() {
         <DashPanel
           title="Quiz Performance Overview"
           subtitle={`${data.quiz_performance.length} quizzes with attempts`}
-          accent="navy"
+          accent="brand"
           right={
             <Link href="/trainer/quizzes" className="text-xs text-orange-600 hover:text-orange-700 font-semibold">
               All quizzes →
@@ -229,11 +229,11 @@ export default function TrainerDashboardPage() {
                 {data.recent_activity.map((a, i) => (
                   <li key={i} className="py-3 flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                      a.type === 'enrollment' ? 'bg-navy-50'
+                      a.type === 'enrollment' ? 'bg-orange-50'
                         : a.passed ? 'bg-emerald-50' : 'bg-red-50'
                     }`}>
                       {a.type === 'enrollment'
-                        ? <Users className="w-3.5 h-3.5 text-navy-500" />
+                        ? <Users className="w-3.5 h-3.5 text-orange-500" />
                         : a.passed
                           ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                           : <XCircle className="w-3.5 h-3.5 text-red-500" />}
@@ -255,7 +255,7 @@ export default function TrainerDashboardPage() {
         <div>
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <QuickLink href="/trainer/courses" icon={<BookOpen className="w-5 h-5" />} title="Manage Courses" subtitle="Modules · Lessons · Assignments" color="bg-navy-50 text-navy-500" />
+            <QuickLink href="/trainer/courses" icon={<BookOpen className="w-5 h-5" />} title="Manage Courses" subtitle="Modules · Lessons · Assignments" color="bg-orange-50 text-orange-500" />
             <QuickLink href="/trainer/quizzes" icon={<Zap className="w-5 h-5" />} title="Manage Quizzes" subtitle="Live · Self-paced · Exams" color="bg-orange-50 text-orange-600" />
             <QuickLink href="/trainer/question-banks" icon={<Library className="w-5 h-5" />} title="Question Banks" subtitle="Reusable question pools" color="bg-emerald-50 text-emerald-600" />
           </div>

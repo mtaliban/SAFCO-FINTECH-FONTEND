@@ -57,7 +57,7 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen bg-slate-50">
 
       {/* ── HERO BANNER ── */}
-      <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0f2a50 0%, #1a3f72 55%, #0d2040 100%)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
             <div>
@@ -65,7 +65,7 @@ export default function StudentDashboardPage() {
                 <GraduationCap className="w-3.5 h-3.5" /> SAFCO FINTECH LMS · Student Portal
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-white">Karibu, {firstName}!</h1>
-              <div className="flex items-center gap-1.5 text-navy-500 text-sm mt-1">
+              <div className="flex items-center gap-1.5 text-white/60 text-sm mt-1">
                 <Calendar className="w-3.5 h-3.5" /> {today}
               </div>
             </div>
@@ -98,7 +98,7 @@ export default function StudentDashboardPage() {
             value={h.avg_score_percent !== null ? h.avg_score_percent.toFixed(1) : null}
             suffix="%"
             icon={<TrendingUp className="w-4 h-4" />}
-            accent="navy"
+            accent="brand"
           />
           <StatCard label="Certificates Earned" value={h.certificates_earned} icon={<Award className="w-4 h-4" />} accent="amber" />
         </div>

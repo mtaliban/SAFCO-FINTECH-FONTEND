@@ -6,19 +6,17 @@ import {
 } from 'recharts';
 
 export const COLORS = {
-  brand: '#f97316',
-  navy: '#1e3a8a',
+  brand: '#f5a623',
+  navy:  '#0f2a50',
   green: '#10b981',
   amber: '#f59e0b',
-  red: '#ef4444',
+  red:   '#ef4444',
   slate: '#64748b',
-  purple: '#8b5cf6',
-  blue: '#0ea5e9',
 };
 
 export const PIE_COLORS = [
   COLORS.brand, COLORS.navy, COLORS.green, COLORS.amber,
-  COLORS.purple, COLORS.blue, COLORS.red, COLORS.slate,
+  COLORS.red, COLORS.slate,
 ];
 
 /* ------------------------------------------------------------------ *
@@ -39,11 +37,11 @@ export function StatCard({
 
   const cfg = {
     brand:  { border: 'border-l-orange-500',  icon: 'bg-orange-50  text-orange-600',  num: 'text-orange-600' },
-    navy:   { border: 'border-l-blue-700',    icon: 'bg-blue-50    text-blue-700',    num: 'text-blue-700' },
+    navy:   { border: 'border-l-orange-400',  icon: 'bg-orange-50  text-orange-500',  num: 'text-orange-500' },
     green:  { border: 'border-l-emerald-500', icon: 'bg-emerald-50 text-emerald-600', num: 'text-emerald-600' },
     amber:  { border: 'border-l-amber-500',   icon: 'bg-amber-50   text-amber-600',   num: 'text-amber-600' },
     red:    { border: 'border-l-red-500',     icon: 'bg-red-50     text-red-600',     num: 'text-red-600' },
-    purple: { border: 'border-l-purple-500',  icon: 'bg-purple-50  text-purple-600',  num: 'text-purple-600' },
+    purple: { border: 'border-l-amber-500',   icon: 'bg-amber-50   text-amber-600',   num: 'text-amber-600' },
   }[accent];
 
   return (
@@ -274,7 +272,7 @@ export function DashPanel({
   const topBorder = accent ? {
     brand: 'border-t-2 border-t-orange-500',
     green: 'border-t-2 border-t-emerald-500',
-    navy:  'border-t-2 border-t-blue-800',
+    navy:  'border-t-2 border-t-orange-500',
     amber: 'border-t-2 border-t-amber-500',
   }[accent] : '';
 
