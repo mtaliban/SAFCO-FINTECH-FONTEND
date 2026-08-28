@@ -36,7 +36,7 @@ export default function TrainerCoursesPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <BookOpen className="w-7 h-7 text-orange-500" /> My Courses
           </h1>
-          <p className="text-slate-600 mt-1">Courses ulizotengeneza (SRS 3.2 Create courses).</p>
+          <p className="text-slate-600 mt-1">Courses ulizotengeneza na kusimamia kwenye mfumo.</p>
         </div>
         <Link href="/trainer/courses/new" className="btn-primary">
           <Plus className="w-4 h-4" /> Course Mpya

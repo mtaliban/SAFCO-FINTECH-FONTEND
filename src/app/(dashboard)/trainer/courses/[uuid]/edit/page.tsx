@@ -38,6 +38,8 @@ export default function EditCoursePage() {
     queryFn: () => api.get('/trainer/my-quizzes').then((r) => r.data.data.data ?? r.data.data ?? []),
   });
 
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [detailForm, setDetailForm] = useState({ title: '', description: '', level: '', duration_hours: '' });
   const [showAddModule, setShowAddModule] = useState(false);
   const [addLessonForModule, setAddLessonForModule] = useState<string | null>(null);
   const [attachQuizForModule, setAttachQuizForModule] = useState<string | null>(null);
@@ -84,6 +86,30 @@ export default function EditCoursePage() {
     } catch { /* toast handled */ }
   }
 
+  function startEditDetails() {
+    setDetailForm({
+      title: course?.title ?? '',
+      description: course?.description ?? '',
+      level: course?.level ?? '',
+      duration_hours: String(course?.duration_hours ?? ''),
+    });
+    setEditingDetails(true);
+  }
+
+  async function saveDetails() {
+    try {
+      await courseApi.update(uuid as string, {
+        title: detailForm.title,
+        description: detailForm.description || undefined,
+        level: detailForm.level,
+        duration_hours: detailForm.duration_hours ? Number(detailForm.duration_hours) : undefined,
+      } as Parameters<typeof courseApi.update>[1]);
+      toast.success('Course imebadilishwa');
+      setEditingDetails(false);
+      refresh();
+    } catch { /* handled */ }
+  }
+
   async function updateFinalAssessment(quizUuid: string | null) {
     try {
       await courseApi.update(uuid as string, { /* eslint-disable-next-line @typescript-eslint/no-explicit-any */ final_assessment_quiz_uuid: quizUuid } as any);
@@ -122,25 +148,73 @@ export default function EditCoursePage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
-      <div className="mb-6 flex justify-between items-start gap-4">
-        <div className="flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{course.title}</h1>
-          <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
-            <StatusBadge status={course.status} />
-            <span className="text-slate-500">{CATEGORY_LABEL[course.category]}</span>
-            <span className="text-slate-500 capitalize">{course.level}</span>
-            {course.duration_hours && <span className="text-slate-500">{course.duration_hours}h</span>}
-          </div>
-          {isRejected && course.rejection_reason && (
-            <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
-              <strong>Rejected:</strong> {course.rejection_reason}
+      <div className="mb-6">
+        {editingDetails ? (
+          <div className="card p-5 mb-4 border-navy-200">
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Badilisha Maelezo ya Course</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="label">Kichwa cha Course</label>
+                <input className="input" value={detailForm.title} onChange={(e) => setDetailForm({ ...detailForm, title: e.target.value })} />
+              </div>
+              <div>
+                <label className="label">Maelezo</label>
+                <textarea rows={2} className="input" value={detailForm.description} onChange={(e) => setDetailForm({ ...detailForm, description: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Kiwango</label>
+                  <select className="input" value={detailForm.level} onChange={(e) => setDetailForm({ ...detailForm, level: e.target.value })}>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                    <option value="expert">Expert</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Muda (masaa)</label>
+                  <input type="number" min={1} className="input" value={detailForm.duration_hours} onChange={(e) => setDetailForm({ ...detailForm, duration_hours: e.target.value })} />
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-        {isDraft && (course.modules?.length ?? 0) > 0 && (
-          <button onClick={submitForApproval} className="btn-primary text-sm shrink-0">
-            <CheckCircle2 className="w-4 h-4" /> Submit for Approval
-          </button>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setEditingDetails(false)} className="btn-secondary text-sm">Ghairi</button>
+              <button onClick={saveDetails} className="btn-primary text-sm">Hifadhi Mabadiliko</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{course.title}</h1>
+              <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
+                <StatusBadge status={course.status} />
+                <span className="text-slate-500">{CATEGORY_LABEL[course.category]}</span>
+                <span className="text-slate-500 capitalize">{course.level}</span>
+                {course.duration_hours && <span className="text-slate-500">{course.duration_hours}h</span>}
+                {isEditable && (
+                  <button
+                    onClick={startEditDetails}
+                    className="text-xs text-navy-600 hover:text-navy-800 font-semibold"
+                  >
+                    ✎ Badilisha maelezo
+                  </button>
+                )}
+              </div>
+              {course.description && (
+                <p className="text-slate-500 text-sm mt-2 line-clamp-2">{course.description}</p>
+              )}
+              {isRejected && course.rejection_reason && (
+                <div className="mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-800">
+                  <strong>Imekataliwa:</strong> {course.rejection_reason}
+                </div>
+              )}
+            </div>
+            {isDraft && (course.modules?.length ?? 0) > 0 && (
+              <button onClick={submitForApproval} className="btn-primary text-sm shrink-0">
+                <CheckCircle2 className="w-4 h-4" /> Submit for Approval
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -187,7 +261,7 @@ export default function EditCoursePage() {
 
         <div className="card p-5 space-y-4">
           <div>
-            <label className="label">Instructor (SRS field)</label>
+            <label className="label">Instructor wa Course</label>
             <select
               className="input"
               disabled={!isEditable}
@@ -202,7 +276,7 @@ export default function EditCoursePage() {
           </div>
 
           <div>
-            <label className="label">Final Assessment (SRS "Course Contains Assessments")</label>
+            <label className="label">Tathmini ya Mwisho (Final Assessment)</label>
             <select
               className="input"
               disabled={!isEditable}
@@ -352,7 +426,7 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
             <div key={q.uuid} className="flex items-center gap-3 p-2 rounded bg-white text-sm">
               <Zap className="w-4 h-4 text-brand-500 shrink-0" />
               <span className="flex-1 font-medium text-slate-800">{q.name}</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">{q.mode === 'live_kahoot' ? 'SAFCO Live' : q.mode}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-brand-100 text-brand-700">{q.mode === 'live_quiz' || q.mode === 'live_kahoot' ? 'SAFCO Live' : q.mode}</span>
               <span className="text-xs text-slate-500">{q.number_of_questions}Q</span>
               {editable && (
                 <button onClick={() => detachQuiz(q.uuid)} className="text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
@@ -836,7 +910,7 @@ function AttachQuizModal({ moduleUuid, quizzes, onClose, onAttached }: {
     catch { setBusy(false); }
   }
   return (
-    <Modal onClose={onClose} title="Attach Quiz to Module (SRS Module Contains Quiz)">
+    <Modal onClose={onClose} title="Ongeza Quiz kwenye Module">
       <p className="text-sm text-slate-600 mb-3">Chagua quiz yako ya ku-attach:</p>
       {!quizzes.length ? (
         <p className="text-slate-400 text-sm">Hakuna quiz. Kwanza tengeneza kwenye <a href="/dashboard/quizzes/new" className="text-brand-600 underline">Quizzes</a>.</p>
@@ -886,7 +960,7 @@ function AddAssignmentModal({ lessonUuid, onClose, onCreated }: { lessonUuid: st
   }
 
   return (
-    <Modal onClose={onClose} title="Ongeza Assignment (SRS Module 9)">
+    <Modal onClose={onClose} title="Ongeza Assignment">
       <div className="space-y-3">
         <div>
           <label className="label">Title *</label>
