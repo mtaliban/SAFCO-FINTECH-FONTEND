@@ -5,45 +5,87 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/auth';
 import { apiRequest } from '@/lib/api';
 
-const schema = z.object({
+const credSchema = z.object({
   identifier: z.string().min(3, 'Weka email au namba ya simu'),
   password: z.string().min(6, 'Password lazima iwe angalau alama 6'),
 });
-type FormData = z.infer<typeof schema>;
+type CredForm = z.infer<typeof credSchema>;
 
 const ROLE_LANDING: Record<string, string> = {
   system_admin:     '/admin',
   trainer:          '/trainer',
-  
   student:          '/student',
   corporate_client: '/corporate',
 };
 
 export default function LoginPage() {
   const router = useRouter();
-  const login = useAuthStore((s) => s.login);
-  const loading = useAuthStore((s) => s.loading);
-  const [showPw, setShowPw] = useState(false);
+  const login          = useAuthStore((s) => s.login);
+  const verifyLoginOtp = useAuthStore((s) => s.verifyLoginOtp);
+  const loading        = useAuthStore((s) => s.loading);
+
+  const [showPw, setShowPw]       = useState(false);
   const [socialLoading, setSocialLoading] = useState<'google' | 'microsoft' | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
-    resolver: zodResolver(schema),
+  // OTP step state
+  const [step, setStep]           = useState<'credentials' | 'otp'>('credentials');
+  const [otpEmail, setOtpEmail]   = useState('');
+  const [otpCode, setOtpCode]     = useState('');
+  const otpInputRef               = useRef<HTMLInputElement>(null);
+
+  const { register, handleSubmit, getValues, formState: { errors } } = useForm<CredForm>({
+    resolver: zodResolver(credSchema),
   });
 
-  async function onSubmit(data: FormData) {
+  // ── Step 1: credentials ──────────────────────────────────────────────────
+  async function onSubmitCredentials(data: CredForm) {
     try {
       const res = await login(data.identifier, data.password, 'web');
-      toast.success(`Karibu, ${res.user.profile?.first_name || res.user.email}!`);
-      router.push(ROLE_LANDING[res.user.roles?.[0] ?? ''] ?? '/dashboard');
+
+      if ('otp_sent' in res && res.otp_sent) {
+        setOtpEmail(res.email);
+        setStep('otp');
+        setTimeout(() => otpInputRef.current?.focus(), 100);
+        return;
+      }
+
+      // Phone-only: token returned directly
+      const full = res as Awaited<ReturnType<typeof verifyLoginOtp>>;
+      toast.success(`Karibu, ${full.user.profile?.first_name || full.user.email}!`);
+      router.push(ROLE_LANDING[full.user.roles?.[0] ?? ''] ?? '/dashboard');
     } catch {
       // handled by axios interceptor
     }
+  }
+
+  // ── Step 2: OTP ──────────────────────────────────────────────────────────
+  async function onSubmitOtp() {
+    if (otpCode.length !== 6) return;
+    try {
+      const res = await verifyLoginOtp(otpEmail, otpCode);
+      toast.success(`Karibu, ${res.user.profile?.first_name || res.user.email}!`);
+      router.push(ROLE_LANDING[res.user.roles?.[0] ?? ''] ?? '/dashboard');
+    } catch {
+      setOtpCode('');
+      otpInputRef.current?.focus();
+    }
+  }
+
+  async function resendOtp() {
+    try {
+      await apiRequest.post('/auth/otp/request', {
+        identifier: otpEmail,
+        type: 'login',
+        channel: 'email',
+      });
+      toast.success('Nambari mpya imetumwa kwa barua pepe yako.');
+    } catch { /* handled */ }
   }
 
   async function handleSocial(provider: 'google' | 'microsoft') {
@@ -57,6 +99,68 @@ export default function LoginPage() {
     }
   }
 
+  // ── OTP screen ───────────────────────────────────────────────────────────
+  if (step === 'otp') {
+    const masked = otpEmail.replace(/(.{2}).+(@.+)/, '$1****$2');
+    return (
+      <div className="animate-slide-up">
+        <div className="mb-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mx-auto mb-4">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-900">Thibitisha Utambulisho</h2>
+          <p className="text-slate-500 mt-2 text-sm">
+            Nambari ya tarakimu 6 imetumwa kwa<br />
+            <span className="font-semibold text-slate-700">{masked}</span>
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="label text-center block">Ingiza Nambari</label>
+            <input
+              ref={otpInputRef}
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              placeholder="000000"
+              value={otpCode}
+              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+              onKeyDown={(e) => e.key === 'Enter' && onSubmitOtp()}
+              className="input text-center text-3xl font-mono tracking-[0.5em] h-16"
+            />
+          </div>
+
+          <button
+            onClick={onSubmitOtp}
+            disabled={loading || otpCode.length !== 6}
+            className="btn-primary w-full h-11 text-sm font-bold flex items-center justify-center gap-2"
+          >
+            {loading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <><ShieldCheck className="w-4 h-4" /><span>Thibitisha na Ingia</span></>}
+          </button>
+        </div>
+
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-sm text-slate-500">
+            Hukupata nambari?{' '}
+            <button onClick={resendOtp} className="text-navy-500 font-semibold hover:text-orange-600 transition-colors">
+              Tuma tena
+            </button>
+          </p>
+          <button
+            onClick={() => { setStep('credentials'); setOtpCode(''); }}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            ← Rudi nyuma
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Credentials screen ───────────────────────────────────────────────────
   return (
     <div className="animate-slide-up">
       <div className="mb-8">
@@ -87,7 +191,6 @@ export default function LoginPage() {
         </button>
       </div>
 
-      {/* Divider */}
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-slate-200" />
@@ -99,8 +202,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmitCredentials)} className="space-y-4">
         <div>
           <label className="label">Email au Namba ya Simu</label>
           <div className="relative">
@@ -150,7 +252,7 @@ export default function LoginPage() {
         >
           {loading
             ? <Loader2 className="w-4 h-4 animate-spin" />
-            : <><span>Ingia</span><ArrowRight className="w-4 h-4" /></>}
+            : <><span>Endelea</span><ArrowRight className="w-4 h-4" /></>}
         </button>
       </form>
 

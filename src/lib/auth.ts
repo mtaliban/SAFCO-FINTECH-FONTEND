@@ -1,6 +1,6 @@
 import Cookies from 'js-cookie';
-import { apiRequest, TOKEN_KEY, USER_KEY } from './api';
-import type { LoginResponse, User } from '@/types';
+import { api, apiRequest, TOKEN_KEY, USER_KEY } from './api';
+import type { LoginOtpPending, LoginResponse, User } from '@/types';
 
 const cookieOpts = {
   expires: 1,
@@ -22,7 +22,10 @@ export const authApi = {
   }) => apiRequest.post<LoginResponse>('/auth/register', payload),
 
   login: (payload: { identifier: string; password: string; device_name?: string }) =>
-    apiRequest.post<LoginResponse>('/auth/login', payload),
+    api.post<{ data: LoginResponse | LoginOtpPending }>('/auth/login', payload).then((r) => r.data.data),
+
+  verifyLoginOtp: (payload: { email: string; code: string; device_name?: string }) =>
+    apiRequest.post<LoginResponse>('/auth/login/verify', payload),
 
   logout: () => apiRequest.post<null>('/auth/logout'),
 

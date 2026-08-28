@@ -65,6 +65,11 @@ export interface LoginResponse {
   requires_2fa: boolean;
 }
 
+export interface LoginOtpPending {
+  otp_sent: true;
+  email: string;
+}
+
 export interface ApiResponse<T = unknown> {
   success: boolean;
   message: string;
