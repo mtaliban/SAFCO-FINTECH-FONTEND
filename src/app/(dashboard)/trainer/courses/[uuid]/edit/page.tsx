@@ -1,12 +1,12 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useRef } from 'react';
 import {
   Loader2, Plus, CheckCircle2, Trash2, Upload, FileText,
   PlayCircle, Zap, ChevronUp, ChevronDown, ClipboardList,
-  Package, FileArchive, Youtube, Film,
+  Package, FileArchive, Youtube, Film, ArrowLeft,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -23,6 +23,7 @@ import { useMaterialStatus } from '@/lib/course/useMaterialStatus';
 
 export default function EditCoursePage() {
   const { uuid } = useParams<{ uuid: string }>();
+  const router = useRouter();
   const qc = useQueryClient();
 
   const { data: course, isLoading } = useQuery({
@@ -118,6 +119,18 @@ export default function EditCoursePage() {
     } catch { /* toast handled */ }
   }
 
+  async function deleteCourse() {
+    if (!confirm(`Futa course "${course?.title}" kabisa? Hatua hii haiwezi kurudishwa.`)) return;
+    try {
+      await courseApi.destroy(uuid as string);
+      toast.success('Course imefutwa');
+      qc.invalidateQueries({ queryKey: ['trainer', 'courses'] });
+      router.push('/trainer/courses');
+    } catch {
+      toast.error('Imeshindwa kufuta course');
+    }
+  }
+
   async function moveModule(idx: number, dir: -1 | 1) {
     if (!course?.modules) return;
     const items = [...course.modules];
@@ -148,6 +161,22 @@ export default function EditCoursePage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto animate-fade-in">
+
+      {/* Top nav */}
+      <div className="flex items-center justify-between mb-5">
+        <Link href="/trainer/courses" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-navy-700 font-medium">
+          <ArrowLeft className="w-4 h-4" /> Kozi Zangu
+        </Link>
+        {isEditable && (
+          <button
+            onClick={deleteCourse}
+            className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-200 font-semibold transition"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Futa Course
+          </button>
+        )}
+      </div>
+
       <div className="mb-6">
         {editingDetails ? (
           <div className="card p-5 mb-4 border-navy-200">
