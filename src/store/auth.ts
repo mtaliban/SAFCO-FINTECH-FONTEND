@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi, clearSession, saveSession } from '@/lib/auth';
+import { disconnectEcho } from '@/lib/echo';
 import type { LoginOtpPending, LoginResponse, User } from '@/types';
 
 interface AuthState {
@@ -75,6 +76,7 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // ignore — still clear local session
         }
+        disconnectEcho();
         clearSession();
         set({ user: null, token: null, isAuthenticated: false });
       },
