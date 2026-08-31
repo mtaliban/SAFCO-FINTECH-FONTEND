@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useNotifications } from '@/lib/notifications/hook';
 import { Plus, Loader2, BookOpen, Users, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { courseApi, CATEGORY_LABEL, Course } from '@/lib/course/api';
@@ -20,9 +21,13 @@ const STATUS_STYLE: Record<string, { bg: string; label: string; icon: React.Comp
 };
 
 export default function TrainerCoursesPage() {
+  const { markReadForRoute } = useNotifications();
+  useEffect(() => { markReadForRoute('/trainer/courses'); }, [markReadForRoute]);
+
   const { data, isLoading } = useQuery({
     queryKey: ['trainer', 'courses'],
     queryFn: () => courseApi.list(),
+    refetchInterval: 15_000,
   });
 
   const courses = (data?.data ?? []) as Course[];

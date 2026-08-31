@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNotifications } from '@/lib/notifications/hook';
 import {
   Loader2, Users, Search, Filter, MoreVertical, ShieldOff, ShieldCheck,
   Trash2, Eye, UserCheck, UserX, ChevronLeft, ChevronRight,
@@ -323,6 +324,8 @@ function UserDrawer({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
   const qc = useQueryClient();
+  const { markReadForRoute } = useNotifications();
+  useEffect(() => { markReadForRoute('/admin/users'); }, [markReadForRoute]);
   const [search, setSearch]     = useState('');
   const [role, setRole]         = useState('');
   const [status, setStatus]     = useState('');

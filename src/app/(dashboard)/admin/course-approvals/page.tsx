@@ -1,16 +1,18 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2, XCircle, Loader2, Clock, ChevronDown, ChevronUp,
-  BookOpen, Users, LayoutGrid, Calendar, Award,
+  BookOpen, Users, LayoutGrid, Calendar, Award, Eye,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { adminCoursesApi, CATEGORY_LABEL, type PendingApprovalCourse } from '@/lib/course/api';
 import { mediaUrl } from '@/lib/utils';
 import { Pagination, usePagedSlice } from '@/components/ui/Pagination';
+import { useNotifications } from '@/lib/notifications/hook';
 
 const PAGE_SIZE = 10;
 
@@ -21,10 +23,14 @@ const LEVEL_LABEL: Record<string, string> = {
 
 export default function CourseApprovalsPage() {
   const qc = useQueryClient();
+  const { markReadForRoute } = useNotifications();
   const [rejectingUuid, setRejectingUuid] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [expandedUuid, setExpandedUuid] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+
+  // Clear notification badge as soon as admin opens this page
+  useEffect(() => { markReadForRoute('/admin/course-approvals'); }, [markReadForRoute]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'course-approvals'],
@@ -130,13 +136,19 @@ export default function CourseApprovalsPage() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    <Link
+                      href={`/admin/course-approvals/${c.uuid}`}
+                      className="btn-secondary text-sm gap-1"
+                    >
+                      <Eye className="w-4 h-4" /> Soma Yote
+                    </Link>
                     <button
                       onClick={() => setExpandedUuid(isExpanded ? null : c.uuid)}
                       className="btn-secondary text-sm gap-1"
                     >
                       <BookOpen className="w-4 h-4" />
-                      {isExpanded ? 'Funga' : 'Kagua'}
+                      {isExpanded ? 'Funga' : 'Muhtasari'}
                       {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                     </button>
                     <button

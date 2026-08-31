@@ -3,17 +3,14 @@
 import mqtt, { MqttClient } from 'mqtt';
 
 let client: MqttClient | null = null;
-let disabled = false;
 const listeners = new Map<string, Set<(payload: unknown) => void>>();
 
 function getClient(): MqttClient | null {
-  if (disabled) return null;
   if (client && (client.connected || client.reconnecting)) return client;
 
-  let url = process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9002/mqtt';
+  let url = process.env.NEXT_PUBLIC_MQTT_URL || 'ws://localhost:9001/mqtt';
 
-  // Browsers block ws:// from https:// pages (Mixed Content).
-  // Auto-upgrade to wss:// so the connection attempt is at least valid.
+  // Auto-upgrade ws:// → wss:// on HTTPS pages (mixed-content block).
   if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
     url = url.replace(/^ws:\/\//, 'wss://');
   }
@@ -22,27 +19,21 @@ function getClient(): MqttClient | null {
     client = mqtt.connect(url, {
       clientId: `safco-fe-${Math.random().toString(36).slice(2, 10)}`,
       keepalive: 30,
-      reconnectPeriod: 5000,
-      connectTimeout: 8000,
+      reconnectPeriod: 5000,   // auto-retry every 5 s
+      connectTimeout: 10_000,
     });
 
     client.on('connect', () => {
+      // Re-subscribe to any topics that were registered before connection
       for (const topic of listeners.keys()) {
         client!.subscribe(topic, { qos: 0 });
       }
     });
 
     client.on('error', (err) => {
-      // Silently disable MQTT if the broker is unreachable (polling fallback takes over)
-      if (
-        err.message?.includes('WebSocket') ||
-        err.message?.includes('ECONNREFUSED') ||
-        err.message?.includes('getaddrinfo')
-      ) {
-        disabled = true;
-        client?.end(true);
-        client = null;
-      }
+      // Log for debugging but do NOT permanently disable — the built-in
+      // reconnectPeriod handles retries automatically.
+      console.warn('[mqtt] connection error, will retry:', err.message);
     });
 
     client.on('message', (topic, payload) => {
@@ -54,22 +45,18 @@ function getClient(): MqttClient | null {
     });
 
     return client;
-  } catch {
-    // SecurityError or any other connection error — disable MQTT gracefully
-    disabled = true;
+  } catch (err) {
+    console.warn('[mqtt] failed to create client:', err);
     client = null;
     return null;
   }
 }
 
-/** Subscribe to a topic. Returns an unsubscribe function. Falls back silently if MQTT unavailable. */
+/** Subscribe to a topic. Returns an unsubscribe function. */
 export function subscribe(topic: string, handler: (payload: unknown) => void): () => void {
   const c = getClient();
 
-  if (!c) {
-    // MQTT disabled — return no-op cleanup; polling fallback handles updates
-    return () => {};
-  }
+  if (!c) return () => {};
 
   if (!listeners.has(topic)) {
     listeners.set(topic, new Set());

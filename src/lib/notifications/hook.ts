@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, type InboxItem } from './api';
 import { subscribe } from '@/lib/mqtt';
@@ -13,10 +13,10 @@ import toast from 'react-hot-toast';
  * Two-layer delivery:
  *  1. MQTT (instant): subscribes to safco/lms/notifications/{userId}
  *     When the backend InAppChannel fires, it publishes a lightweight ping here.
- *     This invalidates the TanStack Query cache immediately → badge updates without waiting.
+ *     This invalidates the TanStack Query cache immediately → badges update instantly.
  *
- *  2. Polling fallback (60 s): in case MQTT is temporarily disconnected,
- *     the standard refetchInterval still catches any missed notifications.
+ *  2. Polling fallback (15 s): catches any missed notifications when MQTT
+ *     is temporarily disconnected.
  */
 export function useNotifications() {
   const qc = useQueryClient();
@@ -30,11 +30,10 @@ export function useNotifications() {
     const topic = `safco/lms/notifications/${userId}`;
     const unsub = subscribe(topic, (payload: unknown) => {
       const p = payload as { title?: string; body?: string; action_url?: string } | null;
-      const title = p?.title ?? '🔔 Notification mpya';
+      const title = p?.title ?? 'Notification mpya';
       const body  = p?.body ? ` — ${p.body.substring(0, 80)}` : '';
       const url   = p?.action_url;
 
-      // Show toast — clicking navigates to the action page
       const msg = `🔔 ${title}${body}`;
       if (url) {
         toast(msg, {
@@ -46,7 +45,7 @@ export function useNotifications() {
         toast(msg, { duration: 5000, style: { maxWidth: 380 } });
       }
 
-      // Invalidate relevant queries so badges update instantly
+      // Invalidate inbox + any page-specific queries for instant badge refresh
       qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
       if (url?.startsWith('/admin/course-approvals'))
         qc.invalidateQueries({ queryKey: ['admin', 'course-approvals'] });
@@ -59,12 +58,12 @@ export function useNotifications() {
     return unsub;
   }, [userId, qc]);
 
-  // ── Layer 2: polling fallback (60 s) ──────────────────────────────────────
+  // ── Layer 2: polling fallback (15 s) ──────────────────────────────────────
   const { data } = useQuery({
     queryKey: ['notifications', 'inbox', 'unread'],
     queryFn: () => notificationsApi.inbox('unread', 50),
-    refetchInterval: 60_000,   // reduced from 30 s since MQTT drives instant updates
-    staleTime: 30_000,
+    refetchInterval: 15_000,
+    staleTime: 10_000,
     retry: false,
   });
 
@@ -95,10 +94,31 @@ export function useNotifications() {
     ).length;
   }
 
+  /**
+   * Mark all unread items whose action_url matches the given route as read.
+   * Call this on mount of any page that has a sidebar notification badge.
+   */
+  const markReadForRoute = useCallback(
+    (href: string) => {
+      if (!href || items.length === 0) return;
+      items
+        .filter(
+          (i) =>
+            !i.read_at &&
+            i.action_url &&
+            (i.action_url === href || i.action_url.startsWith(href + '/')),
+        )
+        .forEach((i) => markReadMut.mutate(i.id));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items],
+  );
+
   return {
     unreadCount: data?.unread_count ?? 0,
     items,
     countForRoute,
+    markReadForRoute,
     markRead: (id: string) => markReadMut.mutate(id),
     markAllRead: () => markAllReadMut.mutate(),
   };
