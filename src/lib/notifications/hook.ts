@@ -29,31 +29,30 @@ export function useNotifications() {
 
     const topic = `safco/lms/notifications/${userId}`;
     const unsub = subscribe(topic, (payload: unknown) => {
-      // Show a toast immediately when notification arrives
       const p = payload as { title?: string; body?: string; action_url?: string } | null;
-      const title = p?.title ?? 'Notification mpya';
-      const body  = p?.body;
-      toast(
-        (t) => (
-          <div
-            className="cursor-pointer"
-            onClick={() => { toast.dismiss(t.id); if (p?.action_url) window.location.pathname = p.action_url; }}
-          >
-            <p className="text-sm font-semibold text-slate-900">{title}</p>
-            {body && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{body}</p>}
-            {p?.action_url && <p className="text-xs text-brand-600 mt-1 font-medium">Bonyeza kuona →</p>}
-          </div>
-        ),
-        { duration: 6000, icon: '🔔', style: { maxWidth: 360 } },
-      );
+      const title = p?.title ?? '🔔 Notification mpya';
+      const body  = p?.body ? ` — ${p.body.substring(0, 80)}` : '';
+      const url   = p?.action_url;
 
-      // Invalidate inbox + any course/user queries relevant to the notification
+      // Show toast — clicking navigates to the action page
+      const msg = `🔔 ${title}${body}`;
+      if (url) {
+        toast(msg, {
+          duration: 6000,
+          style: { cursor: 'pointer', maxWidth: 380 },
+          onClick: () => { window.location.pathname = url; },
+        } as Parameters<typeof toast>[1]);
+      } else {
+        toast(msg, { duration: 5000, style: { maxWidth: 380 } });
+      }
+
+      // Invalidate relevant queries so badges update instantly
       qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
-      if (p?.action_url?.startsWith('/admin/course-approvals'))
+      if (url?.startsWith('/admin/course-approvals'))
         qc.invalidateQueries({ queryKey: ['admin', 'course-approvals'] });
-      if (p?.action_url?.startsWith('/admin/users'))
+      if (url?.startsWith('/admin/users'))
         qc.invalidateQueries({ queryKey: ['admin', 'users'] });
-      if (p?.action_url?.startsWith('/trainer/courses'))
+      if (url?.startsWith('/trainer/courses'))
         qc.invalidateQueries({ queryKey: ['trainer', 'courses'] });
     });
 
