@@ -238,9 +238,10 @@ export default function EditCoursePage() {
                 </div>
               )}
             </div>
-            {isDraft && (course.modules?.length ?? 0) > 0 && (
+            {isEditable && (course.modules?.length ?? 0) > 0 && (
               <button onClick={submitForApproval} className="btn-primary text-sm shrink-0">
-                <CheckCircle2 className="w-4 h-4" /> Submit for Approval
+                <CheckCircle2 className="w-4 h-4" />
+                {isRejected ? 'Tuma Tena kwa Admin' : 'Submit for Approval'}
               </button>
             )}
           </div>

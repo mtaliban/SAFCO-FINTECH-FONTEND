@@ -12,6 +12,8 @@ import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
 import { useNotifications } from '@/lib/notifications/hook';
+import { useQuery } from '@tanstack/react-query';
+import { adminCoursesApi } from '@/lib/course/api';
 
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
@@ -98,6 +100,16 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const role = user?.roles?.[0];
   const items = navForRole(role);
 
+  // Live pending course approvals count for admin sidebar badge
+  const { data: pendingData } = useQuery({
+    queryKey: ['admin', 'course-approvals', 'count'],
+    queryFn: () => adminCoursesApi.pending(),
+    enabled: role === 'system_admin',
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+  const pendingCoursesCount = (pendingData as { meta?: { total?: number } } | undefined)?.meta?.total ?? 0;
+
   async function handleLogout() {
     await logout();
     router.push('/login');
@@ -131,7 +143,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             : pathname === href || pathname.startsWith(href + '/');
 
           // Badge: notifications that match this route's prefix
-          const badge = isRoot ? 0 : countForRoute(href);
+          // For admin course-approvals, also show direct pending count
+          const notifBadge = isRoot ? 0 : countForRoute(href);
+          const badge = href === '/admin/course-approvals' && role === 'system_admin'
+            ? Math.max(notifBadge, pendingCoursesCount)
+            : notifBadge;
 
           return (
             <Link
