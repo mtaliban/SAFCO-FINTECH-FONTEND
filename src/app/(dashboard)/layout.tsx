@@ -143,7 +143,7 @@ function NotificationDropdown({ items, unreadCount, onMarkRead, onMarkAll, onNav
               <div className={`flex-1 min-w-0 ${n.read_at ? 'pl-4' : ''}`}>
                 <p className="text-xs font-semibold text-slate-800 leading-snug truncate">{n.title}</p>
                 {n.body && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>}
-                <p className="text-[10px] text-slate-400 mt-1">{new Date(n.created_at).toLocaleString('sw-TZ')}</p>
+                <p className="text-[10px] text-slate-400 mt-1">{n.created_at ? new Date(n.created_at).toLocaleString('sw-TZ') : ''}</p>
               </div>
             </div>
           ))

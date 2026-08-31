@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationsApi, type InboxItem } from './api';
 import { subscribe } from '@/lib/mqtt';
 import { useAuthStore } from '@/store/auth';
+import toast from 'react-hot-toast';
 
 /**
  * SRS Module 15 — Real-time notification hook.
@@ -27,10 +28,33 @@ export function useNotifications() {
     if (!userId) return;
 
     const topic = `safco/lms/notifications/${userId}`;
-    const unsub = subscribe(topic, () => {
-      // New notification arrived — invalidate both the badge query and the
-      // full inbox so every component that calls this hook refreshes at once.
+    const unsub = subscribe(topic, (payload: unknown) => {
+      // Show a toast immediately when notification arrives
+      const p = payload as { title?: string; body?: string; action_url?: string } | null;
+      const title = p?.title ?? 'Notification mpya';
+      const body  = p?.body;
+      toast(
+        (t) => (
+          <div
+            className="cursor-pointer"
+            onClick={() => { toast.dismiss(t.id); if (p?.action_url) window.location.pathname = p.action_url; }}
+          >
+            <p className="text-sm font-semibold text-slate-900">{title}</p>
+            {body && <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{body}</p>}
+            {p?.action_url && <p className="text-xs text-brand-600 mt-1 font-medium">Bonyeza kuona →</p>}
+          </div>
+        ),
+        { duration: 6000, icon: '🔔', style: { maxWidth: 360 } },
+      );
+
+      // Invalidate inbox + any course/user queries relevant to the notification
       qc.invalidateQueries({ queryKey: ['notifications', 'inbox'] });
+      if (p?.action_url?.startsWith('/admin/course-approvals'))
+        qc.invalidateQueries({ queryKey: ['admin', 'course-approvals'] });
+      if (p?.action_url?.startsWith('/admin/users'))
+        qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      if (p?.action_url?.startsWith('/trainer/courses'))
+        qc.invalidateQueries({ queryKey: ['trainer', 'courses'] });
     });
 
     return unsub;

@@ -284,8 +284,22 @@ export const enrollmentApi = {
   myEnrollments: () => apiRequest.get<Paginated<Enrollment>>('/student/my-enrollments'),
 };
 
+export interface PendingApprovalCourse {
+  uuid: string;
+  title: string;
+  description: string | null;
+  category: string;
+  level: string;
+  duration_hours: number | null;
+  thumbnail_url: string | null;
+  instructor: { email: string; name: string | null } | null;
+  modules_count: number;
+  submitted_at: string;
+  stats: { modules: number };
+}
+
 export const adminCoursesApi = {
-  pending: () => apiRequest.get<Paginated<Course>>('/admin/course-approvals'),
+  pending: () => apiRequest.get<Paginated<PendingApprovalCourse>>('/admin/course-approvals'),
   approve: (uuid: string) => apiRequest.post(`/admin/courses/${uuid}/approve`),
   reject: (uuid: string, reason: string) => apiRequest.post(`/admin/courses/${uuid}/reject`, { reason }),
 };

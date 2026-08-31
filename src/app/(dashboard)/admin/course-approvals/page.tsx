@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { adminCoursesApi, CATEGORY_LABEL } from '@/lib/course/api';
+import { adminCoursesApi, CATEGORY_LABEL, type PendingApprovalCourse } from '@/lib/course/api';
 import { mediaUrl } from '@/lib/utils';
 import { Pagination, usePagedSlice } from '@/components/ui/Pagination';
 
@@ -82,7 +82,7 @@ export default function CourseApprovalsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {rows.map((c) => {
+          {rows.map((c: PendingApprovalCourse) => {
             const isExpanded = expandedUuid === c.uuid;
             return (
               <div key={c.uuid} className="card overflow-hidden">
