@@ -511,6 +511,12 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
   const docRef = useRef<HTMLInputElement>(null);
   const [uploadPct, setUploadPct] = useState<{ label: string; pct: number } | null>(null);
   const [showYouTubeModal, setShowYouTubeModal] = useState(false);
+  const [showLessonPreview, setShowLessonPreview] = useState(false);
+
+  const readyMaterials = (lesson.materials ?? []).filter(
+    (m) => (m.processing_status ?? 'ready') === 'ready' && m.category !== 'interactive',
+  );
+  const hasPreviewable = readyMaterials.length > 0;
 
   async function del() {
     if (!confirm(`Futa lesson "${lesson.title}"?`)) return;
@@ -548,6 +554,19 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
         <span className="flex-1 font-medium text-slate-800">{lesson.title}</span>
         {lesson.duration_seconds && (
           <span className="text-xs text-slate-400">{Math.round(lesson.duration_seconds / 60)}m</span>
+        )}
+        {hasPreviewable && (
+          <button
+            onClick={() => setShowLessonPreview((v) => !v)}
+            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border transition shrink-0 ${
+              showLessonPreview
+                ? 'bg-navy-100 text-navy-700 border-navy-200'
+                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-navy-50 hover:text-navy-600 hover:border-navy-200'
+            }`}
+          >
+            {showLessonPreview ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+            {showLessonPreview ? 'Funga' : 'Preview'}
+          </button>
         )}
         {editable && (
           <div className="flex items-center gap-1">
@@ -654,6 +673,21 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           {lesson.assignments!.map((a) => (
             <AssignmentRow key={a.uuid} a={a} editable={editable} onDeleted={() => delAssignment(a.uuid)} onChanged={onDeleted} />
           ))}
+        </div>
+      )}
+
+      {/* Lesson preview — full student-style view of all materials */}
+      {showLessonPreview && hasPreviewable && (
+        <div className="mt-4 border-t border-navy-100 pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Eye className="w-3.5 h-3.5 text-navy-500" />
+            <span className="text-xs font-bold text-navy-700 uppercase tracking-widest">Preview — Mwanafunzi Ataona Hivi</span>
+          </div>
+          <div className="space-y-4">
+            {readyMaterials.map((m) => (
+              <TrainerMaterialPreview key={m.uuid} material={m} />
+            ))}
+          </div>
         </div>
       )}
 
