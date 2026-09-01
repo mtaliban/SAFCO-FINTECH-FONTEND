@@ -94,8 +94,8 @@ export default function AdminCourseReviewPage() {
     return (
       <div className="flex h-[calc(100vh-0px)] overflow-hidden bg-slate-50">
 
-        {/* ── Sidebar ── */}
-        <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 overflow-hidden">
+        {/* ── Sidebar — hidden on mobile, visible on lg+ ── */}
+        <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shrink-0 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
             <button
               onClick={() => setActiveLessonUuid(null)}
@@ -138,13 +138,25 @@ export default function AdminCourseReviewPage() {
 
         {/* ── Lesson content ── */}
         <div className="flex-1 overflow-y-auto">
+          {/* Mobile top bar — shown only on small screens */}
+          <div className="lg:hidden flex items-center gap-2 px-3 py-2 bg-white border-b border-slate-200 sticky top-0 z-10">
+            <button
+              onClick={() => setActiveLessonUuid(null)}
+              className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand-600 font-medium"
+            >
+              <ArrowLeft className="w-4 h-4" /> Overview
+            </button>
+            <span className="flex-1 text-xs font-semibold text-slate-800 truncate text-center">{activeLesson.title}</span>
+            <span className="text-xs text-slate-400 shrink-0">{currentIdx + 1}/{allLessons.length}</span>
+          </div>
+
           <div className="max-w-3xl mx-auto px-4 py-6">
             {/* Lesson header */}
             <div className="mb-6">
               <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
                 Module {activeLesson.modIdx + 1} · {activeLesson.moduleTitle}
               </p>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
                 {activeLesson.modIdx + 1}.{activeLesson.lesIdx + 1} — {activeLesson.title}
               </h1>
               {activeLesson.description && (
@@ -295,6 +307,21 @@ export default function AdminCourseReviewPage() {
                 </button>
               )}
             </div>
+
+            {/* Mobile approve/reject — shown only on small screens where sidebar is hidden */}
+            {isPending && (
+              <div className="lg:hidden mt-6 pt-5 border-t border-slate-200 space-y-2">
+                <button onClick={approve} className="w-full btn-primary justify-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" /> Approve &amp; Publish
+                </button>
+                <button
+                  onClick={() => { setRejectOpen(true); setReason(''); }}
+                  className="w-full btn-secondary justify-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <XCircle className="w-4 h-4" /> Kataa Course
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -312,7 +339,7 @@ export default function AdminCourseReviewPage() {
 
   // ── Course overview (same layout as student course detail page) ────────────
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
+    <div className="p-4 sm:p-6 md:p-8 max-w-5xl mx-auto animate-fade-in">
 
       {/* Back link */}
       <Link

@@ -452,7 +452,7 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
 
       {/* Attached Quizzes (SRS "Module Contains Quiz") */}
       {(module.quizzes ?? []).length > 0 && (
-        <div className="ml-11 mt-3 space-y-1">
+        <div className="mt-3 ml-3 sm:ml-11 space-y-1">
           {module.quizzes!.map((q) => (
             <div key={q.uuid} className="flex items-center gap-3 p-2 rounded bg-white text-sm">
               <Zap className="w-4 h-4 text-brand-500 shrink-0" />
@@ -469,7 +469,7 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
 
       {/* Lessons */}
       {(module.lessons ?? []).length > 0 && (
-        <div className="ml-11 mt-3 space-y-1">
+        <div className="mt-3 ml-3 sm:ml-11 space-y-1">
           {module.lessons!.map((l, j) => (
             <LessonRow
               key={l.uuid}
@@ -488,7 +488,7 @@ function ModuleBlock({ module, position, total, editable, onMove, onAddLesson, o
 
       {/* Actions */}
       {editable && (
-        <div className="ml-11 mt-3 flex gap-2 flex-wrap">
+        <div className="mt-3 ml-3 sm:ml-11 flex gap-2 flex-wrap">
           <button onClick={onAddLesson} className="text-xs text-brand-600 hover:underline flex items-center gap-1">
             <Plus className="w-3 h-3" /> Add Lesson
           </button>
@@ -548,17 +548,17 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
   return (
     <div className="rounded-lg bg-white border border-slate-100 p-3 mb-2">
       {/* Lesson header */}
-      <div className="flex items-center gap-3 text-sm">
-        <span className="text-xs font-mono text-slate-400 w-10 shrink-0">{num}</span>
+      <div className="flex items-center gap-2 text-sm flex-wrap">
+        <span className="text-xs font-mono text-slate-400 shrink-0">{num}</span>
         <PlayCircle className="w-4 h-4 text-brand-500 shrink-0" />
-        <span className="flex-1 font-medium text-slate-800">{lesson.title}</span>
+        <span className="flex-1 font-medium text-slate-800 min-w-0 truncate">{lesson.title}</span>
         {lesson.duration_seconds && (
-          <span className="text-xs text-slate-400">{Math.round(lesson.duration_seconds / 60)}m</span>
+          <span className="text-xs text-slate-400 shrink-0">{Math.round(lesson.duration_seconds / 60)}m</span>
         )}
         {hasPreviewable && (
           <button
             onClick={() => setShowLessonPreview((v) => !v)}
-            className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg border transition shrink-0 ${
+            className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg border transition shrink-0 ${
               showLessonPreview
                 ? 'bg-navy-100 text-navy-700 border-navy-200'
                 : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-navy-50 hover:text-navy-600 hover:border-navy-200'
@@ -579,7 +579,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
       {/* Upload buttons — visible directly, no modal needed */}
       {editable && (
-        <div className="ml-14 mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 ml-3 sm:ml-14 flex flex-wrap gap-2">
           {/* Video upload */}
           <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition">
             <Film className="w-3.5 h-3.5" /> Upload Video
@@ -647,7 +647,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
       {/* Upload progress bar */}
       {uploadPct && (
-        <div className="ml-14 mt-2">
+        <div className="mt-2 ml-3 sm:ml-14">
           <div className="flex justify-between text-xs text-slate-600 mb-1">
             <span className="font-semibold">{uploadPct.label} inapakiwa...</span>
             <span>{uploadPct.pct}%</span>
@@ -660,7 +660,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
       {/* Existing materials */}
       {(lesson.materials ?? []).length > 0 && (
-        <div className="ml-14 mt-2 space-y-0.5">
+        <div className="mt-2 ml-3 sm:ml-14 space-y-0.5">
           {lesson.materials!.map((m) => (
             <MaterialRow key={m.uuid} material={m} editable={editable} onDeleted={onDeleted} />
           ))}
@@ -669,7 +669,7 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
       {/* Existing assignments */}
       {(lesson.assignments ?? []).length > 0 && (
-        <div className="ml-14 mt-1 space-y-1">
+        <div className="mt-1 ml-3 sm:ml-14 space-y-1">
           {lesson.assignments!.map((a) => (
             <AssignmentRow key={a.uuid} a={a} editable={editable} onDeleted={() => delAssignment(a.uuid)} onChanged={onDeleted} />
           ))}
