@@ -664,7 +664,7 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
 
       {/* Inline viewer */}
       {(pdfEmbedUrl || officeViewerUrl) && (
-        <div className="relative" style={{ height: 560 }}>
+        <div className="relative" style={{ height: 'clamp(280px, 65vh, 560px)' }}>
           {viewerLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 gap-3">
               <Loader2 className={`w-8 h-8 animate-spin ${textClass}`} />

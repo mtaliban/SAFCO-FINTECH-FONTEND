@@ -92,7 +92,7 @@ export default function AdminCourseReviewPage() {
     const nextLesson = currentIdx < allLessons.length - 1 ? allLessons[currentIdx + 1] : null;
 
     return (
-      <div className="flex h-[calc(100vh-0px)] overflow-hidden bg-slate-50">
+      <div className="flex h-[calc(100vh-56px)] lg:h-screen overflow-hidden bg-slate-50">
 
         {/* ── Sidebar — hidden on mobile, visible on lg+ ── */}
         <aside className="hidden lg:flex w-72 bg-white border-r border-slate-200 flex-col shrink-0 overflow-hidden">
@@ -435,9 +435,9 @@ export default function AdminCourseReviewPage() {
       </div>
 
       {/* ── Module / lesson structure — same as student page ── */}
-      <div className="card p-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-1">Muundo wa Course</h2>
-        <p className="text-sm text-slate-500 mb-5">
+      <div className="card p-4 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold text-slate-900 mb-1">Muundo wa Course</h2>
+        <p className="text-sm text-slate-500 mb-4">
           {course.stats?.modules ?? 0} modules · {totalLessons} lessons
         </p>
 
@@ -447,9 +447,9 @@ export default function AdminCourseReviewPage() {
           <div className="space-y-3">
             {(course.modules ?? []).map((mod, mi) => (
               <details key={mod.uuid} open={mi === 0} className="border border-slate-200 rounded-xl overflow-hidden">
-                <summary className="flex items-center gap-3 px-5 py-4 cursor-pointer select-none hover:bg-slate-50 transition">
-                  <div className="flex-1">
-                    <p className="font-bold text-slate-900 text-sm">
+                <summary className="flex items-center gap-2 px-3 sm:px-5 py-3 sm:py-4 cursor-pointer select-none hover:bg-slate-50 transition">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-900 text-sm truncate">
                       Module {mi + 1}: {mod.title}
                     </p>
                     {mod.description && (
@@ -457,9 +457,9 @@ export default function AdminCourseReviewPage() {
                     )}
                   </div>
                   <span className="text-xs text-slate-400 shrink-0">
-                    {mod.lessons?.length ?? 0} lessons
+                    {mod.lessons?.length ?? 0}L
                   </span>
-                  <ChevronRight className="w-4 h-4 text-slate-400 transition-transform" />
+                  <ChevronRight className="w-4 h-4 text-slate-400 transition-transform shrink-0" />
                 </summary>
 
                 <div className="border-t border-slate-100 divide-y divide-slate-50">
@@ -467,10 +467,10 @@ export default function AdminCourseReviewPage() {
                     <button
                       key={l.uuid}
                       onClick={() => setActiveLessonUuid(l.uuid)}
-                      className="w-full text-left flex items-center gap-3 px-5 py-3 text-sm hover:bg-brand-50 transition group"
+                      className="w-full text-left flex items-center gap-2 px-3 sm:px-5 py-2.5 sm:py-3 text-sm hover:bg-brand-50 transition group"
                     >
                       <Play className="w-4 h-4 text-brand-400 shrink-0 group-hover:text-brand-600" />
-                      <span className="flex-1 text-slate-700 group-hover:text-brand-700">
+                      <span className="flex-1 text-slate-700 group-hover:text-brand-700 min-w-0 truncate">
                         {mi + 1}.{li + 1} · {l.title}
                       </span>
                       {l.duration_seconds && (
@@ -740,7 +740,7 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
         </div>
       </div>
       {(pdfEmbedUrl || officeViewerUrl) && (
-        <div className="relative" style={{ height: 560 }}>
+        <div className="relative" style={{ height: 'clamp(280px, 65vh, 560px)' }}>
           {viewerLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 gap-3">
               <Loader2 className={`w-8 h-8 animate-spin ${textClass}`} />

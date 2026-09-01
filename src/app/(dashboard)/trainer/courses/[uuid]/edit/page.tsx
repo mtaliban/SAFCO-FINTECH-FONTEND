@@ -191,7 +191,7 @@ export default function EditCoursePage() {
                 <label className="label">Maelezo</label>
                 <textarea rows={2} className="input" value={detailForm.description} onChange={(e) => setDetailForm({ ...detailForm, description: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="label">Kiwango</label>
                   <select className="input" value={detailForm.level} onChange={(e) => setDetailForm({ ...detailForm, level: e.target.value })}>
@@ -213,10 +213,10 @@ export default function EditCoursePage() {
             </div>
           </div>
         ) : (
-          <div className="flex justify-between items-start gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{course.title}</h1>
-              <div className="flex items-center gap-3 mt-2 text-sm flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 break-words">{course.title}</h1>
+              <div className="flex items-center gap-2 mt-2 text-sm flex-wrap">
                 <StatusBadge status={course.status} />
                 <span className="text-slate-500">{CATEGORY_LABEL[course.category]}</span>
                 <span className="text-slate-500 capitalize">{course.level}</span>
@@ -226,7 +226,7 @@ export default function EditCoursePage() {
                     onClick={startEditDetails}
                     className="text-xs text-navy-600 hover:text-navy-800 font-semibold"
                   >
-                    ✎ Badilisha maelezo
+                    ✎ Badilisha
                   </button>
                 )}
               </div>
@@ -240,9 +240,10 @@ export default function EditCoursePage() {
               )}
             </div>
             {isEditable && (course.modules?.length ?? 0) > 0 && (
-              <button onClick={submitForApproval} className="btn-primary text-sm shrink-0">
+              <button onClick={submitForApproval} className="btn-primary text-sm shrink-0 self-start">
                 <CheckCircle2 className="w-4 h-4" />
-                {isRejected ? 'Tuma Tena kwa Admin' : 'Submit for Approval'}
+                <span className="hidden sm:inline">{isRejected ? 'Tuma Tena kwa Admin' : 'Submit for Approval'}</span>
+                <span className="sm:hidden">{isRejected ? 'Tuma Tena' : 'Submit'}</span>
               </button>
             )}
           </div>
@@ -327,12 +328,12 @@ export default function EditCoursePage() {
       </div>
 
       {/* Modules + Lessons + Quizzes + Assignments */}
-      <div className="card p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold">Course Structure ({course.modules?.length ?? 0} modules)</h2>
+      <div className="card p-4 sm:p-6 mb-6">
+        <div className="flex justify-between items-center mb-4 gap-2">
+          <h2 className="text-base sm:text-lg font-bold truncate">Course Structure ({course.modules?.length ?? 0} modules)</h2>
           {isEditable && (
-            <button onClick={() => setShowAddModule(true)} className="btn-secondary text-sm">
-              <Plus className="w-4 h-4" /> Ongeza Module
+            <button onClick={() => setShowAddModule(true)} className="btn-secondary text-sm shrink-0">
+              <Plus className="w-4 h-4" /> <span className="hidden sm:inline">Ongeza </span>Module
             </button>
           )}
         </div>
@@ -579,10 +580,10 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
 
       {/* Upload buttons — visible directly, no modal needed */}
       {editable && (
-        <div className="mt-2 ml-3 sm:ml-14 flex flex-wrap gap-2">
+        <div className="mt-2 ml-3 sm:ml-14 flex flex-wrap gap-1.5">
           {/* Video upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition">
-            <Film className="w-3.5 h-3.5" /> Upload Video
+          <label className="cursor-pointer flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition" title="Upload Video">
+            <Film className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Upload </span>Video
             <input
               ref={videoRef}
               type="file"
@@ -593,8 +594,8 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           </label>
 
           {/* PDF upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition">
-            <FileText className="w-3.5 h-3.5" /> Upload PDF
+          <label className="cursor-pointer flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition" title="Upload PDF">
+            <FileText className="w-3.5 h-3.5 shrink-0" /> PDF
             <input
               ref={pdfRef}
               type="file"
@@ -605,8 +606,8 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           </label>
 
           {/* Word/Excel/PPT upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition">
-            <FileText className="w-3.5 h-3.5" /> Upload Word/Excel/PPT
+          <label className="cursor-pointer flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold transition" title="Upload Word/Excel/PowerPoint">
+            <FileText className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Word/Excel/</span>PPT
             <input
               ref={docRef}
               type="file"
@@ -617,8 +618,8 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           </label>
 
           {/* SCORM upload */}
-          <label className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition">
-            <FileArchive className="w-3.5 h-3.5" /> Upload SCORM (.zip)
+          <label className="cursor-pointer flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-navy-50 hover:bg-navy-100 text-navy-600 text-xs font-semibold transition" title="Upload SCORM (.zip)">
+            <FileArchive className="w-3.5 h-3.5 shrink-0" /> SCORM
             <input
               type="file"
               accept=".zip"
@@ -630,17 +631,19 @@ function LessonRow({ lesson, num, editable, onDeleted, onAddAssignment, onMove, 
           {/* YouTube / Vimeo / HTML5 URL */}
           <button
             onClick={() => setShowYouTubeModal(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold transition"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 text-xs font-semibold transition"
+            title="Ongeza Video URL au HTML5"
           >
-            <Youtube className="w-3.5 h-3.5" /> Video / HTML5 URL
+            <Youtube className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Video / HTML5 </span>URL
           </button>
 
           {/* Assignment */}
           <button
             onClick={onAddAssignment}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold transition"
+            className="flex items-center gap-1 px-2 sm:px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-semibold transition"
+            title="Ongeza Assignment"
           >
-            <ClipboardList className="w-3.5 h-3.5" /> Add Assignment
+            <ClipboardList className="w-3.5 h-3.5 shrink-0" /> <span className="hidden sm:inline">Add </span>Assignment
           </button>
         </div>
       )}
@@ -1203,7 +1206,7 @@ function TrainerDocPreview({ material }: { material: LessonMaterial }) {
         )}
       </div>
       {hasViewer && (
-        <div className="relative" style={{ height: 500 }}>
+        <div className="relative" style={{ height: 'clamp(280px, 65vh, 500px)' }}>
           {viewerLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 gap-2">
               <Loader2 className={`w-6 h-6 animate-spin ${textClass}`} />
