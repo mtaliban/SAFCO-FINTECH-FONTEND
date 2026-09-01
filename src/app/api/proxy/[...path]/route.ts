@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:8000';
+const TOKEN_COOKIE = 'safco_token';
 
 async function handler(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
@@ -14,9 +15,19 @@ async function handler(req: NextRequest, { params }: { params: Promise<{ path: s
     }
   });
 
+  // Browser-native elements (<video>, <iframe>, <img>) do not send Authorization
+  // headers — they only forward cookies. Read the Sanctum token from the cookie
+  // and inject it so stream/download endpoints authenticate correctly.
+  if (!headers.has('authorization')) {
+    const tokenCookie = req.cookies.get(TOKEN_COOKIE);
+    if (tokenCookie?.value) {
+      headers.set('Authorization', `Bearer ${tokenCookie.value}`);
+    }
+  }
+
   const body = ['GET', 'HEAD'].includes(req.method) ? undefined : await req.arrayBuffer();
 
-  const res = await fetch(target, { method: req.method, headers, body });
+  const res = await fetch(target, { method: req.method, headers, body, redirect: 'follow' });
 
   const resHeaders = new Headers();
   res.headers.forEach((val, key) => {
