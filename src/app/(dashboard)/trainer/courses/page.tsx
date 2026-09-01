@@ -36,14 +36,14 @@ export default function TrainerCoursesPage() {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 flex items-center gap-2">
             <BookOpen className="w-7 h-7 text-orange-500" /> My Courses
           </h1>
           <p className="text-slate-600 mt-1">Courses ulizotengeneza na kusimamia kwenye mfumo.</p>
         </div>
-        <Link href="/trainer/courses/new" className="btn-primary">
+        <Link href="/trainer/courses/new" className="btn-primary self-start shrink-0">
           <Plus className="w-4 h-4" /> Course Mpya
         </Link>
       </div>
@@ -61,7 +61,7 @@ export default function TrainerCoursesPage() {
         </div>
       ) : (
         <>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((c) => {
             const st = STATUS_STYLE[c.status] ?? STATUS_STYLE.draft;
             const Icon = st.icon;

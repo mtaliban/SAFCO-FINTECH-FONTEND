@@ -119,19 +119,19 @@ export default function LessonViewPage() {
   const interactive  = materials.filter((m) => m.category === 'interactive');
 
   return (
-    <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-slate-50">
+    <div className="flex h-[calc(100vh-56px)] lg:h-screen overflow-hidden bg-slate-50">
 
       {/* ── Mobile sidebar overlay ── */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* ── Left sidebar ── */}
       <aside className={`
-        fixed lg:static inset-y-0 left-0 z-40 w-72 bg-white border-r border-slate-200
+        fixed lg:static inset-y-0 left-0 z-50 w-72 bg-white border-r border-slate-200
         flex flex-col transition-transform duration-200
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
@@ -206,14 +206,14 @@ export default function LessonViewPage() {
 
         {/* Scrollable lesson body */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto px-4 md:px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
 
             {/* Lesson header */}
             <div className="mb-6">
               <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
                 Module {lesson.modIndex + 1} · {lesson.moduleTitle}
               </p>
-              <h1 className="text-2xl font-bold text-slate-900">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
                 {lesson.modIndex + 1}.{lesson.lesIndex + 1} — {lesson.title}
               </h1>
               {lesson.description && (

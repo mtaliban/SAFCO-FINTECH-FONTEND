@@ -251,7 +251,7 @@ export default function EditCoursePage() {
       </div>
 
       {/* Thumbnail + Instructor + Final Assessment */}
-      <div className="grid md:grid-cols-2 gap-4 mb-6">
+      <div className="grid sm:grid-cols-2 gap-4 mb-6">
         <div className="card p-5">
           <h3 className="font-bold text-slate-900 mb-2">Thumbnail</h3>
           <div className="aspect-video rounded-lg bg-gradient-to-br from-navy-500 to-navy-800 relative overflow-hidden mb-3">

@@ -63,7 +63,7 @@ export default function CourseApprovalsPage() {
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Course Approvals</h1>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900">Course Approvals</h1>
             <p className="text-slate-500 text-sm">Kagua maudhui ya course kabla ya kuapprove au kukatalia</p>
           </div>
         </div>
@@ -101,7 +101,7 @@ export default function CourseApprovalsPage() {
           ) : (
             <>
               <p className="text-sm text-slate-500 mb-4">{totalPending} course{totalPending !== 1 ? 's' : ''} zinasubiri ukaguzi</p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {pendingRows.map((c) => (
                   <PendingCard key={c.uuid} course={c} />
                 ))}
@@ -128,7 +128,7 @@ export default function CourseApprovalsPage() {
           ) : (
             <>
               <p className="text-sm text-slate-500 mb-4">{historyRows.length} courses zimeshughulikiwa</p>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {historyRows.map((c) => (
                   <HistoryCard key={c.uuid} course={c} />
                 ))}
