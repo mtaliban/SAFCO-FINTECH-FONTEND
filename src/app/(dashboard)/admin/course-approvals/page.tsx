@@ -3,8 +3,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import {
-  CheckCircle2, XCircle, Loader2, Clock, ChevronDown, ChevronUp,
-  BookOpen, Users, LayoutGrid, Calendar, Award, Eye, History,
+  CheckCircle2, XCircle, Loader2, Clock,
+  BookOpen, Users, LayoutGrid, Calendar, History, Eye,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -32,7 +32,6 @@ export default function CourseApprovalsPage() {
   const [tab, setTab] = useState<Tab>('pending');
   const [rejectingUuid, setRejectingUuid] = useState<string | null>(null);
   const [reason, setReason] = useState('');
-  const [expandedUuid, setExpandedUuid] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
   useEffect(() => { markReadForRoute('/admin/course-approvals'); }, [markReadForRoute]);
@@ -55,7 +54,9 @@ export default function CourseApprovalsPage() {
 
   const historyRows: CourseHistoryItem[] = historyData?.data ?? [];
 
-  async function approve(uuid: string) {
+  async function approve(uuid: string, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
     if (!confirm('Approve course hii i-published?')) return;
     try {
       await adminCoursesApi.approve(uuid);
@@ -124,111 +125,14 @@ export default function CourseApprovalsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {pendingRows.map((c: PendingApprovalCourse) => {
-                const isExpanded = expandedUuid === c.uuid;
-                return (
-                  <div key={c.uuid} className="card overflow-hidden">
-                    <div className="p-5 flex flex-col md:flex-row md:items-center gap-4">
-                      <CourseThumbnail url={c.thumbnail_url} size="sm" />
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className="text-xs text-orange-600 font-semibold uppercase tracking-wider">
-                            {CATEGORY_LABEL[c.category as keyof typeof CATEGORY_LABEL]}
-                          </span>
-                          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                            {LEVEL_LABEL[c.level] ?? c.level}
-                          </span>
-                          {c.duration_hours && (
-                            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
-                              {c.duration_hours}h
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="font-bold text-lg text-slate-900 leading-tight">{c.title}</h3>
-                        <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {c.instructor?.name ?? c.instructor?.email ?? 'Hakuna instructor'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <LayoutGrid className="w-3 h-3" />
-                            {c.stats?.modules ?? 0} modules
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Imetumwa {new Date(c.submitted_at).toLocaleString('sw-TZ')}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                        <Link href={`/admin/course-approvals/${c.uuid}`} className="btn-secondary text-sm gap-1">
-                          <Eye className="w-4 h-4" /> Soma Yote
-                        </Link>
-                        <button
-                          onClick={() => setExpandedUuid(isExpanded ? null : c.uuid)}
-                          className="btn-secondary text-sm gap-1"
-                        >
-                          <BookOpen className="w-4 h-4" />
-                          {isExpanded ? 'Funga' : 'Muhtasari'}
-                          {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                        </button>
-                        <button
-                          onClick={() => { setRejectingUuid(c.uuid); setReason(''); }}
-                          className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50"
-                        >
-                          <XCircle className="w-4 h-4" /> Kataa
-                        </button>
-                        <button onClick={() => approve(c.uuid)} className="btn-primary text-sm">
-                          <CheckCircle2 className="w-4 h-4" /> Approve
-                        </button>
-                      </div>
-                    </div>
-
-                    {isExpanded && (
-                      <div className="border-t border-slate-100 bg-slate-50 p-5">
-                        <div className="grid md:grid-cols-[1fr_280px] gap-6">
-                          <div>
-                            {c.description ? (
-                              <div className="mb-4">
-                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Maelezo</h4>
-                                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{c.description}</p>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-slate-400 italic mb-4">Maelezo hayapo.</p>
-                            )}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                              <StatChip icon={<LayoutGrid className="w-4 h-4" />} label="Modules" value={c.stats?.modules ?? 0} color="brand" />
-                              <StatChip icon={<Award className="w-4 h-4" />} label="Level" value={LEVEL_LABEL[c.level] ?? c.level} color="amber" />
-                              <StatChip icon={<Clock className="w-4 h-4" />} label="Muda" value={c.duration_hours ? `${c.duration_hours}h` : '—'} color="green" />
-                            </div>
-                            <div className="flex gap-2 mt-5 pt-4 border-t border-slate-200">
-                              <button
-                                onClick={() => { setRejectingUuid(c.uuid); setReason(''); setExpandedUuid(null); }}
-                                className="flex-1 btn-secondary text-sm text-red-600 border-red-200 justify-center"
-                              >
-                                <XCircle className="w-4 h-4" /> Kataa Course
-                              </button>
-                              <button onClick={() => approve(c.uuid)} className="flex-1 btn-primary text-sm justify-center">
-                                <CheckCircle2 className="w-4 h-4" /> Approve & Publish
-                              </button>
-                            </div>
-                          </div>
-                          <div className="space-y-4">
-                            <CourseThumbnail url={c.thumbnail_url} size="lg" />
-                            <div className="rounded-xl bg-white border border-slate-200 p-4">
-                              <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Instructor</div>
-                              <div className="font-semibold text-slate-800">{c.instructor?.name ?? '—'}</div>
-                              <div className="text-xs text-slate-500">{c.instructor?.email ?? ''}</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {pendingRows.map((c: PendingApprovalCourse) => (
+                <PendingCard
+                  key={c.uuid}
+                  course={c}
+                  onApprove={(e) => approve(c.uuid, e)}
+                  onReject={() => { setRejectingUuid(c.uuid); setReason(''); }}
+                />
+              ))}
 
               <Pagination
                 currentPage={currentPage}
@@ -298,6 +202,90 @@ export default function CourseApprovalsPage() {
   );
 }
 
+/* ── Pending course card ── */
+function PendingCard({
+  course: c,
+  onApprove,
+  onReject,
+}: {
+  course: PendingApprovalCourse;
+  onApprove: (e: React.MouseEvent) => void;
+  onReject: () => void;
+}) {
+  return (
+    <div className="card overflow-hidden hover:shadow-md transition-shadow">
+      <Link href={`/admin/course-approvals/${c.uuid}`} className="flex gap-0">
+        {/* Thumbnail */}
+        <div className="w-40 shrink-0 hidden sm:block relative bg-gradient-to-br from-navy-500 to-navy-800">
+          {c.thumbnail_url ? (
+            <Image src={mediaUrl(c.thumbnail_url)!} alt="" fill className="object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-3xl opacity-30">📚</div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 p-5 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs text-orange-600 font-semibold uppercase tracking-wider">
+              {CATEGORY_LABEL[c.category as keyof typeof CATEGORY_LABEL]}
+            </span>
+            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+              {LEVEL_LABEL[c.level] ?? c.level}
+            </span>
+            {c.duration_hours && (
+              <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                {c.duration_hours}h
+              </span>
+            )}
+          </div>
+
+          <h3 className="font-bold text-lg text-slate-900 leading-tight mb-1">{c.title}</h3>
+
+          {c.description && (
+            <p className="text-sm text-slate-500 line-clamp-2 mb-2">{c.description}</p>
+          )}
+
+          <div className="flex flex-wrap gap-3 text-xs text-slate-400">
+            <span className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {c.instructor?.name ?? c.instructor?.email ?? 'Hakuna instructor'}
+            </span>
+            <span className="flex items-center gap-1">
+              <LayoutGrid className="w-3 h-3" />
+              {c.stats?.modules ?? 0} modules
+            </span>
+            <span className="flex items-center gap-1">
+              <Calendar className="w-3 h-3" />
+              Imetumwa {new Date(c.submitted_at).toLocaleString('sw-TZ')}
+            </span>
+          </div>
+        </div>
+      </Link>
+
+      {/* Action bar — separate from the link */}
+      <div className="px-5 pb-4 flex items-center gap-2 flex-wrap border-t border-slate-100 pt-3">
+        <Link
+          href={`/admin/course-approvals/${c.uuid}`}
+          className="btn-secondary text-sm gap-1.5"
+        >
+          <Eye className="w-4 h-4" /> Soma Course
+        </Link>
+        <div className="flex-1" />
+        <button
+          onClick={onReject}
+          className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50 gap-1"
+        >
+          <XCircle className="w-4 h-4" /> Kataa
+        </button>
+        <button onClick={onApprove} className="btn-primary text-sm gap-1">
+          <CheckCircle2 className="w-4 h-4" /> Approve
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ── History card ── */
 function HistoryCard({ course }: { course: CourseHistoryItem }) {
   const [open, setOpen] = useState(false);
@@ -306,89 +294,80 @@ function HistoryCard({ course }: { course: CourseHistoryItem }) {
 
   return (
     <div className="card overflow-hidden">
-      <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-        <CourseThumbnail url={course.thumbnail_url} size="sm" />
-
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-1">
-            {isApproved && (
-              <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2.5 py-0.5 rounded-full">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Imepublished
-              </span>
-            )}
-            {isRejected && (
-              <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2.5 py-0.5 rounded-full">
-                <XCircle className="w-3.5 h-3.5" /> Imekataliwa
-              </span>
-            )}
-            <span className="text-xs text-orange-600 font-semibold uppercase tracking-wider">
-              {CATEGORY_LABEL[course.category as keyof typeof CATEGORY_LABEL] ?? course.category}
-            </span>
-            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">
-              {LEVEL_LABEL[course.level] ?? course.level}
-            </span>
-          </div>
-
-          <h3 className="font-bold text-slate-900 leading-tight">{course.title}</h3>
-
-          <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
-              <Users className="w-3 h-3" />
-              {course.instructor?.name ?? course.instructor?.email ?? '—'}
-            </span>
-            <span className="flex items-center gap-1">
-              <LayoutGrid className="w-3 h-3" />
-              {course.stats?.modules ?? 0} modules
-            </span>
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {isApproved && course.approved_at
-                ? `Imepitishwa ${new Date(course.approved_at).toLocaleString('sw-TZ')}`
-                : `Imesasishwa ${new Date(course.updated_at).toLocaleString('sw-TZ')}`}
-            </span>
-            {course.approver?.name && (
-              <span className="flex items-center gap-1 font-medium text-slate-600">
-                na {course.approver.name}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Link href={`/admin/course-approvals/${course.uuid}`} className="btn-secondary text-sm gap-1">
-            <Eye className="w-4 h-4" /> Angalia
-          </Link>
-          {isRejected && course.rejection_reason && (
-            <button onClick={() => setOpen(!open)} className="btn-secondary text-sm gap-1 text-red-600 border-red-200">
-              <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
-              Sababu
-            </button>
+      <Link href={`/admin/course-approvals/${course.uuid}`} className="flex gap-0 hover:bg-slate-50/50 transition">
+        {/* Thumbnail */}
+        <div className="w-32 shrink-0 hidden sm:block relative bg-gradient-to-br from-navy-500 to-navy-800">
+          {course.thumbnail_url ? (
+            <Image src={mediaUrl(course.thumbnail_url)!} alt="" fill className="object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-2xl opacity-30">📚</div>
           )}
         </div>
-      </div>
 
-      {/* Rejection reason expandable */}
+        <div className="flex-1 p-4 min-w-0 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              {isApproved && (
+                <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2.5 py-0.5 rounded-full">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Imepublished
+                </span>
+              )}
+              {isRejected && (
+                <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2.5 py-0.5 rounded-full">
+                  <XCircle className="w-3.5 h-3.5" /> Imekataliwa
+                </span>
+              )}
+              <span className="text-xs text-orange-600 font-semibold uppercase tracking-wider">
+                {CATEGORY_LABEL[course.category as keyof typeof CATEGORY_LABEL] ?? course.category}
+              </span>
+            </div>
+
+            <h3 className="font-bold text-slate-900 leading-tight">{course.title}</h3>
+
+            <div className="flex flex-wrap gap-3 mt-1 text-xs text-slate-500">
+              <span className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                {course.instructor?.name ?? course.instructor?.email ?? '—'}
+              </span>
+              <span className="flex items-center gap-1">
+                <LayoutGrid className="w-3 h-3" />
+                {course.stats?.modules ?? 0} modules
+              </span>
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {isApproved && course.approved_at
+                  ? `Imepitishwa ${new Date(course.approved_at).toLocaleString('sw-TZ')}`
+                  : `Imesasishwa ${new Date(course.updated_at).toLocaleString('sw-TZ')}`}
+              </span>
+              {course.approver?.name && (
+                <span className="flex items-center gap-1 font-medium text-slate-600">
+                  na {course.approver.name}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.preventDefault()}>
+            <Link href={`/admin/course-approvals/${course.uuid}`} className="btn-secondary text-sm gap-1">
+              <Eye className="w-4 h-4" /> Angalia
+            </Link>
+            {isRejected && course.rejection_reason && (
+              <button
+                onClick={(e) => { e.preventDefault(); setOpen(!open); }}
+                className="btn-secondary text-sm gap-1 text-red-600 border-red-200"
+              >
+                <BookOpen className="w-4 h-4" /> Sababu
+              </button>
+            )}
+          </div>
+        </div>
+      </Link>
+
       {open && isRejected && course.rejection_reason && (
         <div className="border-t border-red-100 bg-red-50 px-5 py-4">
           <p className="text-xs font-bold text-red-600 uppercase tracking-widest mb-1">Sababu ya Kukataliwa</p>
           <p className="text-sm text-red-800 leading-relaxed whitespace-pre-wrap">{course.rejection_reason}</p>
         </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Shared thumbnail ── */
-function CourseThumbnail({ url, size }: { url: string | null; size: 'sm' | 'lg' }) {
-  const cls = size === 'lg'
-    ? 'aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-navy-500 to-navy-800 relative'
-    : 'w-full md:w-24 h-16 rounded-lg overflow-hidden bg-gradient-to-br from-navy-500 to-navy-800 shrink-0 relative';
-  return (
-    <div className={cls}>
-      {url ? (
-        <Image src={mediaUrl(url)!} alt="" fill className="object-cover" />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center text-2xl opacity-40">📚</div>
       )}
     </div>
   );
@@ -407,22 +386,5 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
     >
       {children}
     </button>
-  );
-}
-
-function StatChip({ icon, label, value, color }: {
-  icon: React.ReactNode; label: string; value: string | number;
-  color: 'brand' | 'amber' | 'green';
-}) {
-  const cls = color === 'amber' ? 'bg-amber-50 text-amber-700'
-    : color === 'green' ? 'bg-green-50 text-green-700'
-    : 'bg-brand-50 text-brand-700';
-  return (
-    <div className={`rounded-lg p-3 ${cls}`}>
-      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-70 mb-1">
-        {icon} {label}
-      </div>
-      <div className="font-black text-lg">{value}</div>
-    </div>
   );
 }
