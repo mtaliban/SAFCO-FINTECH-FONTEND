@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import {
   ArrowLeft, CheckCircle2, XCircle, Loader2,
   BookOpen, Play, FileText, Download, ExternalLink,
-  ChevronRight, Users, Clock, LayoutGrid, Award,
+  ChevronRight, Users, Clock, LayoutGrid, Award, AlertCircle,
 } from 'lucide-react';
 import { courseApi, adminCoursesApi, CATEGORY_LABEL, type LessonMaterial, type MaterialType } from '@/lib/course/api';
 import { mediaUrl } from '@/lib/utils';
@@ -76,6 +76,10 @@ export default function AdminCourseReviewPage() {
     advanced: 'Advanced', expert: 'Expert',
   };
 
+  const isPending   = course.status === 'pending_approval';
+  const isPublished = course.status === 'published';
+  const isRejected  = course.status === 'rejected';
+
   return (
     <div className="flex h-[calc(100vh-0px)] overflow-hidden bg-slate-50">
 
@@ -136,17 +140,51 @@ export default function AdminCourseReviewPage() {
           ))}
         </nav>
 
-        {/* Approve / Reject actions at bottom */}
+        {/* Status banner + actions */}
         <div className="p-3 border-t border-slate-200 space-y-2">
-          <button onClick={approve} className="w-full btn-primary text-sm justify-center gap-2">
-            <CheckCircle2 className="w-4 h-4" /> Approve &amp; Publish
-          </button>
-          <button
-            onClick={() => { setRejectOpen(true); setReason(''); }}
-            className="w-full btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50 justify-center gap-2"
-          >
-            <XCircle className="w-4 h-4" /> Kataa Course
-          </button>
+          {isPublished && (
+            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2.5 mb-1">
+              <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-green-700">Imepublished</p>
+                {course.approved_at && (
+                  <p className="text-[10px] text-green-600">{new Date(course.approved_at).toLocaleString('sw-TZ')}</p>
+                )}
+              </div>
+            </div>
+          )}
+          {isRejected && (
+            <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2.5 mb-1">
+              <div className="flex items-center gap-2 mb-1">
+                <XCircle className="w-4 h-4 text-red-600 shrink-0" />
+                <p className="text-xs font-bold text-red-700">Imekataliwa</p>
+              </div>
+              {course.rejection_reason && (
+                <p className="text-[11px] text-red-700 leading-relaxed">{course.rejection_reason}</p>
+              )}
+            </div>
+          )}
+          {isPending && (
+            <>
+              <button onClick={approve} className="w-full btn-primary text-sm justify-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Approve &amp; Publish
+              </button>
+              <button
+                onClick={() => { setRejectOpen(true); setReason(''); }}
+                className="w-full btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50 justify-center gap-2"
+              >
+                <XCircle className="w-4 h-4" /> Kataa Course
+              </button>
+            </>
+          )}
+          {!isPending && (
+            <Link
+              href="/admin/course-approvals"
+              className="w-full btn-secondary text-sm justify-center gap-2 flex"
+            >
+              <ArrowLeft className="w-4 h-4" /> Rudi Orodhani
+            </Link>
+          )}
         </div>
       </aside>
 

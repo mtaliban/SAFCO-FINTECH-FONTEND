@@ -298,8 +298,25 @@ export interface PendingApprovalCourse {
   stats: { modules: number };
 }
 
+export interface CourseHistoryItem {
+  uuid: string;
+  title: string;
+  category: string;
+  level: string;
+  status: 'published' | 'rejected' | 'archived';
+  thumbnail_url: string | null;
+  duration_hours: number | null;
+  instructor: { email: string; name: string | null } | null;
+  approver: { email: string; name: string | null } | null;
+  rejection_reason: string | null;
+  approved_at: string | null;
+  stats: { modules: number };
+  updated_at: string;
+}
+
 export const adminCoursesApi = {
   pending: () => apiRequest.get<Paginated<PendingApprovalCourse>>('/admin/course-approvals'),
+  history: () => apiRequest.get<Paginated<CourseHistoryItem>>('/admin/course-approvals/history'),
   approve: (uuid: string) => apiRequest.post(`/admin/courses/${uuid}/approve`),
   reject: (uuid: string, reason: string) => apiRequest.post(`/admin/courses/${uuid}/reject`, { reason }),
 };
