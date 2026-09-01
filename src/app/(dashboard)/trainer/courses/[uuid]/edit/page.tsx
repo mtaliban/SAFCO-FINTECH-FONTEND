@@ -7,6 +7,7 @@ import {
   Loader2, Plus, CheckCircle2, Trash2, Upload, FileText,
   PlayCircle, Zap, ChevronUp, ChevronDown, ClipboardList,
   Package, FileArchive, Youtube, Film, ArrowLeft,
+  Eye, EyeOff, ExternalLink, Download,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -744,12 +745,14 @@ function fmtSize(bytes: number): string {
 function MaterialRow({ material, editable, onDeleted }: { material: LessonMaterial; editable: boolean; onDeleted: () => void }) {
   const Icon = materialIcon(material.type);
   const colorClass = material.category === 'documents' ? 'text-red-600' : material.category === 'videos' ? 'text-navy-500' : 'text-navy-500';
+  const [showPreview, setShowPreview] = useState(false);
 
-  // Real-time processing status via MQTT (falls back to poll)
   const status = useMaterialStatus(material.uuid, {
     status: material.processing_status ?? 'ready',
     progress: material.processing_progress ?? 100,
   });
+
+  const canPreview = status.status === 'ready' && material.category !== 'interactive';
 
   async function del() {
     if (!confirm(`Futa material "${material.title}"?`)) return;
@@ -765,6 +768,15 @@ function MaterialRow({ material, editable, onDeleted }: { material: LessonMateri
         <span className="flex-1">{material.title}</span>
         <StatusPill status={status.status} progress={status.progress} />
         <span className="text-slate-400 text-xs">{MATERIAL_TYPE_LABEL[material.type]}</span>
+        {canPreview && (
+          <button
+            onClick={() => setShowPreview((v) => !v)}
+            className="text-navy-500 hover:text-navy-700"
+            title={showPreview ? 'Funga preview' : 'Angalia'}
+          >
+            {showPreview ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+          </button>
+        )}
         {editable && (
           <button onClick={del} className="text-red-500 hover:text-red-700"><Trash2 className="w-3 h-3" /></button>
         )}
@@ -776,6 +788,11 @@ function MaterialRow({ material, editable, onDeleted }: { material: LessonMateri
       )}
       {status.status === 'failed' && status.error && (
         <div className="ml-5 mt-1 text-red-600 text-xs">Failed: {status.error}</div>
+      )}
+      {showPreview && canPreview && (
+        <div className="mt-2 ml-5">
+          <TrainerMaterialPreview material={material} />
+        </div>
       )}
     </div>
   );
@@ -1072,4 +1089,124 @@ function ModalFooter({ onClose, onSave, busy, disabled = false }: { onClose: () 
       </button>
     </div>
   );
+}
+
+/* ── Trainer inline material preview ── */
+function TrainerMaterialPreview({ material }: { material: LessonMaterial }) {
+  const isVideo = material.category === 'videos';
+  const isDoc   = material.category === 'documents';
+  if (isVideo) return <TrainerVideoPreview material={material} />;
+  if (isDoc)   return <TrainerDocPreview material={material} />;
+  return null;
+}
+
+function TrainerVideoPreview({ material }: { material: LessonMaterial }) {
+  const directUrl = material.direct_url ?? null;
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
+  const videoSrc  = directUrl ?? streamUrl;
+  const poster    = mediaUrl(material.thumbnail_url) ?? undefined;
+  const [loading, setLoading] = useState(true);
+  const embed = (material.metadata?.embed_url as string) ?? trainerExtractEmbed(videoSrc);
+
+  return (
+    <div className="rounded-xl overflow-hidden border border-slate-200 bg-black">
+      <div className="relative aspect-video bg-slate-900">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900 z-10">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-500" />
+          </div>
+        )}
+        {embed ? (
+          <iframe src={embed} className="w-full h-full" allowFullScreen title={material.title}
+            onLoad={() => setLoading(false)}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" />
+        ) : (
+          <video src={videoSrc} controls preload="metadata" poster={poster} className="w-full h-full"
+            controlsList="nodownload" onLoadedMetadata={() => setLoading(false)} onError={() => setLoading(false)}>
+            Kivinjari chako hakitumii video hii.
+          </video>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TrainerDocPreview({ material }: { material: LessonMaterial }) {
+  const [viewerLoading, setViewerLoading] = useState(true);
+  const isPdf    = material.type === 'document_pdf';
+  const isOffice = ['document_word', 'document_excel', 'document_powerpoint'].includes(material.type);
+  const signedUrl = material.direct_url ?? material.office_viewer_url ?? null;
+  const streamUrl = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const viewUrl   = signedUrl ?? streamUrl ?? material.url;
+  const isExternal = material.url?.startsWith('http') ?? false;
+
+  const pdfEmbedUrl = isPdf
+    ? (signedUrl ?? streamUrl ?? (isExternal ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true` : null))
+    : null;
+  const officeViewerUrl = isOffice && signedUrl
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(signedUrl)}`
+    : null;
+
+  const { label, bgClass, textClass, borderClass } = trainerDocMeta(material.type);
+  const hasViewer = !!(pdfEmbedUrl || officeViewerUrl);
+
+  return (
+    <div className={`rounded-xl border overflow-hidden bg-white ${borderClass}`}>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100">
+        <div className={`w-7 h-7 rounded-lg ${bgClass} flex items-center justify-center shrink-0`}>
+          <FileText className={`w-4 h-4 ${textClass}`} />
+        </div>
+        <p className="font-semibold text-slate-800 text-xs flex-1 truncate">{material.title}</p>
+        <a href={viewUrl} target="_blank" rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0">
+          <ExternalLink className="w-3 h-3" /> Fungua
+        </a>
+        {signedUrl && (
+          <a href={signedUrl} download target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition shrink-0" title="Download">
+            <Download className="w-3 h-3" />
+          </a>
+        )}
+      </div>
+      {hasViewer && (
+        <div className="relative" style={{ height: 500 }}>
+          {viewerLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 gap-2">
+              <Loader2 className={`w-6 h-6 animate-spin ${textClass}`} />
+              <p className="text-xs text-slate-500">Inapakia {label}...</p>
+            </div>
+          )}
+          <iframe src={(pdfEmbedUrl ?? officeViewerUrl)!} className="w-full h-full border-0"
+            title={material.title} onLoad={() => setViewerLoading(false)} />
+        </div>
+      )}
+      {!hasViewer && (
+        <div className="flex flex-col items-center gap-2 py-6 text-center bg-slate-50">
+          <p className="text-xs text-slate-500">Bonyeza kupakua au kufungua {label}</p>
+          <a href={viewUrl} target="_blank" rel="noopener noreferrer"
+            className={`flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-lg ${bgClass} ${textClass} hover:opacity-80 transition`}>
+            <Download className="w-3.5 h-3.5" /> Download {label}
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function trainerExtractEmbed(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}?rel=0`;
+  const vm = url.match(/vimeo\.com\/(\d+)/);
+  if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
+  return null;
+}
+
+function trainerDocMeta(type: MaterialType) {
+  const map: Partial<Record<MaterialType, { label: string; bgClass: string; textClass: string; borderClass: string }>> = {
+    document_pdf:        { label: 'PDF',       bgClass: 'bg-red-50',    textClass: 'text-red-600',    borderClass: 'border-red-100' },
+    document_word:       { label: 'Word',       bgClass: 'bg-blue-50',   textClass: 'text-blue-600',   borderClass: 'border-blue-100' },
+    document_excel:      { label: 'Excel',      bgClass: 'bg-green-50',  textClass: 'text-green-700',  borderClass: 'border-green-100' },
+    document_powerpoint: { label: 'PowerPoint', bgClass: 'bg-orange-50', textClass: 'text-orange-600', borderClass: 'border-orange-100' },
+  };
+  return map[type] ?? { label: 'Document', bgClass: 'bg-slate-50', textClass: 'text-slate-600', borderClass: 'border-slate-200' };
 }
