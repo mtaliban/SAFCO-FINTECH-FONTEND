@@ -65,7 +65,7 @@ export default function LessonViewPage() {
   const totalLessons   = allLessons.length;
   const progressPct    = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-  async function handleMarkComplete() {
+  async function handleMarkComplete(silent = false) {
     if (isDone || markingComplete) return;
     setMarkingComplete(true);
     try {
@@ -75,18 +75,26 @@ export default function LessonViewPage() {
       if (res.completed) {
         toast.success('🎉 Hongera! Umefanikiwa kumaliza course nzima!');
         setTimeout(() => router.push(`/student/courses/${uuid}`), 1800);
-      } else {
+      } else if (!silent) {
         toast.success(`Progress: ${Number(res.progress_percentage).toFixed(0)}%`);
         if (nextLesson) {
           setTimeout(() => router.push(`/student/courses/${uuid}/lessons/${nextLesson.uuid}`), 700);
         }
       }
     } catch {
-      toast.error('Imeshindwa. Jaribu tena.');
+      if (!silent) toast.error('Imeshindwa. Jaribu tena.');
     } finally {
       setMarkingComplete(false);
     }
   }
+
+  // Auto-mark lesson as complete after 15 seconds of viewing (silent — no toast/redirect)
+  useEffect(() => {
+    if (isDone || !lessonUuid) return;
+    const timer = setTimeout(() => { handleMarkComplete(true); }, 15_000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonUuid, isDone]);
 
   if (isLoading || !course) {
     return (
@@ -340,21 +348,23 @@ export default function LessonViewPage() {
                   <div className="w-10" />
                 )}
 
-                {/* Mark complete — centre */}
+                {/* Progress indicator — auto-marks after 15s, manual click also works */}
                 <button
-                  onClick={handleMarkComplete}
+                  onClick={() => handleMarkComplete(false)}
                   disabled={isDone || markingComplete}
                   className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-semibold text-sm transition
                     ${isDone
                       ? 'bg-green-50 text-green-700 border border-green-200 cursor-default'
-                      : 'bg-brand-600 text-white hover:bg-brand-700 shadow-sm'
+                      : markingComplete
+                        ? 'bg-slate-100 text-slate-500 border border-slate-200 cursor-wait'
+                        : 'bg-white text-slate-600 border border-slate-300 hover:bg-slate-50'
                     }`}
                 >
                   {markingComplete
                     ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <CheckCircle2 className="w-4 h-4" />
+                    : <CheckCircle2 className={`w-4 h-4 ${isDone ? 'text-green-500' : 'text-slate-400'}`} />
                   }
-                  {isDone ? 'Imekamilika ✓' : 'Nimefanya — Mark Complete'}
+                  {isDone ? 'Imekamilika ✓' : markingComplete ? 'Inasajili...' : 'Imekamilika?'}
                 </button>
 
                 {/* Next */}
@@ -480,7 +490,10 @@ function ContentSection({ icon, title, children }: { icon: React.ReactNode; titl
 
 /* ── Video material ── */
 function VideoMaterial({ material }: { material: LessonMaterial }) {
+  // Prefer direct presigned S3 URL (no proxy, no redirect) → stream proxy fallback → raw url
+  const directUrl  = material.direct_url ?? null;
   const streamUrl  = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
+  const videoSrc   = directUrl ?? streamUrl;
   const poster     = mediaUrl(material.thumbnail_url) ?? undefined;
   const isYouTube  = material.type === 'video_youtube';
   const isVimeo    = material.type === 'video_vimeo';
@@ -490,7 +503,7 @@ function VideoMaterial({ material }: { material: LessonMaterial }) {
     <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
       {/* Player */}
       <VideoPlayer
-        url={streamUrl}
+        url={videoSrc}
         embedUrl={(material.metadata?.embed_url as string) ?? undefined}
         title={material.title}
         type={material.type}
@@ -575,20 +588,25 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
   const [viewerLoading, setViewerLoading] = useState(true);
   const isPdf      = material.type === 'document_pdf';
   const isOffice   = ['document_word', 'document_excel', 'document_powerpoint'].includes(material.type);
-  const streamUrl  = material.stream_url ? mediaUrl(material.stream_url) : null;
-  const viewUrl    = streamUrl ?? material.url;
-  const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
-  const isExternal = material.url.startsWith('http');
-  const hasViewer  = (isPdf && (streamUrl || isExternal)) || (isOffice && !!material.office_viewer_url);
+  const streamUrl   = material.stream_url ? mediaUrl(material.stream_url) : null;
+  const signedUrl   = material.direct_url ?? material.office_viewer_url ?? null; // presigned S3 URL
+  const viewUrl     = signedUrl ?? streamUrl ?? material.url;
+  const downloadUrl = signedUrl
+    ? signedUrl.replace('ResponseContentDisposition=inline', 'ResponseContentDisposition=attachment')
+    : (streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl);
+  const isExternal  = material.url?.startsWith('http') ?? false;
+  const hasViewer   = (isPdf && !!(signedUrl || streamUrl || isExternal)) || (isOffice && !!signedUrl);
 
-  const pdfEmbedUrl = streamUrl
-    ? streamUrl
-    : (isPdf && isExternal
-        ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true`
-        : null);
+  // PDF: prefer presigned S3 URL (no redirect chain) → stream proxy → Google Docs fallback
+  const pdfEmbedUrl = isPdf
+    ? (signedUrl
+        ?? streamUrl
+        ?? (isExternal ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true` : null))
+    : null;
 
-  const officeViewerUrl = isOffice && material.office_viewer_url
-    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(material.office_viewer_url)}`
+  // Office: use Microsoft Office Online viewer with the presigned S3 URL
+  const officeViewerUrl = isOffice && signedUrl
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(signedUrl)}`
     : null;
 
   const { label, bgClass, textClass, borderClass } = docMeta(material.type);
@@ -629,7 +647,7 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
             <ExternalLink className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Fungua</span>
           </a>
-          {(streamUrl || isExternal) && (
+          {(signedUrl || streamUrl || isExternal) && (
             <a
               href={downloadUrl}
               target="_blank"

@@ -601,7 +601,9 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
 
 /* ── Video material ── */
 function VideoMaterial({ material }: { material: LessonMaterial }) {
+  const directUrl = material.direct_url ?? null;
   const streamUrl = material.stream_url ? mediaUrl(material.stream_url)! : material.url;
+  const videoSrc  = directUrl ?? streamUrl;
   const poster    = mediaUrl(material.thumbnail_url) ?? undefined;
   const isYouTube = material.type === 'video_youtube';
   const isVimeo   = material.type === 'video_vimeo';
@@ -609,7 +611,7 @@ function VideoMaterial({ material }: { material: LessonMaterial }) {
 
   return (
     <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
-      <VideoPlayer url={streamUrl} embedUrl={(material.metadata?.embed_url as string) ?? undefined}
+      <VideoPlayer url={videoSrc} embedUrl={(material.metadata?.embed_url as string) ?? undefined}
         title={material.title} type={material.type} poster={poster} />
       <div className="flex items-center gap-3 px-4 py-3 border-t border-slate-100">
         {isYouTube && (
@@ -663,15 +665,19 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
   const isPdf    = material.type === 'document_pdf';
   const isOffice = ['document_word', 'document_excel', 'document_powerpoint'].includes(material.type);
   const streamUrl   = material.stream_url ? mediaUrl(material.stream_url) : null;
-  const viewUrl     = streamUrl ?? material.url;
-  const downloadUrl = streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl;
-  const isExternal  = material.url.startsWith('http');
-  const hasViewer   = (isPdf && (streamUrl || isExternal)) || (isOffice && !!material.office_viewer_url);
+  const signedUrl   = material.direct_url ?? material.office_viewer_url ?? null;
+  const viewUrl     = signedUrl ?? streamUrl ?? material.url;
+  const downloadUrl = signedUrl
+    ? signedUrl.replace('ResponseContentDisposition=inline', 'ResponseContentDisposition=attachment')
+    : (streamUrl ? `${streamUrl}?disposition=attachment` : viewUrl);
+  const isExternal  = material.url?.startsWith('http') ?? false;
+  const hasViewer   = (isPdf && !!(signedUrl || streamUrl || isExternal)) || (isOffice && !!signedUrl);
 
-  const pdfEmbedUrl = streamUrl ? streamUrl
-    : (isPdf && isExternal ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true` : null);
-  const officeViewerUrl = isOffice && material.office_viewer_url
-    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(material.office_viewer_url)}`
+  const pdfEmbedUrl = isPdf
+    ? (signedUrl ?? streamUrl ?? (isExternal ? `https://docs.google.com/viewer?url=${encodeURIComponent(material.url)}&embedded=true` : null))
+    : null;
+  const officeViewerUrl = isOffice && signedUrl
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(signedUrl)}`
     : null;
   const { label, bgClass, textClass, borderClass } = docMeta(material.type);
 
@@ -698,7 +704,7 @@ function DocMaterial({ material }: { material: LessonMaterial }) {
             className="flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
             <ExternalLink className="w-3.5 h-3.5" /><span className="hidden sm:inline">Fungua</span>
           </a>
-          {(streamUrl || isExternal) && (
+          {(signedUrl || streamUrl || isExternal) && (
             <a href={downloadUrl} target="_blank" rel="noopener noreferrer"
               className="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition" title="Download">
               <Download className="w-3.5 h-3.5" />

@@ -131,7 +131,9 @@ export interface LessonMaterial {
   width?: number | null;
   height?: number | null;
   stream_url?: string | null;
-  /** Pre-signed S3 URL for Word/Excel/PPT — used by Microsoft Office Online viewer */
+  /** Direct pre-signed S3 URL — use for <video>, <iframe> PDF, Office viewer. Bypasses stream proxy. */
+  direct_url?: string | null;
+  /** Pre-signed S3 URL for Word/Excel/PPT — used by Microsoft Office Online viewer (alias of direct_url) */
   office_viewer_url?: string | null;
 }
 
