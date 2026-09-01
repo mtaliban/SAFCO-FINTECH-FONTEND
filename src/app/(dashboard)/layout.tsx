@@ -8,7 +8,7 @@ import { isAuthenticated } from '@/lib/auth';
 import { Loader2, Menu } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { AiTutorWidget } from '@/components/ai/AiTutorWidget';
-import { useNotifications } from '@/lib/notifications/hook';
+import { useNotificationsSubscription } from '@/lib/notifications/hook';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,8 +17,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const role = user?.roles?.[0];
 
-  // Keep hook mounted so MQTT toasts fire for all pages
-  useNotifications();
+  // Reverb WebSocket subscription — ONE instance only, mounted here for all pages.
+  useNotificationsSubscription();
 
   useEffect(() => {
     if (!isAuthenticated()) { router.replace('/login'); return; }

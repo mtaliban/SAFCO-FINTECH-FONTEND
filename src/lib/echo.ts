@@ -6,13 +6,9 @@ import Cookies from 'js-cookie';
 import { TOKEN_KEY } from '@/lib/api';
 
 let instance: Echo<'reverb'> | null = null;
+let builtForToken: string | null = null;
 
-function buildEcho(): Echo<'reverb'> | null {
-  if (typeof window === 'undefined') return null;
-
-  const token = Cookies.get(TOKEN_KEY);
-  if (!token) return null;
-
+function buildEcho(token: string): Echo<'reverb'> {
   const key    = process.env.NEXT_PUBLIC_REVERB_APP_KEY ?? '';
   const host   = process.env.NEXT_PUBLIC_REVERB_HOST   ?? '13.62.222.211';
   const port   = Number(process.env.NEXT_PUBLIC_REVERB_PORT ?? 8080);
@@ -30,7 +26,6 @@ function buildEcho(): Echo<'reverb'> | null {
     wssPort: tls ? 443 : port,
     forceTLS: tls,
     enabledTransports: ['ws', 'wss'],
-    // Our api.php exposes POST /api/v1/broadcasting/auth with auth:sanctum
     authEndpoint: `${apiBase}/v1/broadcasting/auth`,
     auth: {
       headers: {
@@ -41,11 +36,23 @@ function buildEcho(): Echo<'reverb'> | null {
   });
 }
 
-/** Returns a singleton Echo instance. Re-creates if the token changes. */
+/**
+ * Returns the singleton Echo instance.
+ * Re-creates automatically when the auth token changes (e.g. after login).
+ */
 export function getEcho(): Echo<'reverb'> | null {
-  if (!instance) {
-    instance = buildEcho();
+  if (typeof window === 'undefined') return null;
+
+  const token = Cookies.get(TOKEN_KEY);
+  if (!token) return null;
+
+  // Rebuild if token changed (login after logout, or token refresh)
+  if (!instance || builtForToken !== token) {
+    instance?.disconnect();
+    instance = buildEcho(token);
+    builtForToken = token;
   }
+
   return instance;
 }
 
@@ -53,4 +60,5 @@ export function getEcho(): Echo<'reverb'> | null {
 export function disconnectEcho(): void {
   instance?.disconnect();
   instance = null;
+  builtForToken = null;
 }
