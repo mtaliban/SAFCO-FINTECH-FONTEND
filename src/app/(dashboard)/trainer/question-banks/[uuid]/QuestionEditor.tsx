@@ -198,17 +198,14 @@ function validate(f: EditorForm): string | null {
   switch (f.type) {
     case 'multiple_choice': {
       const filled = f.choiceOptions.filter((o) => o.label.trim());
-      if (filled.length < 2) return 'Provide at least 2 options.';
-      const ids = filled.map((_, i) => LETTERS[i]);
-      if (!ids.includes(f.correctSingle)) return 'Select the correct option.';
+      if (!filled.length) return 'Add at least one option.';
       return null;
     }
     case 'true_false':
       return f.correctSingle === 'true' || f.correctSingle === 'false' ? null : 'Pick True or False.';
     case 'multiple_select': {
       const filled = f.choiceOptions.filter((o) => o.label.trim());
-      if (filled.length < 2) return 'Provide at least 2 options.';
-      if (f.correctMulti.length < 1) return 'Select at least one correct option.';
+      if (!filled.length) return 'Add at least one option.';
       return null;
     }
     case 'fill_in_blank': {
