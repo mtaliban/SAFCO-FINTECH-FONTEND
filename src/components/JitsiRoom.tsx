@@ -43,11 +43,17 @@ export default function JitsiRoom({ roomName, displayName, email, isHost = false
             startWithAudioMuted: true,
             disableDeepLinking: true,
             prejoinPageEnabled: false,
+            disableAuth: true,
+            disableProfile: false,
+            enableNoisyMicDetection: false,
+            disableThirdPartyRequests: true,
           },
           interfaceConfigOverwrite: {
             SHOW_JITSI_WATERMARK: false,
             SHOW_WATERMARK_FOR_GUESTS: false,
             TOOLBAR_BUTTONS: toolbarButtons,
+            DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+            HIDE_INVITE_MORE_HEADER: true,
           },
         });
 

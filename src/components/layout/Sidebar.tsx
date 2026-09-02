@@ -6,7 +6,7 @@ import {
   Home, User, LogOut, GraduationCap,
   Zap, Users, Activity, BarChart3, BookOpen, Award, Building2,
   ClipboardList, UserPlus, Layers, QrCode, Library, CreditCard, Star,
-  MessagesSquare, X, ShieldCheck, Settings,
+  MessagesSquare, X, ShieldCheck, Settings, Video,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth';
 import { cn } from '@/lib/utils';
@@ -52,8 +52,8 @@ const studentNav: NavItem[] = [
   { href: '/student/exams',              label: 'Examinations',         icon: GraduationCap },
   { href: '/student/assignments',        label: 'Assignments',          icon: ClipboardList },
   { href: '/student/attempts',           label: 'My Attempts',          icon: Layers },
+  { href: '/student/sessions',           label: 'Madarasa ya Live',     icon: Video },
   { href: '/student/check-in',           label: 'Check-in (QR)',        icon: QrCode },
-  { href: '/student/live-class',         label: 'Live Class',           icon: Activity },
   { href: '/student/certificates',       label: 'My Certificates',      icon: Award },
   { href: '/forum',                      label: 'Discussion Forum',     icon: MessagesSquare },
   { href: '/billing',                    label: 'Billing',              icon: CreditCard },
