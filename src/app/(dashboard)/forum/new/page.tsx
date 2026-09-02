@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -33,7 +34,11 @@ const TIPS: Record<CategorySlug, string[]> = {
   ],
 };
 
-export default function NewThreadPage() {
+export default function NewThreadPageWrapper() {
+  return <Suspense><NewThreadPage /></Suspense>;
+}
+
+function NewThreadPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 

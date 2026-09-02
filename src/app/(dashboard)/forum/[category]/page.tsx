@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -21,7 +22,11 @@ const GRADIENT_MAP: Record<string, string> = {
   emerald: 'linear-gradient(135deg, #064e3b 0%, #0d9488 100%)',
 };
 
-export default function CategoryThreadsPage() {
+export default function CategoryThreadsPageWrapper() {
+  return <Suspense><CategoryThreadsPage /></Suspense>;
+}
+
+function CategoryThreadsPage() {
   const params = useParams();
   const slug = params?.category as CategorySlug;
   const searchParams = useSearchParams();

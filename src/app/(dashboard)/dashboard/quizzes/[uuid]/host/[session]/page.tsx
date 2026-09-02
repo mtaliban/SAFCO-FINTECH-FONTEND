@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
+import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -39,7 +40,15 @@ interface SessionState {
   current_question_ends_at: string | null;
 }
 
-export default function HostSessionPage() {
+export default function HostSessionPageWrapper() {
+  return (
+    <Suspense fallback={<div className="fixed inset-0 bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" /></div>}>
+      <HostSessionPage />
+    </Suspense>
+  );
+}
+
+function HostSessionPage() {
   const { session: sessionUuid } = useParams<{ session: string }>();
   const params = useSearchParams();
   const pin = params.get('pin') ?? '';
