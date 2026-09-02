@@ -134,7 +134,7 @@ export default function StudentCheckInPage() {
 function ResultCard({ result, onAgain }: { result: NonNullable<Result>; onAgain: () => void }) {
   const styleMap = {
     present: { c: 'from-green-500 to-emerald-600', Icon: CheckCircle2, label: 'PRESENT 🎉' },
-    late: { c: 'from-amber-500 to-orange-600', Icon: Clock, label: 'LATE ⏰' },
+    late: { c: 'from-amber-500 to-orange-600', Icon: Clock, label: 'UMECHELEWA ⏰' },
     absent: { c: 'from-red-500 to-red-700', Icon: XCircle, label: 'ABSENT' },
     excused: { c: 'from-navy-500 to-navy-600', Icon: CheckCircle2, label: 'EXCUSED' },
   } as const;
@@ -145,6 +145,9 @@ function ResultCard({ result, onAgain }: { result: NonNullable<Result>; onAgain:
       <div className={`bg-gradient-to-br ${st.c} text-white p-4 sm:p-6 lg:p-8 text-center`}>
         <Icon className="w-16 h-16 mx-auto mb-3" />
         <div className="text-2xl sm:text-3xl font-black mb-2">{st.label}</div>
+        {result.status === 'late' && (
+          <div className="text-white/80 text-sm mb-2">Ulifika baada ya muda wa kuanza — umerekodiwa kama umechelewa.</div>
+        )}
         <div className="text-white/80">{result.session.title}</div>
         {result.session.location && <div className="text-white/60 text-sm mt-1">📍 {result.session.location}</div>}
       </div>
