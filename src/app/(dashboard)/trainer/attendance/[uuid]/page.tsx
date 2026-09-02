@@ -73,9 +73,8 @@ export default function LiveAttendanceSessionPage() {
     qc.invalidateQueries({ queryKey: ['attendance-session', uuid] });
   }
   async function closeSession() {
-    if (!confirm('Funga session? Absentees wote wa-marked.')) return;
     const res = await api.post(`/attendance-sessions/${uuid}/close`);
-    toast.success(res.data.message ?? 'Closed');
+    toast.success(res.data.message ?? 'Darasa limefungwa. Absentees wamewekwa automatically.');
     qc.invalidateQueries({ queryKey: ['attendance-session', uuid] });
   }
   async function markStudent(studentUuid: string, status: 'present' | 'late' | 'absent' | 'excused') {
@@ -146,9 +145,7 @@ export default function LiveAttendanceSessionPage() {
             displayName={user?.profile?.full_name ?? user?.email ?? 'Trainer'}
             email={user?.email ?? ''}
             isHost={true}
-            onLeft={() => {
-              if (confirm('Umesimama? Funga session ya attendance?')) closeSession();
-            }}
+            onLeft={() => closeSession()}
             height="480px"
           />
         </div>
