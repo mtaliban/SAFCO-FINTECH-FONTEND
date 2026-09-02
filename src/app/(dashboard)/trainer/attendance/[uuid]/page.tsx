@@ -5,8 +5,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Loader2, QrCode, RefreshCw, X, CheckCircle2, XCircle, Clock,
-  AlertCircle, BarChart3, MapPin, Link2,
+  AlertCircle, BarChart3, MapPin, Link2, Video,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useAuthStore } from '@/store/auth';
+
+const JitsiRoom = dynamic(() => import('@/components/JitsiRoom'), { ssr: false });
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import { subscribe } from '@/lib/mqtt';
@@ -26,6 +30,7 @@ export default function LiveAttendanceSessionPage() {
   const { uuid } = useParams<{ uuid: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+  const user = useAuthStore((s) => s.user);
   const [qrBlob, setQrBlob] = useState<string | null>(null);
 
   const { data: session, isLoading } = useQuery({
@@ -118,15 +123,44 @@ export default function LiveAttendanceSessionPage() {
         </div>
       </div>
 
+      {/* Jitsi Live Class (full width when open) */}
+      {isOpen && session.jitsi_room && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold flex items-center gap-2 text-slate-900">
+              <Video className="w-5 h-5 text-green-600" /> Darasa la Live
+            </h2>
+            <button
+              onClick={() => {
+                const link = `${window.location.origin}/student/live-class/${uuid}`;
+                navigator.clipboard.writeText(link);
+                toast.success('Link imenakiliwa! Tuma kwa wanafunzi.');
+              }}
+              className="btn-primary text-sm"
+            >
+              <Link2 className="w-4 h-4" /> Copy Live Class Link
+            </button>
+          </div>
+          <JitsiRoom
+            roomName={session.jitsi_room}
+            displayName={user?.profile?.full_name ?? user?.email ?? 'Trainer'}
+            email={user?.email ?? ''}
+            isHost={true}
+            onLeft={() => {
+              if (confirm('Umesimama? Funga session ya attendance?')) closeSession();
+            }}
+            height="480px"
+          />
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* QR + summary */}
+        {/* QR (physical classrooms only) + share */}
         <div className="lg:col-span-1">
-          <div className="card p-6 sticky top-6">
+          <div className="card p-5 sticky top-6">
             {isOpen ? (
               <>
-                <div className="text-center mb-3">
-                  <div className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Scan to Check In</div>
-                </div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Darasa la Physical (QR)</p>
                 {qrBlob ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qrBlob} alt="Attendance QR" className="w-full aspect-square rounded" />
@@ -135,28 +169,18 @@ export default function LiveAttendanceSessionPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                   </div>
                 )}
-                <button
-                  onClick={() => {
-                    const link = `${window.location.origin}/student/check-in?token=${session.qr_token}`;
-                    navigator.clipboard.writeText(link);
-                    toast.success('Link imenakiliwa! Ipeleke kwa wanafunzi.');
-                  }}
-                  className="btn-primary text-sm w-full mt-3"
-                >
-                  <Link2 className="w-4 h-4" /> Copy Check-in Link
-                </button>
-                <button onClick={rotate} className="btn-secondary text-sm w-full mt-2">
+                <button onClick={rotate} className="btn-secondary text-sm w-full mt-3">
                   <RefreshCw className="w-4 h-4" /> Rotate QR
                 </button>
                 <p className="mt-3 text-xs text-slate-400 text-center">
-                  Tuma link hiyo kwa WhatsApp, Zoom chat, au LMS — wanafunzi wabonyeze tu.
+                  Wanafunzi wa chumba scan hii QR. Kwa online tuma Live Class Link hapo juu.
                 </p>
               </>
             ) : (
               <div className="text-center py-8">
                 <QrCode className="w-16 h-16 mx-auto text-slate-300 mb-3" />
                 <p className="text-slate-500 text-sm">
-                  {isClosed ? 'Session imefungwa. QR haifanyi kazi tena.' : 'Bofya "Open Session" ili QR ianze kufanya kazi.'}
+                  {isClosed ? 'Session imefungwa.' : 'Bonyeza "Open Session" kuanza.'}
                 </p>
               </div>
             )}

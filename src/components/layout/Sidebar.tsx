@@ -53,6 +53,7 @@ const studentNav: NavItem[] = [
   { href: '/student/assignments',        label: 'Assignments',          icon: ClipboardList },
   { href: '/student/attempts',           label: 'My Attempts',          icon: Layers },
   { href: '/student/check-in',           label: 'Check-in (QR)',        icon: QrCode },
+  { href: '/student/live-class',         label: 'Live Class',           icon: Activity },
   { href: '/student/certificates',       label: 'My Certificates',      icon: Award },
   { href: '/forum',                      label: 'Discussion Forum',     icon: MessagesSquare },
   { href: '/billing',                    label: 'Billing',              icon: CreditCard },

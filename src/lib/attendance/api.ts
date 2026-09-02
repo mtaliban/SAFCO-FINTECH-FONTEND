@@ -2,7 +2,7 @@ import { api, apiRequest } from '@/lib/api';
 
 export type SessionStatus = 'scheduled' | 'open' | 'closed';
 export type RecordStatus = 'present' | 'late' | 'absent' | 'excused';
-export type CheckInMethod = 'qr' | 'manual' | 'auto';
+export type CheckInMethod = 'qr' | 'manual' | 'auto' | 'live';
 
 export interface AttendanceSession {
   uuid: string;
@@ -20,7 +20,24 @@ export interface AttendanceSession {
   qr_token: string;
   qr_expires_at: string | null;
   records_count: number;
+  jitsi_room: string;
 }
+
+export interface SessionPeek {
+  uuid: string;
+  title: string;
+  location: string | null;
+  status: SessionStatus;
+  starts_at: string;
+  course: { uuid: string; title: string } | null;
+  jitsi_room: string;
+}
+
+export type LiveJoinResult = {
+  status: RecordStatus;
+  session: { uuid: string; title: string; location: string | null; jitsi_room: string };
+  checked_in_at: string;
+};
 
 export interface AttendanceRecord {
   uuid: string;
@@ -71,6 +88,10 @@ export const attendanceApi = {
     apiRequest.post<{ status: RecordStatus; session: { title: string; location: string | null }; checked_in_at: string }>(
       '/attendance/check-in', { token }
     ),
+  liveJoin: (sessionUuid: string) =>
+    apiRequest.post<LiveJoinResult>(`/attendance-sessions/${sessionUuid}/live-join`),
+  peek: (sessionUuid: string) =>
+    apiRequest.get<SessionPeek>(`/attendance-sessions/${sessionUuid}/peek`),
 };
 
 /** Auth token needed by <img src> fetches — Next.js image can't set headers. */
