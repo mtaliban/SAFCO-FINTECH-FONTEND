@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Camera, CheckCircle2, Clock, Loader2, QrCode, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,7 +12,11 @@ type Result = {
   checked_in_at: string;
 } | null;
 
-export default function StudentCheckInPage() {
+export default function StudentCheckInPageWrapper() {
+  return <Suspense><StudentCheckInPage /></Suspense>;
+}
+
+function StudentCheckInPage() {
   const params = useSearchParams();
   const initialToken = params.get('token') ?? '';
   const [token, setToken] = useState(initialToken);
