@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Loader2, QrCode, RefreshCw, X, CheckCircle2, XCircle, Clock,
-  AlertCircle, BarChart3, MapPin,
+  AlertCircle, BarChart3, MapPin, Link2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
@@ -135,12 +135,22 @@ export default function LiveAttendanceSessionPage() {
                     <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                   </div>
                 )}
-                <button onClick={rotate} className="btn-secondary text-sm w-full mt-3">
+                <button
+                  onClick={() => {
+                    const link = `${window.location.origin}/student/check-in?token=${session.qr_token}`;
+                    navigator.clipboard.writeText(link);
+                    toast.success('Link imenakiliwa! Ipeleke kwa wanafunzi.');
+                  }}
+                  className="btn-primary text-sm w-full mt-3"
+                >
+                  <Link2 className="w-4 h-4" /> Copy Check-in Link
+                </button>
+                <button onClick={rotate} className="btn-secondary text-sm w-full mt-2">
                   <RefreshCw className="w-4 h-4" /> Rotate QR
                 </button>
-                <div className="mt-3 text-xs text-slate-500 text-center break-all">
-                  Token: {session.qr_token.slice(0, 12)}...
-                </div>
+                <p className="mt-3 text-xs text-slate-400 text-center">
+                  Tuma link hiyo kwa WhatsApp, Zoom chat, au LMS — wanafunzi wabonyeze tu.
+                </p>
               </>
             ) : (
               <div className="text-center py-8">
