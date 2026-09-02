@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { use, useState } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Loader2, Plus, Search, Pencil, Trash2, HelpCircle,
@@ -36,8 +36,8 @@ const TYPE_COLOR: Record<QuestionType, string> = {
   short_answer: 'bg-slate-200 text-slate-700',
 };
 
-export default function QuestionBankDetailPage({ params }: { params: Promise<{ uuid: string }> }) {
-  const { uuid } = use(params);
+export default function QuestionBankDetailPage({ params }: { params: { uuid: string } }) {
+  const { uuid } = params;
   const qc = useQueryClient();
 
   const [search, setSearch] = useState('');
