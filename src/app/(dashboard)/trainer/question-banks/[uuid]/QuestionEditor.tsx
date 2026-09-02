@@ -195,32 +195,7 @@ function buildPayload(f: EditorForm): Partial<Question> {
 
 function validate(f: EditorForm): string | null {
   if (!f.text.trim()) return 'Question text is required.';
-  switch (f.type) {
-    case 'multiple_choice': {
-      const filled = f.choiceOptions.filter((o) => o.label.trim());
-      if (!filled.length) return 'Add at least one option.';
-      return null;
-    }
-    case 'true_false':
-      return f.correctSingle === 'true' || f.correctSingle === 'false' ? null : 'Pick True or False.';
-    case 'multiple_select': {
-      const filled = f.choiceOptions.filter((o) => o.label.trim());
-      if (!filled.length) return 'Add at least one option.';
-      return null;
-    }
-    case 'fill_in_blank': {
-      const filled = f.acceptableAnswers.map((a) => a.trim()).filter(Boolean);
-      if (!filled.length) return 'Provide at least one acceptable answer.';
-      return null;
-    }
-    case 'matching': {
-      const filled = f.pairs.filter((p) => p.left.trim() && p.right.trim());
-      if (filled.length < 2) return 'Provide at least 2 matching pairs.';
-      return null;
-    }
-    case 'short_answer':
-      return null; // keywords optional (manual grading if empty)
-  }
+  return null;
 }
 
 interface Props {
