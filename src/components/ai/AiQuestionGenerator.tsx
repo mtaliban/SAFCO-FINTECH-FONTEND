@@ -116,25 +116,41 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
     }
   }
 
+  const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
   async function saveAndAttach() {
     if (selected.length === 0) { toast.error('Select at least one question'); return; }
     if (!bankUuid) { toast.error('Select a question bank to save to'); return; }
     setSaving(true);
     try {
       const created = await Promise.all(
-        selected.map((q) =>
-          questionBankApi.createQuestion(bankUuid, {
+        selected.map((q) => {
+          const validDifficulty = (['easy', 'medium', 'hard'] as const).includes(
+            q.difficulty as 'easy' | 'medium' | 'hard',
+          ) ? q.difficulty as 'easy' | 'medium' | 'hard' : 'medium';
+
+          const options = q.options.map((o, idx) => ({ id: LETTERS[idx] ?? String(idx), label: o.label }));
+          const correctIds = q.options
+            .map((o, idx) => o.is_correct ? (LETTERS[idx] ?? String(idx)) : null)
+            .filter(Boolean) as string[];
+          const correctAnswer = q.type === 'multiple_choice'
+            ? correctIds.slice(0, 1)
+            : q.type === 'multiple_select'
+            ? correctIds
+            : q.correct_answer;
+
+          return questionBankApi.createQuestion(bankUuid, {
             text: q.text,
             type: q.type,
-            options: q.options.map((o, idx) => ({ id: String(idx), label: o.label })),
-            correct_answer: q.correct_answer,
+            options: options as never,
+            correct_answer: correctAnswer,
             explanation: q.explanation,
-            difficulty: q.difficulty,
+            difficulty: validDifficulty,
             points: q.points,
             time_limit_seconds: q.time_limit_seconds,
             tags: [...(q.tags ?? []), 'ai_generated'],
-          }),
-        ),
+          });
+        }),
       );
       const ids = created.map((c) => c.id);
       await quizApi.attachQuestions(quizUuid, ids);
