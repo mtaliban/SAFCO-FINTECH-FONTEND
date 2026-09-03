@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, XCircle, Loader2, Trophy, Zap, Flame } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Trophy, Zap, Flame, LogOut } from 'lucide-react';
 import { playApi, type LeaderboardEntry } from '@/lib/quiz/api';
 import { useLiveSession } from '@/lib/quiz/useLiveSession';
 
@@ -123,7 +123,7 @@ export default function PlaySessionPage() {
     return <Full bg="bg-white"><Loader2 className="w-12 h-12 animate-spin text-brand-600" /></Full>;
   }
   if (status === 'waiting' || status === 'starting') {
-    return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} />;
+    return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} onExit={() => router.push('/play')} />;
   }
   // Show result IMMEDIATELY after submitting — no waiting for timer
   if (selectedOption && lastResult) {
@@ -173,11 +173,14 @@ function Full({ bg, children }: { bg: string; children: React.ReactNode }) {
 }
 
 /* ── Lobby ── */
-function LobbyScreen({ participant, pin, count, quizName }: {
-  participant: Participant; pin: string; count: number; quizName?: string;
+function LobbyScreen({ participant, pin, count, quizName, onExit }: {
+  participant: Participant; pin: string; count: number; quizName?: string; onExit: () => void;
 }) {
   return (
     <main className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center p-6 overflow-hidden">
+      <button onClick={onExit} className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200 rounded-lg transition" title="Toka">
+        <LogOut className="w-5 h-5" />
+      </button>
       <div className="text-center animate-fade-in max-w-sm w-full">
         <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-4xl font-black shadow-lg shadow-orange-200">
           {participant.nickname[0]?.toUpperCase()}
@@ -251,10 +254,15 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
   busy: boolean;
   onSelect: (id: string) => void;
 }) {
+  const router = useRouter();
   const remaining = useCountdown(question.ends_at, question.time_limit_seconds);
   const timeUp = remaining <= 0;
   const answered = !!selectedOption;
   const opts = question.options?.slice(0, 4) ?? [];
+
+  function handleExit() {
+    if (confirm('Una uhakika unataka kutoka kwenye quiz?')) router.push('/play');
+  }
 
   return (
     <main className="fixed inset-0 bg-slate-50 flex flex-col overflow-hidden">
@@ -264,8 +272,11 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
           Swali <span className="text-slate-900 font-bold">{question.question_number}</span> / {question.total_questions}
         </div>
         <CountdownCircle remaining={remaining} total={question.time_limit_seconds} />
-        <div className="flex-1 text-right text-xs text-slate-500">
-          {participant.nickname}
+        <div className="flex-1 flex items-center justify-end gap-2">
+          <span className="text-xs text-slate-500">{participant.nickname}</span>
+          <button onClick={handleExit} className="p-1.5 text-slate-300 hover:text-slate-500 hover:bg-slate-100 rounded transition" title="Toka">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -333,6 +344,7 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
 
 /* ── Wait (time up, no answer) ── */
 function WaitScreen({ participant }: { participant: Participant }) {
+  const router = useRouter();
   return (
     <Full bg="bg-slate-50">
       <div className="text-center">
@@ -340,6 +352,9 @@ function WaitScreen({ participant }: { participant: Participant }) {
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Swali limemalizika</h1>
         <p className="text-slate-500 text-sm">Hukujibu kwa wakati</p>
         <p className="mt-6 text-xs text-slate-400">{participant.nickname}</p>
+        <button onClick={() => router.push('/play')} className="mt-8 text-xs text-slate-400 hover:text-slate-600 underline">
+          Toka kwenye quiz
+        </button>
       </div>
     </Full>
   );
@@ -450,6 +465,11 @@ function ResultScreen({ result, participant, question, selectedOption }: {
         <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
           Swali linalofuata linakuja{dots}
+        </div>
+        <div className="text-center">
+          <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }} className="text-xs text-slate-300 hover:text-slate-500 underline transition">
+            Toka kwenye quiz
+          </button>
         </div>
       </div>
     </main>

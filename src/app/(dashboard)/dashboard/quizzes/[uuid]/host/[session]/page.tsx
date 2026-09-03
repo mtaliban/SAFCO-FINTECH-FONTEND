@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Play, SkipForward, Users, Trophy, Copy, CheckCircle2,
-  Zap, Clock, Flame,
+  Zap, Clock, Flame, ArrowLeft,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sessionApi, playApi, type LeaderboardEntry, type LiveEndQuestionPayload, type LiveParticipant } from '@/lib/quiz/api';
@@ -49,7 +49,7 @@ export default function HostSessionPageWrapper() {
 }
 
 function HostSessionPage() {
-  const { session: sessionUuid } = useParams<{ session: string }>();
+  const { uuid, session: sessionUuid } = useParams<{ uuid: string; session: string }>();
   const params = useSearchParams();
   const pin = params.get('pin') ?? '';
   const qc = useQueryClient();
@@ -198,6 +198,17 @@ function HostSessionPage() {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 text-slate-900">
     <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
+      {/* Back navigation */}
+      <div className="mb-3 flex items-center gap-3">
+        <a href={`/dashboard/quizzes/${uuid}/edit`} className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition">
+          <ArrowLeft className="w-4 h-4" /> Rudi kwa Quiz
+        </a>
+        <span className="text-slate-300">·</span>
+        <a href="/trainer/quizzes" className="text-sm text-slate-500 hover:text-slate-800 transition">
+          My Quizzes
+        </a>
+      </div>
+
       {/* Header — PIN + participant count + status */}
       <HostHeader
         pin={pin}
