@@ -169,20 +169,22 @@ export default function QuizEditPage() {
           </div>
 
           {!quiz.questions?.length ? (
-            <div className="p-12 text-center">
-              <HelpCircle className="w-16 h-16 mx-auto text-slate-300 mb-3" />
-              <h3 className="text-lg font-bold text-slate-900 mb-2">No questions attached yet</h3>
-              <p className="text-slate-500 mb-6">Pick from your Question Banks or let AI generate questions instantly.</p>
+            <div className="p-10 text-center border-2 border-dashed border-amber-200 rounded-xl bg-amber-50">
+              <HelpCircle className="w-14 h-14 mx-auto text-amber-400 mb-3" />
+              <h3 className="text-lg font-bold text-slate-900 mb-1">Hakuna maswali yaliyowekwa kwenye quiz hii</h3>
+              <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
+                Quiz inahitaji maswali kabla hujaisambaza. Chagua maswali kutoka Question Bank yako, au achilia AI iyatengeneze.
+              </p>
               <div className="flex items-center justify-center gap-3 flex-wrap">
                 <button
                   onClick={() => setShowAiGenerator(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white transition"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold text-white transition"
                   style={{ background: 'linear-gradient(135deg, #4338ca, #7c3aed)' }}
                 >
-                  <Sparkles className="w-4 h-4" /> Generate with AI
+                  <Sparkles className="w-4 h-4" /> Tengeneza na AI
                 </button>
-                <button onClick={() => setShowAttachModal(true)} className="btn-primary">
-                  <Library className="w-4 h-4" /> Attach from Bank
+                <button onClick={() => setShowAttachModal(true)} className="btn-primary px-5 py-2.5">
+                  <Library className="w-4 h-4" /> Chagua kutoka Question Bank
                 </button>
               </div>
             </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Play, Zap, BookOpen, Loader2 } from 'lucide-react';
+import { Plus, Play, Zap, BookOpen, Loader2, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiRequest } from '@/lib/api';
 import { Quiz, quizApi } from '@/lib/quiz/api';
@@ -70,11 +70,28 @@ export default function TrainerQuizzesPage() {
               <h3 className="font-bold text-lg text-slate-900 mb-1">{q.name}</h3>
               <p className="text-sm text-slate-500 line-clamp-2 mb-4">{q.description ?? 'No description'}</p>
 
-              <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
-                <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" /> {q.number_of_questions} Q</span>
-                <span>{q.category}</span>
-                <span>{q.difficulty}</span>
-              </div>
+              {(() => {
+                const attachedCount = q.questions !== undefined ? q.questions.length : null;
+                const noQuestions = attachedCount === 0;
+                return (
+                  <div className="mb-4 space-y-2">
+                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <BookOpen className="w-3 h-3" />
+                        {attachedCount !== null ? `${attachedCount} maswali yaliyowekwa` : `${q.number_of_questions} Q (configured)`}
+                      </span>
+                      <span>{q.category}</span>
+                      <span>{q.difficulty}</span>
+                    </div>
+                    {noQuestions && (
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                        Hakuna maswali yaliyowekwa — ingia Edit ili kuongeza maswali
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="flex gap-2">
                 <Link href={`/dashboard/quizzes/${q.id}/edit`} className="btn-secondary flex-1 text-sm">Edit</Link>
