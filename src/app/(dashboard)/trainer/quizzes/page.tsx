@@ -2,17 +2,31 @@
 
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { Plus, Play, Zap, BookOpen, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { apiRequest } from '@/lib/api';
-import { Quiz } from '@/lib/quiz/api';
+import { Quiz, quizApi } from '@/lib/quiz/api';
 
 export default function TrainerQuizzesPage() {
+  const router = useRouter();
   const { data, isLoading } = useQuery({
     queryKey: ['trainer', 'my-quizzes'],
     queryFn: () => apiRequest.get<{ data: Quiz[] }>('/trainer/my-quizzes'),
   });
 
   const quizzes = data?.data ?? [];
+
+  async function hostLive(q: Quiz) {
+    try {
+      const session = await quizApi.host(q.id);
+      toast.success(`Session started! PIN: ${session.pin}`);
+      router.push(`/dashboard/quizzes/${q.id}/host/${session.id}?pin=${session.pin}`);
+    } catch (e) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to start session';
+      toast.error(msg);
+    }
+  }
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto animate-fade-in">
@@ -64,10 +78,10 @@ export default function TrainerQuizzesPage() {
 
               <div className="flex gap-2">
                 <Link href={`/dashboard/quizzes/${q.id}/edit`} className="btn-secondary flex-1 text-sm">Edit</Link>
-                {q.status === 'published' && (
-                  <Link href={`/dashboard/quizzes/${q.id}/host/new`} className="btn-primary flex-1 text-sm">
+                {q.status === 'published' && q.mode === 'live_kahoot' && (
+                  <button onClick={() => hostLive(q)} className="btn-primary flex-1 text-sm">
                     <Play className="w-3 h-3" /> Host Live
-                  </Link>
+                  </button>
                 )}
               </div>
             </div>
