@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Loader2, Plus, Search, Pencil, Trash2, HelpCircle,
-  CheckSquare, ToggleRight, ListChecks, PenLine, Shuffle, Type,
+  CheckSquare, ToggleRight, ListChecks, PenLine, Shuffle, Type, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/lib/questionBank/api';
 import { CATEGORY_LABEL } from '@/lib/course/api';
 import { QuestionEditor } from './QuestionEditor';
+import { AiQuestionGenerator } from '@/components/ai/AiQuestionGenerator';
 
 const TYPE_ICON: Record<QuestionType, React.ComponentType<{ className?: string }>> = {
   multiple_choice: CheckSquare,
@@ -44,6 +45,7 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
   const [type, setType] = useState<QuestionType | ''>('');
   const [difficulty, setDifficulty] = useState<'' | 'easy' | 'medium' | 'hard'>('');
   const [editor, setEditor] = useState<{ open: boolean; question: Question | null }>({ open: false, question: null });
+  const [showAi, setShowAi] = useState(false);
 
   const { data: bank, isLoading: bankLoading } = useQuery({
     queryKey: ['question-bank', uuid],
@@ -108,9 +110,14 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
                   <span className="font-semibold text-slate-700">{qs?.meta?.total ?? bank.total_questions ?? 0}</span> total questions
                 </div>
               </div>
-              <button onClick={() => setEditor({ open: true, question: null })} className="btn-primary shrink-0">
-                <Plus className="w-4 h-4" /> New Question
-              </button>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setShowAi(true)} className="btn-secondary">
+                  <Sparkles className="w-4 h-4" /> AI Generate
+                </button>
+                <button onClick={() => setEditor({ open: true, question: null })} className="btn-primary">
+                  <Plus className="w-4 h-4" /> New Question
+                </button>
+              </div>
             </div>
           </div>
 
@@ -224,6 +231,19 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
           question={editor.question}
           onClose={() => setEditor({ open: false, question: null })}
           onSaved={onEditorSaved}
+        />
+      )}
+
+      {showAi && (
+        <AiQuestionGenerator
+          defaultBankUuid={uuid}
+          onClose={() => setShowAi(false)}
+          onImported={() => {
+            setShowAi(false);
+            qc.invalidateQueries({ queryKey: ['question-bank-questions', uuid] });
+            qc.invalidateQueries({ queryKey: ['question-bank', uuid] });
+            qc.invalidateQueries({ queryKey: ['question-banks'] });
+          }}
         />
       )}
     </div>

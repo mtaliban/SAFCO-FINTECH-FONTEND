@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Play, Pause, SkipForward, Users, Trophy, Copy, CheckCircle2, XCircle,
+  Play, SkipForward, Users, Trophy, Copy, CheckCircle2,
   Zap, Clock, Flame,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -71,6 +71,10 @@ function HostSessionPage() {
   const [activeQuestion, setActiveQuestion] = useState<QuestionStartedPayload | null>(null);
   const [lastReveal, setLastReveal] = useState<LiveEndQuestionPayload | null>(null);
 
+  // Auto-advance refs/state
+  const endingRef = useRef(false);
+  const [nextIn, setNextIn] = useState<number | null>(null);
+
   // Real-time leaderboard, refetched on question_ended
   const { data: leaderboard = [] } = useQuery({
     queryKey: ['leaderboard', sessionUuid],
@@ -129,6 +133,36 @@ function HostSessionPage() {
 
   useLiveSession(pin, ['question_started', 'question_ended', 'participant_joined', 'leaderboard', 'completed'], eventHandler);
 
+  // Auto-reveal: when question timer expires, call endQuestion automatically
+  useEffect(() => {
+    if (status !== 'question_active' || !questionEndsAt) return;
+    endingRef.current = false;
+    const delay = new Date(questionEndsAt).getTime() - Date.now() + 1500;
+    const t = setTimeout(() => {
+      if (!endingRef.current) { endingRef.current = true; endQuestion(); }
+    }, Math.max(delay, 0));
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, questionEndsAt]);
+
+  // Auto-next: 6-second countdown after answer revealed, then start next question or complete
+  useEffect(() => {
+    if (status !== 'question_ended') { setNextIn(null); return; }
+    let s = 6;
+    setNextIn(s);
+    const t = setInterval(() => {
+      s -= 1;
+      setNextIn(s);
+      if (s <= 0) {
+        clearInterval(t);
+        if (isLast) complete();
+        else startQuestion();
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
   // Controls
   async function startQuestion() {
     try { await sessionApi.startQuestion(sessionUuid as string); }
@@ -166,29 +200,43 @@ function HostSessionPage() {
 
       {/* Controls bar */}
       <div className="bg-white rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 border border-slate-200 shadow-sm">
-        <div className="text-sm font-bold text-slate-500 mr-2">Host controls:</div>
         {status === 'waiting' && (
           <button onClick={startQuestion} className="btn-primary text-base px-6 py-3">
             <Play className="w-5 h-5" /> Anzisha Quiz
           </button>
         )}
         {status === 'question_active' && (
-          <button onClick={endQuestion} className="btn-primary text-base px-6 py-3 bg-navy-500 hover:bg-navy-600">
-            <Pause className="w-5 h-5" /> Reveal Answer Now
-          </button>
+          <>
+            <div className="text-sm text-slate-500 font-medium flex items-center gap-2">
+              <Clock className="w-4 h-4 text-orange-500 animate-pulse" />
+              Jibu litaonyeshwa moja kwa moja muda ukiisha…
+            </div>
+            <button
+              onClick={() => { if (!endingRef.current) { endingRef.current = true; endQuestion(); } }}
+              className="btn-secondary text-sm px-4 py-2 ml-auto"
+            >
+              <SkipForward className="w-4 h-4" /> Onyesha Jibu Sasa
+            </button>
+          </>
         )}
-        {(status === 'question_ended' || status === 'showing_leaderboard') && !isLast && (
-          <button onClick={startQuestion} className="btn-primary text-base px-6 py-3">
-            <SkipForward className="w-5 h-5" /> Swali Linalofuata
-          </button>
-        )}
-        {(status === 'question_ended' || status === 'showing_leaderboard') && isLast && (
-          <button onClick={complete} className="btn-primary text-base px-6 py-3 bg-navy-500 hover:bg-navy-50">
-            <Trophy className="w-5 h-5" /> Malizia Quiz
-          </button>
+        {(status === 'question_ended' || status === 'showing_leaderboard') && (
+          <>
+            <div className="text-sm font-medium text-slate-700 flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-orange-500 text-white font-black text-lg animate-pulse">
+                {nextIn ?? 0}
+              </span>
+              {isLast ? 'Matokeo ya mwisho yataonyeshwa…' : 'Swali linalofuata linaanza…'}
+            </div>
+            <button
+              onClick={() => { setNextIn(null); if (isLast) complete(); else startQuestion(); }}
+              className="btn-secondary text-sm px-4 py-2 ml-auto"
+            >
+              <SkipForward className="w-4 h-4" /> {isLast ? 'Malizia Sasa' : 'Swali Linalofuata Sasa'}
+            </button>
+          </>
         )}
         {status === 'completed' && (
-          <div className="text-sm text-slate-500 font-medium">Session ended — see final leaderboard below.</div>
+          <div className="text-sm text-slate-500 font-medium">Mchezo umekwisha — angalia matokeo hapa chini.</div>
         )}
       </div>
 
@@ -432,21 +480,21 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
             const isCorrect = correctIds.includes(String(o.id));
             return (
               <div key={o.id} className={`p-3 rounded-xl border-2 ${
-                isCorrect ? 'border-green-400 bg-green-900/40' : 'border-white/10 bg-white/5'
+                isCorrect ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-slate-50'
               }`}>
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-xl" style={{ color: o.color ?? DEFAULT_COLORS[i] }}>
                     {DEFAULT_SHAPES[i] ?? '●'}
                   </span>
-                  <span className={`flex-1 font-semibold ${isCorrect ? 'text-green-300' : 'text-white/80'}`}>
+                  <span className={`flex-1 font-semibold ${isCorrect ? 'text-green-700' : 'text-slate-700'}`}>
                     {o.label}
                   </span>
-                  {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-400" />}
-                  <span className="text-sm font-mono text-white/50">{count} ({totalPct}%)</span>
+                  {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                  <span className="text-sm font-mono text-slate-400">{count} ({totalPct}%)</span>
                 </div>
-                <div className="h-2.5 rounded-full overflow-hidden bg-white/10">
+                <div className="h-2.5 rounded-full overflow-hidden bg-slate-200">
                   <div
-                    className={`h-full transition-all duration-500 rounded-full ${isCorrect ? 'bg-green-400' : 'bg-white/30'}`}
+                    className={`h-full transition-all duration-500 rounded-full ${isCorrect ? 'bg-green-400' : 'bg-slate-400'}`}
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -455,9 +503,9 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
           })}
         </div>
       ) : (
-        <div className="p-4 rounded-xl bg-green-900/40 border-2 border-green-400">
-          <div className="text-xs font-semibold text-green-300 mb-1 uppercase">Jibu Sahihi</div>
-          <div className="text-lg font-bold text-green-100">{JSON.stringify(reveal.correct_answer)}</div>
+        <div className="p-4 rounded-xl bg-green-50 border-2 border-green-400">
+          <div className="text-xs font-semibold text-green-700 mb-1 uppercase">Jibu Sahihi</div>
+          <div className="text-lg font-bold text-green-800">{JSON.stringify(reveal.correct_answer)}</div>
         </div>
       )}
 
@@ -478,9 +526,9 @@ function normaliseCorrect(v: unknown): string[] {
 }
 
 function StatCard({ label, value, total, accent }: { label: string; value: number | string; total?: number; accent?: 'green' | 'red' }) {
-  const cls = accent === 'green' ? 'bg-green-900/50 text-green-300 border border-green-500/30'
-    : accent === 'red' ? 'bg-red-900/50 text-red-300 border border-red-500/30'
-    : 'bg-white/10 text-white border border-white/10';
+  const cls = accent === 'green' ? 'bg-green-50 text-green-700 border border-green-300'
+    : accent === 'red' ? 'bg-red-50 text-red-700 border border-red-300'
+    : 'bg-slate-100 text-slate-700 border border-slate-200';
   return (
     <div className={`rounded-xl p-3 text-center ${cls}`}>
       <div className="text-2xl sm:text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-50"> / {total}</span>}</div>

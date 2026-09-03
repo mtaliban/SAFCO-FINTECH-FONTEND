@@ -22,7 +22,8 @@ interface DraftQuestion extends AiGeneratedQuestion {
 }
 
 interface Props {
-  quizUuid: string;
+  quizUuid?: string;
+  defaultBankUuid?: string;
   onClose: () => void;
   onImported: () => void;
 }
@@ -51,7 +52,7 @@ const TYPE_BADGE: Record<string, string> = {
   fill_in_blank: 'bg-amber-100 text-amber-700',
 };
 
-export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
+export function AiQuestionGenerator({ quizUuid, defaultBankUuid, onClose, onImported }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [tab, setTab] = useState<SourceTab>('topic');
@@ -66,7 +67,7 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
   const [generating, setGenerating] = useState(false);
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
 
-  const [bankUuid, setBankUuid] = useState('');
+  const [bankUuid, setBankUuid] = useState(defaultBankUuid ?? '');
   const [saving, setSaving] = useState(false);
 
   const { data: banksResp } = useQuery({
@@ -133,9 +134,10 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
           const correctIds = q.options
             .map((o, idx) => o.is_correct ? (LETTERS[idx] ?? String(idx)) : null)
             .filter(Boolean) as string[];
-          const correctAnswer = q.type === 'multiple_choice'
+          const qtype = q.type as string;
+          const correctAnswer = qtype === 'multiple_choice'
             ? correctIds.slice(0, 1)
-            : q.type === 'multiple_select'
+            : qtype === 'multiple_select'
             ? correctIds
             : q.correct_answer;
 
@@ -153,8 +155,12 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
         }),
       );
       const ids = created.map((c) => c.id);
-      await quizApi.attachQuestions(quizUuid, ids);
-      toast.success(`${ids.length} question${ids.length === 1 ? '' : 's'} added to quiz`);
+      if (quizUuid) {
+        await quizApi.attachQuestions(quizUuid, ids);
+        toast.success(`${ids.length} question${ids.length === 1 ? '' : 's'} added to quiz`);
+      } else {
+        toast.success(`${ids.length} question${ids.length === 1 ? '' : 's'} saved to question bank`);
+      }
       onImported();
     } catch {
       toast.error('Failed to save questions — check your question bank selection');
@@ -469,28 +475,32 @@ export function AiQuestionGenerator({ quizUuid, onClose, onImported }: Props) {
             {/* Save controls */}
             {questions.length > 0 && (
               <div className="mt-4 pt-4 border-t border-slate-200 space-y-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">
-                    Save to Question Bank
-                  </label>
-                  <select
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
-                    value={bankUuid}
-                    onChange={(e) => setBankUuid(e.target.value)}
-                  >
-                    <option value="">— Select a question bank —</option>
-                    {banks.map((b) => (
-                      <option key={b.uuid} value={b.uuid}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
+                {!defaultBankUuid && (
+                  <div>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest block mb-1.5">
+                      Save to Question Bank
+                    </label>
+                    <select
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-navy-300 outline-none"
+                      value={bankUuid}
+                      onChange={(e) => setBankUuid(e.target.value)}
+                    >
+                      <option value="">— Select a question bank —</option>
+                      {banks.map((b) => (
+                        <option key={b.uuid} value={b.uuid}>{b.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <button
                   onClick={saveAndAttach}
                   disabled={saving || selected.length === 0 || !bankUuid}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-navy-50 hover:bg-navy-100 text-white font-bold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                  {saving ? 'Saving…' : `Import ${selected.length} Question${selected.length === 1 ? '' : 's'} to Quiz`}
+                  {saving ? 'Saving…' : quizUuid
+                    ? `Import ${selected.length} Question${selected.length === 1 ? '' : 's'} to Quiz`
+                    : `Save ${selected.length} Question${selected.length === 1 ? '' : 's'} to Bank`}
                 </button>
               </div>
             )}
