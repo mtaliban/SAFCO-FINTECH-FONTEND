@@ -145,6 +145,16 @@ function HostSessionPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, questionEndsAt]);
 
+  // Auto-reveal immediately when ALL participants have answered — no waiting for timer
+  useEffect(() => {
+    if (status !== 'question_active') return;
+    if (!answerCount || participantCount <= 0) return;
+    if (answerCount.answered >= participantCount) {
+      if (!endingRef.current) { endingRef.current = true; endQuestion(); }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, answerCount, participantCount]);
+
   // Auto-next: 3-second countdown after answer revealed, then start next question or complete
   useEffect(() => {
     if (status !== 'question_ended') { setNextIn(null); return; }

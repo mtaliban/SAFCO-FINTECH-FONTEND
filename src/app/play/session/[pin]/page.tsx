@@ -53,8 +53,8 @@ export default function PlaySessionPage() {
   const { data: state, refetch: refetchState } = useQuery<SessionState | null>({
     queryKey: ['play-session', pin],
     queryFn: () => playApi.sessionState(pin as string) as Promise<SessionState>,
-    // Poll fast when showing result so we jump to next question quickly
-    refetchInterval: showingResult ? 1000 : 3000,
+    // Poll at 500ms after answering so next question appears almost instantly
+    refetchInterval: showingResult ? 500 : 3000,
     enabled: !!participant,
   });
 
@@ -361,6 +361,13 @@ function ResultScreen({ result, participant, question, selectedOption }: {
   const correctIds = normalizeCorrect(result.correct_answer);
   const opts = question?.options?.slice(0, 4) ?? [];
 
+  // Show dot-dot-dot countdown so student knows something is happening
+  const [dots, setDots] = useState('');
+  useEffect(() => {
+    const t = setInterval(() => setDots((d) => d.length >= 3 ? '' : d + '.'), 500);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <main className="fixed inset-0 flex flex-col overflow-y-auto bg-slate-50">
       {/* Verdict banner */}
@@ -440,9 +447,9 @@ function ResultScreen({ result, participant, question, selectedOption }: {
           )}
         </div>
 
-        <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Inasubiri swali linalofuata…
+        <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
+          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+          Swali linalofuata linakuja{dots}
         </div>
       </div>
     </main>
