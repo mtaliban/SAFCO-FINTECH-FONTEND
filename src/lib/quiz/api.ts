@@ -319,5 +319,6 @@ export const playApi = {
       is_correct: boolean; points_earned: number; speed_bonus: number;
       streak_bonus: number; current_streak: number; total_score: number;
       response_time_ms: number; answered_at_position: number;
+      correct_answer?: unknown;
     }>(`/play/session/${pin}/answer`, { participant_id: participantId, answer }),
 };

@@ -17,6 +17,7 @@ interface CurrentQuestion {
 interface AnswerResult {
   is_correct: boolean; points_earned: number; total_score: number;
   current_streak: number; speed_bonus: number; streak_bonus: number;
+  correct_answer?: unknown;
 }
 interface SessionState {
   pin: string; quiz_name: string; status: string;
@@ -47,10 +48,13 @@ export default function PlaySessionPage() {
     setParticipant(p);
   }, [pin, router]);
 
+  const showingResult = !!(selectedOption && lastResult);
+
   const { data: state, refetch: refetchState } = useQuery<SessionState | null>({
     queryKey: ['play-session', pin],
     queryFn: () => playApi.sessionState(pin as string) as Promise<SessionState>,
-    refetchInterval: 3000,
+    // Poll fast when showing result so we jump to next question quickly
+    refetchInterval: showingResult ? 1000 : 3000,
     enabled: !!participant,
   });
 
@@ -62,7 +66,7 @@ export default function PlaySessionPage() {
       if (!q) return;
       setCurrentQuestion(q);
       if (answeredForRef.current !== q.question_id) {
-        // New question detected — reset answer state
+        // New question — reset answer state
         setSelectedOption(null);
         setLastResult(null);
         answeredForRef.current = q.question_id;
@@ -75,13 +79,11 @@ export default function PlaySessionPage() {
     prevStatusRef.current = status;
 
     if (status === 'question_active') {
-      // Always fetch when becoming active: first time (!currentQuestion) OR
-      // transitioning from question_ended (new question started without MQTT)
+      // Fetch on first active, or on transition from question_ended (new question without MQTT)
       if (!currentQuestion || prevStatus === 'question_ended') {
         fetchCurrentQuestion();
       }
     } else if (status !== 'question_ended') {
-      // Leaving active/ended — clear question so next active triggers fresh fetch
       setCurrentQuestion(null);
     }
   }, [status, currentQuestion, fetchCurrentQuestion]);
@@ -123,9 +125,16 @@ export default function PlaySessionPage() {
   if (status === 'waiting' || status === 'starting') {
     return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} />;
   }
-  // Show result IMMEDIATELY after submitting — don't wait for question_ended
+  // Show result IMMEDIATELY after submitting — no waiting for timer
   if (selectedOption && lastResult) {
-    return <ResultScreen result={lastResult} participant={participant} />;
+    return (
+      <ResultScreen
+        result={lastResult}
+        participant={participant}
+        question={currentQuestion}
+        selectedOption={selectedOption}
+      />
+    );
   }
   if (status === 'question_active' && currentQuestion) {
     return (
@@ -204,7 +213,7 @@ function CountdownCircle({ remaining, total }: { remaining: number; total: numbe
   return (
     <div className="relative w-20 h-20 shrink-0">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
-        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="8" />
+        <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="8" />
         <circle
           cx="48" cy="48" r={r} fill="none"
           stroke={col} strokeWidth="8" strokeLinecap="round"
@@ -213,7 +222,7 @@ function CountdownCircle({ remaining, total }: { remaining: number; total: numbe
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-black text-white">{remaining}</span>
+        <span className="text-2xl font-black text-slate-800">{remaining}</span>
       </div>
     </div>
   );
@@ -314,7 +323,7 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
 
       {/* Status footer */}
       <div className="py-2 text-center text-xs shrink-0 bg-white border-t border-slate-200">
-        {answered && <p className="text-green-600 font-semibold">✓ Jibu limetumwa — subiri wengine…</p>}
+        {answered && <p className="text-green-600 font-semibold">✓ Jibu limetumwa — inapakia matokeo…</p>}
         {timeUp && !answered && <p className="text-red-500 font-semibold">⏱ Muda umeisha!</p>}
         {!answered && !timeUp && <p className="text-slate-300">&nbsp;</p>}
       </div>
@@ -336,55 +345,105 @@ function WaitScreen({ participant }: { participant: Participant }) {
   );
 }
 
-/* ── Per-question result ── */
-function ResultScreen({ result, participant }: { result: AnswerResult; participant: Participant }) {
+/* ── Per-question result — shows immediately after submitting ── */
+function normalizeCorrect(v: unknown): string[] {
+  if (Array.isArray(v)) return (v as unknown[]).map(String);
+  if (v === null || v === undefined) return [];
+  return [String(v)];
+}
+
+function ResultScreen({ result, participant, question, selectedOption }: {
+  result: AnswerResult;
+  participant: Participant;
+  question: CurrentQuestion | null;
+  selectedOption: string | null;
+}) {
+  const correctIds = normalizeCorrect(result.correct_answer);
+  const opts = question?.options?.slice(0, 4) ?? [];
+
   return (
-    <main className={`fixed inset-0 flex flex-col items-center justify-center text-white p-4 md:p-8 overflow-y-auto ${
-      result.is_correct
-        ? 'bg-gradient-to-br from-green-500 to-emerald-700'
-        : 'bg-gradient-to-br from-red-500 to-red-800'
-    }`}>
-      <div className="text-center animate-fade-in w-full max-w-sm mx-auto">
-        {result.is_correct ? (
-          <>
-            <CheckCircle2 className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-3" strokeWidth={2} />
-            <h1 className="text-3xl md:text-5xl font-black mb-3">Sahihi! 🎉</h1>
-            <div className="text-5xl md:text-7xl font-black text-yellow-200 font-mono mb-4">
-              +{result.points_earned.toLocaleString()}
-            </div>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {result.speed_bonus > 0 && (
-                <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm font-bold">
-                  <Zap className="w-4 h-4" /> Kasi +{result.speed_bonus}
-                </span>
-              )}
-              {result.streak_bonus > 0 && (
-                <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-3 py-1 text-sm font-bold">
-                  <Flame className="w-4 h-4" /> Streak +{result.streak_bonus}
-                </span>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <XCircle className="w-20 h-20 md:w-28 md:h-28 mx-auto mb-3" strokeWidth={2} />
-            <h1 className="text-3xl md:text-5xl font-black mb-3">Sio Sahihi 😬</h1>
-          </>
-        )}
-
-        <div className="mt-6 bg-white/15 rounded-2xl px-6 py-4 inline-block">
-          <p className="text-xs uppercase tracking-widest text-white/60">Jumla ya Alama</p>
-          <p className="text-3xl md:text-4xl font-black font-mono">{result.total_score.toLocaleString()}</p>
+    <main className="fixed inset-0 flex flex-col overflow-y-auto bg-slate-50">
+      {/* Verdict banner */}
+      <div className={`px-6 py-5 text-white text-center ${result.is_correct ? 'bg-green-500' : 'bg-red-500'}`}>
+        <div className="flex items-center justify-center gap-3 mb-1">
+          {result.is_correct
+            ? <CheckCircle2 className="w-8 h-8" strokeWidth={2.5} />
+            : <XCircle className="w-8 h-8" strokeWidth={2.5} />}
+          <span className="text-2xl font-black">{result.is_correct ? 'Sahihi! 🎉' : 'Sio Sahihi 😬'}</span>
         </div>
-
-        {result.current_streak >= 2 && (
-          <div className="mt-4 inline-flex items-center gap-2 bg-orange-400/30 rounded-full px-4 py-2 font-bold">
-            <Flame className="w-5 h-5 text-orange-200" />
-            {result.current_streak} sahihi mfululizo!
+        {result.points_earned > 0 && (
+          <div className="text-4xl font-black text-yellow-200 font-mono">+{result.points_earned.toLocaleString()}</div>
+        )}
+        {(result.speed_bonus > 0 || result.streak_bonus > 0) && (
+          <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
+            {result.speed_bonus > 0 && (
+              <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-2.5 py-0.5 text-sm font-bold">
+                <Zap className="w-3.5 h-3.5" /> Kasi +{result.speed_bonus}
+              </span>
+            )}
+            {result.streak_bonus > 0 && (
+              <span className="inline-flex items-center gap-1 bg-white/20 rounded-full px-2.5 py-0.5 text-sm font-bold">
+                <Flame className="w-3.5 h-3.5" /> Streak +{result.streak_bonus}
+              </span>
+            )}
           </div>
         )}
+      </div>
 
-        <p className="mt-6 text-white/40 text-xs">Subiri swali linalofuata…</p>
+      {/* Options — show correct answer highlighted */}
+      {opts.length > 0 && (
+        <div className="px-4 py-4 space-y-2">
+          {!result.is_correct && (
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+              {correctIds.length > 0 ? '✅ Jibu Sahihi Lilikuwa:' : 'Majibu yote:'}
+            </p>
+          )}
+          {opts.map((opt, i) => {
+            const isCorrect = correctIds.length > 0 && correctIds.includes(String(opt.id));
+            const wasSelected = selectedOption === opt.id;
+            const bg = opt.color ?? COLORS[i] ?? '#334155';
+
+            let rowClass = 'border-slate-200 bg-white text-slate-700';
+            let labelClass = 'text-slate-700';
+            if (isCorrect) {
+              rowClass = 'border-green-400 bg-green-50';
+              labelClass = 'text-green-800 font-bold';
+            } else if (wasSelected && !result.is_correct) {
+              rowClass = 'border-red-300 bg-red-50';
+              labelClass = 'text-red-700';
+            }
+
+            return (
+              <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${rowClass}`}>
+                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>
+                  {shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}
+                </span>
+                <span className={`flex-1 text-sm ${labelClass}`}>{opt.label}</span>
+                {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
+                {wasSelected && !result.is_correct && <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
+                {wasSelected && result.is_correct && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Score + waiting */}
+      <div className="px-4 pb-6 mt-auto space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
+          <p className="text-4xl font-black text-orange-500 font-mono">{result.total_score.toLocaleString()}</p>
+          {result.current_streak >= 2 && (
+            <div className="mt-2 inline-flex items-center gap-1.5 bg-orange-50 text-orange-600 rounded-full px-3 py-1 text-sm font-bold">
+              <Flame className="w-4 h-4" /> {result.current_streak} sahihi mfululizo!
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Inasubiri swali linalofuata…
+        </div>
       </div>
     </main>
   );

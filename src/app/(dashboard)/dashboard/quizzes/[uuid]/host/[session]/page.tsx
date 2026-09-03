@@ -145,10 +145,10 @@ function HostSessionPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, questionEndsAt]);
 
-  // Auto-next: 6-second countdown after answer revealed, then start next question or complete
+  // Auto-next: 3-second countdown after answer revealed, then start next question or complete
   useEffect(() => {
     if (status !== 'question_ended') { setNextIn(null); return; }
-    let s = 6;
+    let s = 3;
     setNextIn(s);
     const t = setInterval(() => {
       s -= 1;
