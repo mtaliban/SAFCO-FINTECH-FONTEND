@@ -44,18 +44,17 @@ export default function PlayLandingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-navy-500 via-navy-700 to-navy-900 flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,166,35,0.2),transparent_50%)]" />
-      <div className="w-full max-w-md relative">
+    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <img src="/logo.png" alt="SAFCO FinTech" className="h-12 brightness-0 invert" />
+            <img src="/logo.png" alt="SAFCO FinTech" className="h-12" />
           </div>
-          <h1 className="text-4xl font-black text-white mb-2">🎯 Jiunge Quiz!</h1>
-          <p className="text-white/70">Weka PIN uliyopewa na mwalimu</p>
+          <h1 className="text-4xl font-black text-slate-900 mb-2">🎯 Jiunge Quiz!</h1>
+          <p className="text-slate-500">Weka PIN uliyopewa na mwalimu</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
           {step === 'pin' ? (
             <form onSubmit={pinForm.handleSubmit(submitPin)} className="space-y-5 animate-fade-in">
               <div>
@@ -109,7 +108,7 @@ export default function PlayLandingPage() {
           )}
         </div>
 
-        <p className="text-center text-white/50 text-sm mt-6">
+        <p className="text-center text-slate-400 text-sm mt-6">
           Powered by SAFCO FINTECH LMS
         </p>
       </div>

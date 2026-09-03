@@ -37,6 +37,7 @@ export default function PlaySessionPage() {
   const [lastResult, setLastResult] = useState<AnswerResult | null>(null);
   const [busy, setBusy] = useState(false);
   const answeredForRef = useRef<string | null>(null);
+  const prevStatusRef = useRef<string>('');
 
   useEffect(() => {
     const raw = sessionStorage.getItem('safco_participant');
@@ -61,6 +62,7 @@ export default function PlaySessionPage() {
       if (!q) return;
       setCurrentQuestion(q);
       if (answeredForRef.current !== q.question_id) {
+        // New question detected — reset answer state
         setSelectedOption(null);
         setLastResult(null);
         answeredForRef.current = q.question_id;
@@ -69,8 +71,19 @@ export default function PlaySessionPage() {
   }, [pin]);
 
   useEffect(() => {
-    if (status === 'question_active' && !currentQuestion) fetchCurrentQuestion();
-    if (status !== 'question_active' && status !== 'question_ended') setCurrentQuestion(null);
+    const prevStatus = prevStatusRef.current;
+    prevStatusRef.current = status;
+
+    if (status === 'question_active') {
+      // Always fetch when becoming active: first time (!currentQuestion) OR
+      // transitioning from question_ended (new question started without MQTT)
+      if (!currentQuestion || prevStatus === 'question_ended') {
+        fetchCurrentQuestion();
+      }
+    } else if (status !== 'question_ended') {
+      // Leaving active/ended — clear question so next active triggers fresh fetch
+      setCurrentQuestion(null);
+    }
   }, [status, currentQuestion, fetchCurrentQuestion]);
 
   useLiveSession(
@@ -81,6 +94,7 @@ export default function PlaySessionPage() {
         answeredForRef.current = null;
         setSelectedOption(null);
         setLastResult(null);
+        setCurrentQuestion(null);
         fetchCurrentQuestion();
         refetchState();
       } else {
@@ -109,6 +123,10 @@ export default function PlaySessionPage() {
   if (status === 'waiting' || status === 'starting') {
     return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} />;
   }
+  // Show result IMMEDIATELY after submitting — don't wait for question_ended
+  if (selectedOption && lastResult) {
+    return <ResultScreen result={lastResult} participant={participant} />;
+  }
   if (status === 'question_active' && currentQuestion) {
     return (
       <QuestionScreen
@@ -121,7 +139,6 @@ export default function PlaySessionPage() {
     );
   }
   if (status === 'question_ended') {
-    if (lastResult) return <ResultScreen result={lastResult} participant={participant} />;
     return <WaitScreen participant={participant} />;
   }
   if (status === 'completed') {
