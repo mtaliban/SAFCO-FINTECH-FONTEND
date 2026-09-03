@@ -90,11 +90,11 @@ export default function PlaySessionPage() {
   );
 
   async function submit(optionId: string) {
-    if (!participant || selectedOption || busy) return;
+    if (!participant || selectedOption || busy || !optionId) return;
     setSelectedOption(optionId);
     setBusy(true);
     try {
-      const res = await playApi.submitAnswer(pin as string, participant.id, optionId);
+      const res = await playApi.submitAnswer(pin as string, participant.id, String(optionId));
       setLastResult(res as AnswerResult);
     } catch {
       setSelectedOption(null);
@@ -104,7 +104,7 @@ export default function PlaySessionPage() {
   if (!participant) return null;
 
   if (status === 'connecting' || (!state && !currentQuestion)) {
-    return <Full bg="bg-navy-900"><Loader2 className="w-12 h-12 animate-spin text-white/50" /></Full>;
+    return <Full bg="bg-white"><Loader2 className="w-12 h-12 animate-spin text-brand-600" /></Full>;
   }
   if (status === 'waiting' || status === 'starting') {
     return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} />;
@@ -133,7 +133,7 @@ export default function PlaySessionPage() {
       />
     );
   }
-  return <Full bg="bg-slate-900"><span className="text-white/60">Status: {status}</span></Full>;
+  return <Full bg="bg-slate-50"><span className="text-slate-400">Status: {status}</span></Full>;
 }
 
 /* ── helpers ── */
@@ -151,29 +151,26 @@ function LobbyScreen({ participant, pin, count, quizName }: {
   participant: Participant; pin: string; count: number; quizName?: string;
 }) {
   return (
-    <main className="fixed inset-0 bg-gradient-to-br from-navy-700 via-navy-800 to-navy-950 flex flex-col items-center justify-center text-white p-6 overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(245,166,35,0.15),transparent_60%)]" />
-
-      <div className="relative text-center animate-fade-in max-w-sm w-full">
-        {/* Avatar */}
-        <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-4xl font-black shadow-lg shadow-orange-500/30">
+    <main className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center p-6 overflow-hidden">
+      <div className="text-center animate-fade-in max-w-sm w-full">
+        <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-4xl font-black shadow-lg shadow-orange-200">
           {participant.nickname[0]?.toUpperCase()}
         </div>
 
-        <h1 className="text-3xl font-black mb-1">{participant.nickname}</h1>
-        {quizName && <p className="text-white/60 text-sm mb-6">{quizName}</p>}
+        <h1 className="text-3xl font-black text-slate-900 mb-1">{participant.nickname}</h1>
+        {quizName && <p className="text-slate-500 text-sm mb-6">{quizName}</p>}
 
-        <div className="bg-white/10 backdrop-blur rounded-2xl p-5 mb-6">
-          <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Game PIN</p>
-          <p className="text-5xl font-mono font-black tracking-widest text-orange-300">{pin}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Game PIN</p>
+          <p className="text-5xl font-mono font-black tracking-widest text-orange-500">{pin}</p>
         </div>
 
-        <div className="inline-flex items-center gap-2 bg-green-500/20 rounded-full px-4 py-2 text-green-300 text-sm font-semibold">
-          <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+        <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2 text-green-700 text-sm font-semibold">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           {count} {count === 1 ? 'player' : 'players'} joined
         </div>
 
-        <p className="mt-8 text-white/40 text-xs">Subiri mwalimu aanze quiz…</p>
+        <p className="mt-8 text-slate-400 text-xs">Subiri mwalimu aanze quiz…</p>
       </div>
     </main>
   );
@@ -234,20 +231,20 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
   const opts = question.options?.slice(0, 4) ?? [];
 
   return (
-    <main className="fixed inset-0 bg-slate-900 flex flex-col overflow-hidden">
+    <main className="fixed inset-0 bg-slate-50 flex flex-col overflow-hidden">
       {/* Top bar */}
-      <div className="flex items-center gap-3 px-4 py-2 bg-black/30">
-        <div className="flex-1 text-xs text-white/60 font-medium">
-          Swali <span className="text-white font-bold">{question.question_number}</span> / {question.total_questions}
+      <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200">
+        <div className="flex-1 text-xs text-slate-500 font-medium">
+          Swali <span className="text-slate-900 font-bold">{question.question_number}</span> / {question.total_questions}
         </div>
         <CountdownCircle remaining={remaining} total={question.time_limit_seconds} />
-        <div className="flex-1 text-right text-xs text-white/60">
+        <div className="flex-1 text-right text-xs text-slate-500">
           {participant.nickname}
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-white/10">
+      <div className="h-1 bg-slate-200">
         <div
           className="h-full bg-orange-400 transition-all duration-200"
           style={{ width: `${(question.question_number / question.total_questions) * 100}%` }}
@@ -255,8 +252,8 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
       </div>
 
       {/* Question text */}
-      <div className="flex items-center justify-center px-6 py-4 flex-shrink-0" style={{ minHeight: '28%' }}>
-        <div className="bg-white rounded-2xl shadow-lg px-6 py-4 max-w-2xl w-full text-center">
+      <div className="flex items-center justify-center px-4 py-4 flex-shrink-0" style={{ minHeight: '28%' }}>
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm px-6 py-4 max-w-2xl w-full text-center">
           {question.image_url && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={question.image_url} alt="" className="w-full max-h-32 object-contain mb-3 rounded" />
@@ -267,7 +264,7 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
 
       {/* Options — 2×2 grid */}
       <div className="flex-1 grid grid-cols-2 gap-2 p-3">
-        {opts.map((opt, i) => {
+        {opts.filter((o) => o.id).map((opt, i) => {
           const bg = opt.color ?? COLORS[i] ?? '#334155';
           const shape = shapeChar(opt.shape) ?? SHAPES[i] ?? '●';
           const isSel = selectedOption === opt.id;
@@ -282,7 +279,7 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
                 relative rounded-2xl flex flex-col items-center justify-center gap-2 p-3
                 text-white font-bold transition-all duration-150
                 ${dim ? 'opacity-25 scale-95' : 'active:scale-95'}
-                ${isSel ? 'ring-4 ring-white ring-offset-2 ring-offset-slate-900 scale-[1.03]' : ''}
+                ${isSel ? 'ring-4 ring-white ring-offset-2 ring-offset-slate-50 scale-[1.03]' : ''}
                 ${!answered && !timeUp ? 'hover:brightness-110 hover:scale-[1.02]' : ''}
                 ${timeUp && !answered ? 'opacity-40' : ''}
               `}
@@ -299,10 +296,10 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
       </div>
 
       {/* Status footer */}
-      <div className="py-2 text-center text-xs shrink-0">
-        {answered && <p className="text-green-300 font-semibold">✓ Jibu limetumwa — subiri wengine…</p>}
-        {timeUp && !answered && <p className="text-red-400 font-semibold">⏱ Muda umeisha!</p>}
-        {!answered && !timeUp && <p className="text-white/30">&nbsp;</p>}
+      <div className="py-2 text-center text-xs shrink-0 bg-white border-t border-slate-200">
+        {answered && <p className="text-green-600 font-semibold">✓ Jibu limetumwa — subiri wengine…</p>}
+        {timeUp && !answered && <p className="text-red-500 font-semibold">⏱ Muda umeisha!</p>}
+        {!answered && !timeUp && <p className="text-slate-300">&nbsp;</p>}
       </div>
     </main>
   );
@@ -311,12 +308,12 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
 /* ── Wait (time up, no answer) ── */
 function WaitScreen({ participant }: { participant: Participant }) {
   return (
-    <Full bg="bg-slate-800">
-      <div className="text-center text-white">
+    <Full bg="bg-slate-50">
+      <div className="text-center">
         <div className="text-7xl mb-4">⌛</div>
-        <h1 className="text-2xl font-bold mb-2">Swali limemalizika</h1>
-        <p className="text-white/60 text-sm">Hukujibu kwa wakati</p>
-        <p className="mt-6 text-xs text-white/30">{participant.nickname}</p>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Swali limemalizika</h1>
+        <p className="text-slate-500 text-sm">Hukujibu kwa wakati</p>
+        <p className="mt-6 text-xs text-slate-400">{participant.nickname}</p>
       </div>
     </Full>
   );
@@ -393,20 +390,20 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
     : `Nafasi ya ${rank}`;
 
   return (
-    <main className="fixed inset-0 bg-gradient-to-br from-navy-800 to-navy-950 text-white overflow-y-auto">
+    <main className="fixed inset-0 bg-slate-50 overflow-y-auto">
       <div className="min-h-full flex flex-col items-center justify-start px-4 py-10">
-        <Trophy className="w-20 h-20 text-yellow-300 mb-4" />
-        <h1 className="text-4xl font-black mb-1">Quiz Imekamilika!</h1>
-        {rankLabel && <div className="text-2xl mb-4">{rankLabel}</div>}
+        <Trophy className="w-20 h-20 text-yellow-500 mb-4" />
+        <h1 className="text-4xl font-black text-slate-900 mb-1">Quiz Imekamilika!</h1>
+        {rankLabel && <div className="text-2xl text-slate-700 mb-4">{rankLabel}</div>}
 
-        <div className="bg-white/10 rounded-2xl px-8 py-5 mb-8 text-center">
-          <p className="text-xs uppercase tracking-widest text-white/50 mb-1">Alama Zako</p>
-          <p className="text-6xl font-black text-yellow-300 font-mono">{score.toLocaleString()}</p>
+        <div className="bg-white border border-slate-200 rounded-2xl px-8 py-5 mb-8 text-center shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Alama Zako</p>
+          <p className="text-6xl font-black text-orange-500 font-mono">{score.toLocaleString()}</p>
           {myRow && (
-            <div className="flex items-center justify-center gap-4 mt-3 text-sm text-white/70">
+            <div className="flex items-center justify-center gap-4 mt-3 text-sm text-slate-600">
               <span>✓ {myRow.correct_answers} sahihi</span>
               {myRow.longest_streak > 0 && (
-                <span className="text-orange-300 flex items-center gap-1">
+                <span className="text-orange-500 flex items-center gap-1">
                   <Flame className="w-4 h-4" /> streak {myRow.longest_streak}
                 </span>
               )}
@@ -415,19 +412,19 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
         </div>
 
         {finalLeaderboard.length > 0 && (
-          <div className="w-full max-w-sm bg-white/5 rounded-2xl p-4 mb-8 space-y-1.5">
-            <p className="text-xs uppercase tracking-widest text-white/50 text-center mb-3">Orodha ya Ushindi</p>
+          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-4 mb-8 space-y-1.5 shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-slate-400 text-center mb-3">Orodha ya Ushindi</p>
             {finalLeaderboard.slice(0, 10).map((e) => {
               const isMe = e.nickname === participant.nickname;
               const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
               return (
                 <div key={e.participant_id}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl ${isMe ? 'bg-orange-500/30 ring-2 ring-orange-400' : 'bg-white/5'}`}>
+                  className={`flex items-center gap-3 p-2.5 rounded-xl ${isMe ? 'bg-orange-50 ring-2 ring-orange-400' : 'bg-slate-50'}`}>
                   <div className="w-8 text-center font-black text-sm">{medal}</div>
-                  <div className="flex-1 font-semibold truncate">
-                    {e.nickname}{isMe && <span className="text-orange-300 text-xs ml-1">(wewe)</span>}
+                  <div className="flex-1 font-semibold text-slate-900 truncate">
+                    {e.nickname}{isMe && <span className="text-orange-500 text-xs ml-1">(wewe)</span>}
                   </div>
-                  <div className="font-mono font-black text-yellow-300">{e.total_score.toLocaleString()}</div>
+                  <div className="font-mono font-black text-orange-500">{e.total_score.toLocaleString()}</div>
                 </div>
               );
             })}
@@ -436,7 +433,7 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
 
         <button
           onClick={() => router.push('/play')}
-          className="btn-primary text-lg px-10 py-3 bg-orange-500 hover:bg-orange-600 border-none"
+          className="btn-primary text-lg px-10 py-3"
         >
           Cheza Tena 🚀
         </button>

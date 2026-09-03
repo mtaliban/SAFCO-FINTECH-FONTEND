@@ -152,7 +152,7 @@ function HostSessionPage() {
   const isLast = currentIndex + 1 >= totalQuestions;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950 text-white">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-50 text-slate-900">
     <div className="p-4 md:p-6 max-w-7xl mx-auto animate-fade-in">
       {/* Header — PIN + participant count + status */}
       <HostHeader
@@ -165,8 +165,8 @@ function HostSessionPage() {
       />
 
       {/* Controls bar */}
-      <div className="bg-white/10 rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 border border-white/10">
-        <div className="text-sm font-bold text-white/70 mr-2">Host controls:</div>
+      <div className="bg-white rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 border border-slate-200 shadow-sm">
+        <div className="text-sm font-bold text-slate-500 mr-2">Host controls:</div>
         {status === 'waiting' && (
           <button onClick={startQuestion} className="btn-primary text-base px-6 py-3">
             <Play className="w-5 h-5" /> Anzisha Quiz
@@ -188,7 +188,7 @@ function HostSessionPage() {
           </button>
         )}
         {status === 'completed' && (
-          <div className="text-sm text-slate-600 font-medium">Session ended — see final leaderboard below.</div>
+          <div className="text-sm text-slate-500 font-medium">Session ended — see final leaderboard below.</div>
         )}
       </div>
 
@@ -293,24 +293,24 @@ function StatusBadge({ status }: { status: SessionStatus }) {
 
 function ParticipantLobby({ participants, count }: { participants: LiveParticipant[]; count: number }) {
   return (
-    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold flex items-center gap-2 text-white">
-          <Users className="w-5 h-5 text-orange-400" /> Waiting Room
+        <h3 className="text-lg font-bold flex items-center gap-2 text-slate-900">
+          <Users className="w-5 h-5 text-orange-500" /> Waiting Room
         </h3>
-        <span className="text-sm text-white/50">{count} joined</span>
+        <span className="text-sm text-slate-400">{count} joined</span>
       </div>
       {participants.length === 0 ? (
         <div className="p-12 text-center">
           <div className="text-6xl mb-3 animate-bounce">👀</div>
-          <p className="text-white/50">Share the PIN — waiting for players to join…</p>
+          <p className="text-slate-400">Share the PIN — waiting for players to join…</p>
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
           {participants.map((p) => (
             <div
               key={p.id}
-              className="px-3 py-2 rounded-full bg-orange-500/20 text-orange-200 border border-orange-500/30 font-semibold text-sm flex items-center gap-1.5 animate-fade-in"
+              className="px-3 py-2 rounded-full bg-orange-50 text-orange-700 border border-orange-200 font-semibold text-sm flex items-center gap-1.5 animate-fade-in"
               title={p.joined_at ? new Date(p.joined_at).toLocaleTimeString() : ''}
             >
               {p.nickname}
@@ -335,9 +335,9 @@ function ActiveQuestionView({
   const answerPct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   return (
-    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-xs font-semibold uppercase tracking-wider text-white/50">
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
           Swali {question.index + 1} / {question.total}
         </div>
         <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full font-mono font-black text-2xl ${
@@ -348,7 +348,7 @@ function ActiveQuestionView({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-4 mb-5">
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
         <h2 className="text-2xl font-bold text-slate-900 text-center">{q.text}</h2>
       </div>
 
@@ -369,14 +369,14 @@ function ActiveQuestionView({
 
       {/* Live "answered" ticker */}
       <div>
-        <div className="flex items-center justify-between text-sm mb-2 text-white/70">
+        <div className="flex items-center justify-between text-sm mb-2 text-slate-600">
           <span className="font-semibold flex items-center gap-1">
-            <Zap className="w-4 h-4 text-orange-400" />
+            <Zap className="w-4 h-4 text-orange-500" />
             {answered} / {total} wamejibu
           </span>
-          <span className="font-bold text-white">{answerPct}%</span>
+          <span className="font-bold text-slate-900">{answerPct}%</span>
         </div>
-        <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden">
+        <div className="h-3 w-full bg-slate-200 rounded-full overflow-hidden">
           <div className="h-full bg-orange-400 transition-all duration-300 rounded-full" style={{ width: `${answerPct}%` }} />
         </div>
       </div>
@@ -407,11 +407,11 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
   const correctIds = normaliseCorrect(reveal.correct_answer);
 
   return (
-    <div className="bg-white/5 rounded-2xl border border-white/10 p-6">
-      <div className="text-xs font-semibold uppercase tracking-wider text-white/50 mb-2">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
         Jibu limeonyeshwa
       </div>
-      <div className="bg-white rounded-xl p-4 mb-5">
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
         <h2 className="text-xl font-bold text-slate-900 text-center">{q.text}</h2>
       </div>
 
@@ -492,37 +492,37 @@ function StatCard({ label, value, total, accent }: { label: string; value: numbe
 function LeaderboardPanel({ leaderboard, highlight }: { leaderboard: LeaderboardEntry[]; highlight: boolean }) {
   const top = useMemo(() => leaderboard.slice(0, 10), [leaderboard]);
   return (
-    <div className="bg-white/5 rounded-2xl border border-white/10 p-4 sticky top-4">
-      <h3 className="font-bold text-white mb-3 flex items-center gap-2">
-        <Trophy className="w-5 h-5 text-yellow-400" /> Leaderboard
+    <div className="bg-white rounded-2xl border border-slate-200 p-4 sticky top-4 shadow-sm">
+      <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <Trophy className="w-5 h-5 text-yellow-500" /> Leaderboard
       </h3>
       {top.length === 0 ? (
-        <div className="p-6 text-center text-sm text-white/40">Subiri jibu la kwanza…</div>
+        <div className="p-6 text-center text-sm text-slate-400">Subiri jibu la kwanza…</div>
       ) : (
         <div className="space-y-1.5">
           {top.map((e) => (
             <div
               key={e.participant_id}
               className={`flex items-center gap-2 p-2.5 rounded-xl text-sm ${
-                highlight && e.rank <= 3 ? 'bg-yellow-500/20 border border-yellow-400/30' : 'bg-white/5'
+                highlight && e.rank <= 3 ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50'
               }`}
             >
               <div className="w-7 text-center font-black">
-                {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : <span className="text-white/50">{e.rank}</span>}
+                {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : <span className="text-slate-400">{e.rank}</span>}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-white truncate flex items-center gap-1">
+                <div className="font-semibold text-slate-900 truncate flex items-center gap-1">
                   {e.nickname}
-                  {e.is_late_join && <span className="text-[9px] px-1 rounded bg-amber-500/30 text-amber-300 uppercase font-bold">Late</span>}
+                  {e.is_late_join && <span className="text-[9px] px-1 rounded bg-amber-100 text-amber-700 uppercase font-bold">Late</span>}
                 </div>
-                <div className="text-[10px] text-white/40 flex items-center gap-2">
-                  <span><CheckCircle2 className="w-2.5 h-2.5 inline text-green-400" /> {e.correct_answers}</span>
+                <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                  <span><CheckCircle2 className="w-2.5 h-2.5 inline text-green-500" /> {e.correct_answers}</span>
                   {typeof e.current_streak === 'number' && e.current_streak >= 2 && (
-                    <span className="text-orange-400 font-bold"><Flame className="w-2.5 h-2.5 inline" /> {e.current_streak}</span>
+                    <span className="text-orange-500 font-bold"><Flame className="w-2.5 h-2.5 inline" /> {e.current_streak}</span>
                   )}
                 </div>
               </div>
-              <div className="text-lg font-black text-yellow-300 font-mono">{e.total_score.toLocaleString()}</div>
+              <div className="text-lg font-black text-orange-500 font-mono">{e.total_score.toLocaleString()}</div>
             </div>
           ))}
         </div>
@@ -534,9 +534,9 @@ function LeaderboardPanel({ leaderboard, highlight }: { leaderboard: Leaderboard
 function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   const [first, second, third] = leaderboard;
   return (
-    <div className="bg-white/5 rounded-2xl border border-white/10 p-6 text-center">
-      <div className="text-xs font-semibold uppercase tracking-widest text-white/50 mb-1">Matokeo ya Mwisho</div>
-      <div className="text-2xl sm:text-3xl font-black text-white mb-6">🏆 SAFCO Live — Mabingwa</div>
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center shadow-sm">
+      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Matokeo ya Mwisho</div>
+      <div className="text-2xl sm:text-3xl font-black text-slate-900 mb-6">🏆 SAFCO Live — Mabingwa</div>
 
       <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 items-end max-w-2xl mx-auto">
         <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-400" emoji="🥈" />
@@ -546,12 +546,12 @@ function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
 
       {leaderboard.length > 3 && (
         <div className="text-left max-w-md mx-auto space-y-1.5 mt-6">
-          <div className="text-xs font-semibold text-white/40 uppercase mb-2">Orodha Kamili</div>
+          <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Orodha Kamili</div>
           {leaderboard.slice(3, 20).map((e) => (
-            <div key={e.participant_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
-              <div className="w-6 text-white/40 font-bold text-sm">{e.rank}</div>
-              <div className="flex-1 truncate font-medium text-white">{e.nickname}</div>
-              <div className="text-yellow-300 font-black font-mono">{e.total_score.toLocaleString()}</div>
+            <div key={e.participant_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50">
+              <div className="w-6 text-slate-400 font-bold text-sm">{e.rank}</div>
+              <div className="flex-1 truncate font-medium text-slate-900">{e.nickname}</div>
+              <div className="text-orange-500 font-black font-mono">{e.total_score.toLocaleString()}</div>
             </div>
           ))}
         </div>
