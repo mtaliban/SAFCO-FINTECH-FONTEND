@@ -40,6 +40,10 @@ export default function PlaySessionPage() {
   const [busy, setBusy] = useState(false);
   // correct_answer revealed by MQTT question_ended payload (or submit response if backend returns it)
   const [revealedAnswer, setRevealedAnswer] = useState<unknown>(undefined);
+  // running cumulative score so MissedScreen can show it without a submit response
+  const [cumulativeScore, setCumulativeScore] = useState(0);
+  // final leaderboard captured from MQTT 'completed' payload
+  const [mqttLeaderboard, setMqttLeaderboard] = useState<LeaderboardEntry[]>([]);
   const answeredForRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string>('');
 
@@ -111,6 +115,13 @@ export default function PlaySessionPage() {
         const ca = p?.payload?.correct_answer ?? p?.correct_answer;
         if (ca !== undefined) setRevealedAnswer(ca);
         refetchState();
+      } else if (event === 'completed') {
+        // Capture final leaderboard from MQTT so CompletedScreen shows it immediately
+        type CompletedPayload = { payload?: { final_leaderboard?: LeaderboardEntry[] }; final_leaderboard?: LeaderboardEntry[] };
+        const p = payload as CompletedPayload;
+        const lb = p?.payload?.final_leaderboard ?? p?.final_leaderboard;
+        if (lb && lb.length > 0) setMqttLeaderboard(lb);
+        refetchState();
       } else {
         refetchState();
       }
@@ -124,6 +135,7 @@ export default function PlaySessionPage() {
     try {
       const res = await playApi.submitAnswer(pin as string, participant.id, String(optionId));
       setLastResult(res as AnswerResult);
+      setCumulativeScore((res as AnswerResult).total_score ?? 0);
       // If backend already returns correct_answer in submit response, capture it immediately
       if ((res as AnswerResult).correct_answer !== undefined) {
         setRevealedAnswer((res as AnswerResult).correct_answer);
@@ -143,18 +155,20 @@ export default function PlaySessionPage() {
   }
   // CRITICAL: check completed FIRST — otherwise ResultScreen blocks CompletedScreen
   if (status === 'completed') {
+    const leaderboard = mqttLeaderboard.length > 0
+      ? mqttLeaderboard
+      : (state?.final_leaderboard ?? []);
     return (
       <CompletedScreen
         participant={participant}
-        finalScore={lastResult?.total_score ?? null}
-        finalLeaderboard={state?.final_leaderboard ?? []}
+        finalScore={cumulativeScore || (lastResult?.total_score ?? null)}
+        finalLeaderboard={leaderboard}
         quizName={state?.quiz_name}
       />
     );
   }
   // Show result IMMEDIATELY after submitting — no waiting for timer
   if (selectedOption && lastResult) {
-    // Merge revealed correct_answer from MQTT question_ended event (if available)
     const resultWithAnswer: AnswerResult = revealedAnswer !== undefined
       ? { ...lastResult, correct_answer: revealedAnswer }
       : lastResult;
@@ -179,8 +193,17 @@ export default function PlaySessionPage() {
       />
     );
   }
+  // Student didn't answer before time ran out — show 0-pts feedback + correct answer
   if (status === 'question_ended') {
-    return <WaitScreen participant={participant} />;
+    return (
+      <MissedScreen
+        revealedAnswer={revealedAnswer}
+        cumulativeScore={cumulativeScore}
+        participant={participant}
+        question={currentQuestion}
+        isLastQuestion={currentIndex + 1 >= (state?.total_questions ?? 999)}
+      />
+    );
   }
   return <Full bg="bg-slate-50"><span className="text-slate-400">Status: {status}</span></Full>;
 }
@@ -365,21 +388,79 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
   );
 }
 
-/* ── Wait (time up, no answer) ── */
-function WaitScreen({ participant }: { participant: Participant }) {
-  const router = useRouter();
+/* ── Missed question (time up, no answer) — shows 0 pts + correct answer ── */
+function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, isLastQuestion }: {
+  revealedAnswer: unknown; cumulativeScore: number; participant: Participant;
+  question: CurrentQuestion | null; isLastQuestion: boolean;
+}) {
+  const [dots, setDots] = useState('');
+  useEffect(() => {
+    const t = setInterval(() => setDots((d) => d.length >= 3 ? '' : d + '.'), 500);
+    return () => clearInterval(t);
+  }, []);
+
+  const correctIds = normalizeCorrect(revealedAnswer);
+  const opts = question?.options?.slice(0, 4) ?? [];
+
   return (
-    <Full bg="bg-slate-50">
-      <div className="text-center">
-        <div className="text-7xl mb-4">⌛</div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">Swali limemalizika</h1>
-        <p className="text-slate-500 text-sm">Hukujibu kwa wakati</p>
-        <p className="mt-6 text-xs text-slate-400">{participant.nickname}</p>
-        <button onClick={() => router.push('/play')} className="mt-8 text-xs text-slate-400 hover:text-slate-600 underline">
-          Toka kwenye quiz
-        </button>
+    <main className="fixed inset-0 flex flex-col overflow-y-auto bg-slate-50">
+      {/* Verdict banner */}
+      <div className="px-6 py-5 text-white text-center bg-slate-600">
+        <div className="flex items-center justify-center gap-3 mb-1">
+          <span className="text-4xl">⏱</span>
+          <span className="text-2xl font-black">Haukujibu!</span>
+        </div>
+        <div className="text-3xl font-black text-slate-200 font-mono">+0 alama</div>
+        <div className="text-sm text-slate-300 mt-1">Muda umeisha kabla hujajibu</div>
       </div>
-    </Full>
+
+      {/* Options — show correct answer if we have it */}
+      {opts.length > 0 && (
+        <div className="px-4 py-4 space-y-2">
+          {correctIds.length > 0 && (
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+              ✅ Jibu Sahihi Lilikuwa:
+            </p>
+          )}
+          {opts.map((opt, i) => {
+            const isCorrect = correctIds.length > 0 && correctIds.includes(String(opt.id));
+            const bg = opt.color ?? COLORS[i] ?? '#334155';
+            const rowClass = isCorrect ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-white';
+            const labelClass = isCorrect ? 'text-green-800 font-bold' : 'text-slate-500';
+            return (
+              <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${rowClass}`}>
+                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>
+                  {shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}
+                </span>
+                <span className={`flex-1 text-sm ${labelClass}`}>{opt.label}</span>
+                {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Score + waiting */}
+      <div className="px-4 pb-6 mt-auto space-y-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
+          <p className="text-4xl font-black text-orange-500 font-mono">{cumulativeScore.toLocaleString()}</p>
+          <p className="text-xs text-slate-400 mt-1">{participant.nickname}</p>
+        </div>
+        <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
+          <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
+          {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
+        </div>
+        <div className="text-center">
+          <button
+            onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
+            className="text-xs text-slate-300 hover:text-slate-500 underline transition"
+          >
+            Toka kwenye quiz
+          </button>
+        </div>
+      </div>
+    </main>
   );
 }
 
