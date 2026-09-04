@@ -208,7 +208,7 @@ export default function StudentAssignmentDetailPage() {
 
           <button
             onClick={submit}
-            disabled={busy || (!file && !text.trim())}
+            disabled={busy || (!file && !text.trim()) || !!(file && file.size > ASSIGNMENT_MAX_MB * 1024 * 1024)}
             className="btn-primary w-full justify-center"
           >
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : (<><Send className="w-4 h-4" /> {sub ? 'Re-submit Answer' : 'Submit Answer'}</>)}

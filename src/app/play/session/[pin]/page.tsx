@@ -23,6 +23,7 @@ interface SessionState {
   pin: string; quiz_name: string; status: string;
   participant_count: number; total_questions: number;
   current_question_index: number; current_question_ends_at: string | null;
+  realtime_topic?: string;
   final_leaderboard?: LeaderboardEntry[] | null;
 }
 
@@ -37,6 +38,8 @@ export default function PlaySessionPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<AnswerResult | null>(null);
   const [busy, setBusy] = useState(false);
+  // correct_answer revealed by MQTT question_ended payload (or submit response if backend returns it)
+  const [revealedAnswer, setRevealedAnswer] = useState<unknown>(undefined);
   const answeredForRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string>('');
 
@@ -59,6 +62,7 @@ export default function PlaySessionPage() {
   });
 
   const status = state?.status ?? 'connecting';
+  const currentIndex = state?.current_question_index ?? 0;
 
   const fetchCurrentQuestion = useCallback(async () => {
     try {
@@ -79,7 +83,7 @@ export default function PlaySessionPage() {
     prevStatusRef.current = status;
 
     if (status === 'question_active') {
-      // Fetch on first active, or on transition from question_ended (new question without MQTT)
+      setRevealedAnswer(undefined); // clear for new question
       if (!currentQuestion || prevStatus === 'question_ended') {
         fetchCurrentQuestion();
       }
@@ -91,13 +95,21 @@ export default function PlaySessionPage() {
   useLiveSession(
     pin,
     ['question_started', 'question_ended', 'completed'],
-    useCallback((event: string) => {
+    useCallback((event: string, payload: unknown) => {
       if (event === 'question_started') {
         answeredForRef.current = null;
         setSelectedOption(null);
         setLastResult(null);
+        setRevealedAnswer(undefined);
         setCurrentQuestion(null);
         fetchCurrentQuestion();
+        refetchState();
+      } else if (event === 'question_ended') {
+        // Backend sends correct_answer in the question_ended payload — capture it for students
+        type EndedPayload = { payload?: { correct_answer?: unknown }; correct_answer?: unknown };
+        const p = payload as EndedPayload;
+        const ca = p?.payload?.correct_answer ?? p?.correct_answer;
+        if (ca !== undefined) setRevealedAnswer(ca);
         refetchState();
       } else {
         refetchState();
@@ -112,6 +124,10 @@ export default function PlaySessionPage() {
     try {
       const res = await playApi.submitAnswer(pin as string, participant.id, String(optionId));
       setLastResult(res as AnswerResult);
+      // If backend already returns correct_answer in submit response, capture it immediately
+      if ((res as AnswerResult).correct_answer !== undefined) {
+        setRevealedAnswer((res as AnswerResult).correct_answer);
+      }
     } catch {
       setSelectedOption(null);
     } finally { setBusy(false); }
@@ -125,14 +141,30 @@ export default function PlaySessionPage() {
   if (status === 'waiting' || status === 'starting') {
     return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} onExit={() => router.push('/play')} />;
   }
+  // CRITICAL: check completed FIRST — otherwise ResultScreen blocks CompletedScreen
+  if (status === 'completed') {
+    return (
+      <CompletedScreen
+        participant={participant}
+        finalScore={lastResult?.total_score ?? null}
+        finalLeaderboard={state?.final_leaderboard ?? []}
+        quizName={state?.quiz_name}
+      />
+    );
+  }
   // Show result IMMEDIATELY after submitting — no waiting for timer
   if (selectedOption && lastResult) {
+    // Merge revealed correct_answer from MQTT question_ended event (if available)
+    const resultWithAnswer: AnswerResult = revealedAnswer !== undefined
+      ? { ...lastResult, correct_answer: revealedAnswer }
+      : lastResult;
     return (
       <ResultScreen
-        result={lastResult}
+        result={resultWithAnswer}
         participant={participant}
         question={currentQuestion}
         selectedOption={selectedOption}
+        isLastQuestion={currentIndex + 1 >= (state?.total_questions ?? 999)}
       />
     );
   }
@@ -149,15 +181,6 @@ export default function PlaySessionPage() {
   }
   if (status === 'question_ended') {
     return <WaitScreen participant={participant} />;
-  }
-  if (status === 'completed') {
-    return (
-      <CompletedScreen
-        participant={participant}
-        finalScore={lastResult?.total_score ?? null}
-        finalLeaderboard={state?.final_leaderboard ?? []}
-      />
-    );
   }
   return <Full bg="bg-slate-50"><span className="text-slate-400">Status: {status}</span></Full>;
 }
@@ -367,11 +390,12 @@ function normalizeCorrect(v: unknown): string[] {
   return [String(v)];
 }
 
-function ResultScreen({ result, participant, question, selectedOption }: {
+function ResultScreen({ result, participant, question, selectedOption, isLastQuestion }: {
   result: AnswerResult;
   participant: Participant;
   question: CurrentQuestion | null;
   selectedOption: string | null;
+  isLastQuestion: boolean;
 }) {
   const correctIds = normalizeCorrect(result.correct_answer);
   const opts = question?.options?.slice(0, 4) ?? [];
@@ -464,7 +488,7 @@ function ResultScreen({ result, participant, question, selectedOption }: {
 
         <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-          Swali linalofuata linakuja{dots}
+          {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
         </div>
         <div className="text-center">
           <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }} className="text-xs text-slate-300 hover:text-slate-500 underline transition">
@@ -477,8 +501,9 @@ function ResultScreen({ result, participant, question, selectedOption }: {
 }
 
 /* ── Final podium ── */
-function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
+function CompletedScreen({ participant, finalScore, finalLeaderboard, quizName }: {
   participant: Participant; finalScore: number | null; finalLeaderboard: LeaderboardEntry[];
+  quizName?: string;
 }) {
   const router = useRouter();
   const myRow = useMemo(
@@ -488,19 +513,33 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
   const rank = myRow?.rank;
   const score = myRow?.total_score ?? finalScore ?? 0;
 
+  const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🎯';
   const rankLabel = !rank ? null
     : rank === 1 ? '🥇 Umeshinda!' : rank === 2 ? '🥈 Nafasi ya 2!' : rank === 3 ? '🥉 Nafasi ya 3!'
     : `Nafasi ya ${rank}`;
 
   return (
     <main className="fixed inset-0 bg-slate-50 overflow-y-auto">
-      <div className="min-h-full flex flex-col items-center justify-start px-4 py-10">
-        <Trophy className="w-20 h-20 text-yellow-500 mb-4" />
+      <div className="min-h-full flex flex-col items-center justify-start px-4 py-8">
+
+        {/* Top nav — back to home */}
+        <div className="w-full max-w-sm mb-6 flex items-center justify-between">
+          <button
+            onClick={() => router.push('/student')}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition"
+          >
+            ← Dashibodi
+          </button>
+          <span className="text-xs text-slate-400 font-mono">{participant.nickname}</span>
+        </div>
+
+        <Trophy className="w-20 h-20 text-yellow-500 mb-3" />
         <h1 className="text-4xl font-black text-slate-900 mb-1">Quiz Imekamilika!</h1>
+        {quizName && <p className="text-slate-500 text-sm mb-2">{quizName}</p>}
         {rankLabel && <div className="text-2xl text-slate-700 mb-4">{rankLabel}</div>}
 
-        <div className="bg-white border border-slate-200 rounded-2xl px-8 py-5 mb-8 text-center shadow-sm">
-          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Alama Zako</p>
+        <div className="bg-white border border-slate-200 rounded-2xl px-8 py-5 mb-6 text-center shadow-sm w-full max-w-sm">
+          <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Alama Zako {rankEmoji}</p>
           <p className="text-6xl font-black text-orange-500 font-mono">{score.toLocaleString()}</p>
           {myRow && (
             <div className="flex items-center justify-center gap-4 mt-3 text-sm text-slate-600">
@@ -515,8 +554,8 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
         </div>
 
         {finalLeaderboard.length > 0 && (
-          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-4 mb-8 space-y-1.5 shadow-sm">
-            <p className="text-xs uppercase tracking-widest text-slate-400 text-center mb-3">Orodha ya Ushindi</p>
+          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-4 mb-6 space-y-1.5 shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-slate-400 text-center mb-3">🏆 Orodha ya Ushindi</p>
             {finalLeaderboard.slice(0, 10).map((e) => {
               const isMe = e.nickname === participant.nickname;
               const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
@@ -534,12 +573,20 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard }: {
           </div>
         )}
 
-        <button
-          onClick={() => router.push('/play')}
-          className="btn-primary text-lg px-10 py-3"
-        >
-          Cheza Tena 🚀
-        </button>
+        <div className="flex flex-col gap-3 w-full max-w-sm">
+          <button
+            onClick={() => router.push('/play')}
+            className="btn-primary text-base px-8 py-3 justify-center"
+          >
+            Cheza Tena 🚀
+          </button>
+          <button
+            onClick={() => router.push('/student')}
+            className="btn-secondary text-sm px-8 py-2.5 justify-center"
+          >
+            ← Rudi Dashibodini
+          </button>
+        </div>
       </div>
     </main>
   );

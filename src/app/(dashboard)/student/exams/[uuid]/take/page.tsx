@@ -45,10 +45,13 @@ export default function TakeExamPage() {
     setPhase('loading');
     try {
       const state = await attemptApi.start(quizUuid as string);
-      setAttempt(state);
+      // Shuffle questions client-side when setting enabled (anti-cheat)
+      const shuffledQuestions = quiz?.settings?.shuffle_questions ? shuffleArray(state.questions) : state.questions;
+      const shuffledState = { ...state, questions: shuffledQuestions };
+      setAttempt(shuffledState);
       // Pre-fill answers from server (in case we resumed)
       const initial: Record<string, unknown> = {};
-      for (const q of state.questions) if (q.my_answer !== null && q.my_answer !== undefined) initial[q.question_id] = q.my_answer;
+      for (const q of shuffledState.questions) if (q.my_answer !== null && q.my_answer !== undefined) initial[q.question_id] = q.my_answer;
       setAnswers(initial);
       setViolationCount(state.violations_count ?? 0);
 
@@ -249,6 +252,7 @@ export default function TakeExamPage() {
           answer={answers[q.question_id]}
           onAnswer={(a) => saveAnswer(q.question_id, a)}
           examType={attempt.exam_type}
+          shuffleOptions={!!quiz?.settings?.shuffle_options}
         />
 
         {/* Navigation */}
@@ -407,13 +411,14 @@ function FullScreenLoader({ label = 'Loading…' }: { label?: string }) {
  * ============================================================ */
 
 function QuestionCard({
-  index, total, question, answer, onAnswer, examType,
+  index, total, question, answer, onAnswer, examType, shuffleOptions,
 }: {
   index: number; total: number;
   question: AttemptQuestion;
   answer: unknown;
   onAnswer: (a: unknown) => void;
   examType: string | null;
+  shuffleOptions: boolean;
 }) {
   return (
     <div className="card p-6">
@@ -426,7 +431,7 @@ function QuestionCard({
         <img src={question.image_url} alt="" className="max-w-full h-auto rounded-lg mb-4 border" />
       )}
 
-      <QuestionInput question={question} answer={answer} onAnswer={onAnswer} />
+      <QuestionInput question={question} answer={answer} onAnswer={onAnswer} shuffleOptions={shuffleOptions} />
 
       {examType === 'practice' && (
         <div className="mt-5 text-xs text-slate-500 flex items-center gap-1">
@@ -437,8 +442,14 @@ function QuestionCard({
   );
 }
 
-function QuestionInput({ question, answer, onAnswer }: { question: AttemptQuestion; answer: unknown; onAnswer: (a: unknown) => void }) {
-  const opts = (question.options ?? []) as Array<{ id?: string; label?: string; left?: string; right?: string }>;
+function QuestionInput({ question, answer, onAnswer, shuffleOptions }: { question: AttemptQuestion; answer: unknown; onAnswer: (a: unknown) => void; shuffleOptions: boolean }) {
+  const rawOpts = (question.options ?? []) as Array<{ id?: string; label?: string; left?: string; right?: string }>;
+  // Shuffle once per question (stable for the session); matching uses fixed order
+  const opts = useMemo(() => {
+    if (!shuffleOptions || question.type === 'matching') return rawOpts;
+    return shuffleArray(rawOpts);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question.question_id, shuffleOptions]);
 
   switch (question.type) {
     case 'multiple_choice':
@@ -555,4 +566,13 @@ function normaliseSingle(v: unknown): string {
   if (Array.isArray(v)) return String(v[0] ?? '');
   if (v === null || v === undefined) return '';
   return String(v);
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
 }
