@@ -7,8 +7,8 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Play, SkipForward, Users, Trophy, Copy, CheckCircle2,
-  Zap, Clock, Flame, ArrowLeft,
+  Play, SkipForward, Users, Trophy, Copy, CheckCircle2, XCircle,
+  Zap, Clock, Flame, ArrowLeft, Target,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { sessionApi, playApi, type LeaderboardEntry, type LiveEndQuestionPayload, type LiveParticipant } from '@/lib/quiz/api';
@@ -70,6 +70,9 @@ function HostSessionPage() {
 
   const [activeQuestion, setActiveQuestion] = useState<QuestionStartedPayload | null>(null);
   const [lastReveal, setLastReveal] = useState<LiveEndQuestionPayload | null>(null);
+  // Snapshot of leaderboard at question_started — used to compute per-question delta
+  const [prevLeaderboard, setPrevLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const leaderboardRef = useRef<LeaderboardEntry[]>([]);
 
   // Auto-advance refs/state
   const endingRef = useRef(false);
@@ -98,6 +101,9 @@ function HostSessionPage() {
     enabled: !!sessionUuid,
   });
 
+  // Keep leaderboardRef always current so MQTT callbacks can snapshot it
+  useEffect(() => { leaderboardRef.current = leaderboard; }, [leaderboard]);
+
   // ------- MQTT subscriptions -------
   const eventHandler = useCallback((event: string, payload: unknown) => {
     switch (event) {
@@ -105,6 +111,8 @@ function HostSessionPage() {
         const p = (payload as { payload?: QuestionStartedPayload }).payload ?? (payload as QuestionStartedPayload);
         setActiveQuestion(p);
         setLastReveal(null);
+        // Snapshot leaderboard BEFORE the question so we can compute per-question delta on reveal
+        setPrevLeaderboard([...leaderboardRef.current]);
         qc.invalidateQueries({ queryKey: ['host-session', pin] });
         break;
       }
@@ -289,7 +297,12 @@ function HostSessionPage() {
 
         {/* Sidebar — always shows current leaderboard */}
         <div>
-          <LeaderboardPanel leaderboard={leaderboard} highlight={status !== 'completed'} />
+          <LeaderboardPanel
+            leaderboard={leaderboard}
+            prevLeaderboard={prevLeaderboard}
+            showDelta={status === 'question_ended' || status === 'showing_leaderboard'}
+            highlight={status !== 'completed'}
+          />
         </div>
       </div>
     </div>
@@ -474,66 +487,116 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
   const dist = stats.distribution || {};
   const maxCount = Math.max(1, ...Object.values(dist));
   const correctIds = normaliseCorrect(reveal.correct_answer);
+  const correctOpts = opts.filter((o) => correctIds.includes(String(o.id)));
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-        Jibu limeonyeshwa
-      </div>
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5">
-        <h2 className="text-xl font-bold text-slate-900 text-center">{q.text}</h2>
-      </div>
-
-      {/* Big stats banner */}
-      <div className="grid grid-cols-3 gap-2 md:gap-3 mb-5">
-        <StatCard label="Walijibu" value={stats.total_answers} total={total} />
-        <StatCard label="Sahihi" value={stats.correct_count} accent="green" />
-        <StatCard label="Asilimia" value={`${stats.correct_rate_percent}%`} accent={stats.correct_rate_percent >= 50 ? 'green' : 'red'} />
+    <div className="space-y-4">
+      {/* Question text — compact */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Swali</div>
+        <p className="text-base font-semibold text-slate-800 leading-snug">{q.text}</p>
       </div>
 
-      {/* Bar chart per option */}
-      {opts.length > 0 ? (
-        <div className="space-y-2">
-          {opts.map((o, i) => {
-            const count = dist[o.id] ?? 0;
-            const pct = Math.round((count / maxCount) * 100);
-            const totalPct = stats.total_answers > 0 ? Math.round((count / stats.total_answers) * 100) : 0;
-            const isCorrect = correctIds.includes(String(o.id));
-            return (
-              <div key={o.id} className={`p-3 rounded-xl border-2 ${
-                isCorrect ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-slate-50'
-              }`}>
-                <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-xl" style={{ color: o.color ?? DEFAULT_COLORS[i] }}>
-                    {DEFAULT_SHAPES[i] ?? '●'}
-                  </span>
-                  <span className={`flex-1 font-semibold ${isCorrect ? 'text-green-700' : 'text-slate-700'}`}>
-                    {o.label}
-                  </span>
-                  {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-                  <span className="text-sm font-mono text-slate-400">{count} ({totalPct}%)</span>
-                </div>
-                <div className="h-2.5 rounded-full overflow-hidden bg-slate-200">
-                  <div
-                    className={`h-full transition-all duration-500 rounded-full ${isCorrect ? 'bg-green-400' : 'bg-slate-400'}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
+      {/* ═══ CORRECT ANSWER BANNER — big & obvious ═══ */}
+      <div className="bg-green-500 rounded-2xl p-5 text-white text-center shadow-sm">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Target className="w-5 h-5" />
+          <span className="text-sm font-bold uppercase tracking-widest opacity-90">Jibu Sahihi</span>
         </div>
-      ) : (
-        <div className="p-4 rounded-xl bg-green-50 border-2 border-green-400">
-          <div className="text-xs font-semibold text-green-700 mb-1 uppercase">Jibu Sahihi</div>
-          <div className="text-lg font-bold text-green-800">{JSON.stringify(reveal.correct_answer)}</div>
-        </div>
-      )}
+        {correctOpts.length > 0 ? (
+          correctOpts.map((o, i) => (
+            <div key={o.id} className="text-2xl md:text-3xl font-black leading-tight">
+              {DEFAULT_SHAPES[opts.indexOf(o)] ?? '●'} {o.label}
+            </div>
+          ))
+        ) : (
+          <div className="text-xl font-black">{JSON.stringify(reveal.correct_answer)}</div>
+        )}
+      </div>
 
+      {/* ═══ STATS ROW ═══ */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 text-center shadow-sm">
+          <div className="text-3xl font-black text-slate-900 tabular-nums">
+            {stats.total_answers}
+            <span className="text-lg text-slate-400 font-normal"> / {total}</span>
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1">Walijibu</div>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center shadow-sm">
+          <div className="text-3xl font-black text-green-700 tabular-nums flex items-center justify-center gap-1">
+            <CheckCircle2 className="w-6 h-6" />{stats.correct_count}
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-green-600 mt-1">Sahihi</div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center shadow-sm">
+          <div className="text-3xl font-black text-red-600 tabular-nums flex items-center justify-center gap-1">
+            <XCircle className="w-6 h-6" />{stats.incorrect_count}
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-red-500 mt-1">Makosa</div>
+        </div>
+      </div>
+
+      {/* ═══ OPTION DISTRIBUTION ═══ */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+          Majibu ya Wachezaji
+        </div>
+        {opts.length > 0 ? (
+          <div className="space-y-2">
+            {opts.map((o, i) => {
+              const count = dist[o.id] ?? 0;
+              const barPct = Math.round((count / maxCount) * 100);
+              const totalPct = stats.total_answers > 0
+                ? Math.round((count / stats.total_answers) * 100) : 0;
+              const isCorrect = correctIds.includes(String(o.id));
+              const isWrong = !isCorrect && count > 0;
+
+              return (
+                <div key={o.id} className={`p-3 rounded-xl border-2 transition ${
+                  isCorrect ? 'border-green-400 bg-green-50'
+                  : isWrong  ? 'border-red-300 bg-red-50'
+                  :            'border-slate-200 bg-slate-50'
+                }`}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-lg w-6 text-center shrink-0" style={{ color: o.color ?? DEFAULT_COLORS[i] }}>
+                      {DEFAULT_SHAPES[i] ?? '●'}
+                    </span>
+                    <span className={`flex-1 text-sm font-semibold ${
+                      isCorrect ? 'text-green-800' : isWrong ? 'text-red-700' : 'text-slate-500'
+                    }`}>
+                      {o.label}
+                    </span>
+                    {isCorrect && <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />}
+                    {isWrong   && <XCircle      className="w-4 h-4 text-red-400 shrink-0" />}
+                    <span className={`text-sm font-bold font-mono shrink-0 ${
+                      isCorrect ? 'text-green-700' : isWrong ? 'text-red-600' : 'text-slate-400'
+                    }`}>
+                      {count} <span className="text-xs font-normal opacity-70">({totalPct}%)</span>
+                    </span>
+                  </div>
+                  <div className="h-3 rounded-full overflow-hidden bg-slate-200">
+                    <div
+                      className={`h-full transition-all duration-700 rounded-full ${
+                        isCorrect ? 'bg-green-400' : isWrong ? 'bg-red-400' : 'bg-slate-300'
+                      }`}
+                      style={{ width: `${barPct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-sm text-slate-500 italic">Hakuna majibu ya kuonyesha</div>
+        )}
+      </div>
+
+      {/* Explanation */}
       {q.explanation && (
-        <div className="mt-4 p-3 bg-navy-50/30 border-l-4 border-blue-400 rounded-r-xl">
-          <div className="text-xs font-semibold text-navy-500 mb-1">Maelezo</div>
-          <div className="text-sm text-navy-500">{q.explanation}</div>
+        <div className="p-4 bg-blue-50 border-l-4 border-blue-400 rounded-r-2xl">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-1">Maelezo</div>
+          <div className="text-sm text-blue-900 leading-relaxed">{q.explanation}</div>
         </div>
       )}
     </div>
@@ -546,54 +609,105 @@ function normaliseCorrect(v: unknown): string[] {
   return [String(v)];
 }
 
-function StatCard({ label, value, total, accent }: { label: string; value: number | string; total?: number; accent?: 'green' | 'red' }) {
-  const cls = accent === 'green' ? 'bg-green-50 text-green-700 border border-green-300'
-    : accent === 'red' ? 'bg-red-50 text-red-700 border border-red-300'
-    : 'bg-slate-100 text-slate-700 border border-slate-200';
-  return (
-    <div className={`rounded-xl p-3 text-center ${cls}`}>
-      <div className="text-2xl sm:text-3xl font-black">{value}{total !== undefined && <span className="text-lg opacity-50"> / {total}</span>}</div>
-      <div className="text-xs font-semibold uppercase tracking-wider opacity-70 mt-1">{label}</div>
-    </div>
-  );
-}
+function LeaderboardPanel({
+  leaderboard, prevLeaderboard, showDelta, highlight,
+}: {
+  leaderboard: LeaderboardEntry[];
+  prevLeaderboard: LeaderboardEntry[];
+  showDelta: boolean;
+  highlight: boolean;
+}) {
+  const top = useMemo(() => leaderboard.slice(0, 15), [leaderboard]);
 
-function LeaderboardPanel({ leaderboard, highlight }: { leaderboard: LeaderboardEntry[]; highlight: boolean }) {
-  const top = useMemo(() => leaderboard.slice(0, 10), [leaderboard]);
+  // Build lookup of prevCorrect by participant_id so we can compute per-question result
+  const prevCorrectMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const e of prevLeaderboard) m[e.participant_id] = e.correct_answers;
+    return m;
+  }, [prevLeaderboard]);
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-4 sticky top-4 shadow-sm">
       <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
         <Trophy className="w-5 h-5 text-yellow-500" /> Leaderboard
+        <span className="ml-auto text-[10px] font-normal text-slate-400 uppercase tracking-wider">{top.length} players</span>
       </h3>
+
+      {showDelta && prevLeaderboard.length > 0 && (
+        <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider mb-2">
+          <span className="text-green-600">✓ Sahihi</span>
+          <span className="text-slate-300">|</span>
+          <span className="text-red-500">✗ Makosa</span>
+          <span className="ml-auto text-slate-400">swali hili</span>
+        </div>
+      )}
+
       {top.length === 0 ? (
         <div className="p-6 text-center text-sm text-slate-400">Subiri jibu la kwanza…</div>
       ) : (
-        <div className="space-y-1.5">
-          {top.map((e) => (
-            <div
-              key={e.participant_id}
-              className={`flex items-center gap-2 p-2.5 rounded-xl text-sm ${
-                highlight && e.rank <= 3 ? 'bg-yellow-50 border border-yellow-200' : 'bg-slate-50'
-              }`}
-            >
-              <div className="w-7 text-center font-black">
-                {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : <span className="text-slate-400">{e.rank}</span>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-semibold text-slate-900 truncate flex items-center gap-1">
-                  {e.nickname}
-                  {e.is_late_join && <span className="text-[9px] px-1 rounded bg-amber-100 text-amber-700 uppercase font-bold">Late</span>}
+        <div className="space-y-1">
+          {top.map((e) => {
+            // Detect if this player got the current question right by checking if correct_answers increased
+            const prevCorrect = prevCorrectMap[e.participant_id];
+            const gotItRight = showDelta && prevCorrect !== undefined && e.correct_answers > prevCorrect;
+            const didntAnswer = showDelta && prevCorrect !== undefined && e.correct_answers === prevCorrect
+              && (e.incorrect_answers ?? 0) === (prevLeaderboard.find(p => p.participant_id === e.participant_id)?.incorrect_answers ?? 0);
+            const gotItWrong = showDelta && !gotItRight && prevCorrect !== undefined;
+
+            return (
+              <div
+                key={e.participant_id}
+                className={`flex items-center gap-2 p-2.5 rounded-xl text-sm border transition-colors ${
+                  showDelta && gotItRight  ? 'bg-green-50 border-green-200' :
+                  showDelta && gotItWrong && !didntAnswer ? 'bg-red-50 border-red-200' :
+                  highlight && e.rank <= 3 ? 'bg-yellow-50 border-yellow-200' :
+                  'bg-slate-50 border-transparent'
+                }`}
+              >
+                {/* Rank */}
+                <div className="w-7 text-center font-black shrink-0">
+                  {e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉'
+                    : <span className="text-slate-400 text-xs">{e.rank}</span>}
                 </div>
-                <div className="text-[10px] text-slate-400 flex items-center gap-2">
-                  <span><CheckCircle2 className="w-2.5 h-2.5 inline text-green-500" /> {e.correct_answers}</span>
-                  {typeof e.current_streak === 'number' && e.current_streak >= 2 && (
-                    <span className="text-orange-500 font-bold"><Flame className="w-2.5 h-2.5 inline" /> {e.current_streak}</span>
+
+                {/* Name + stats */}
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-900 truncate text-xs flex items-center gap-1">
+                    {e.nickname}
+                    {e.is_late_join && (
+                      <span className="text-[8px] px-1 rounded bg-amber-100 text-amber-700 uppercase font-bold shrink-0">Late</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-green-600 font-bold flex items-center gap-0.5">
+                      <CheckCircle2 className="w-2.5 h-2.5" /> {e.correct_answers}
+                    </span>
+                    {typeof e.incorrect_answers === 'number' && (
+                      <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
+                        <XCircle className="w-2.5 h-2.5" /> {e.incorrect_answers}
+                      </span>
+                    )}
+                    {typeof e.current_streak === 'number' && e.current_streak >= 2 && (
+                      <span className="text-[10px] text-orange-500 font-bold flex items-center gap-0.5">
+                        <Flame className="w-2.5 h-2.5" /> {e.current_streak}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Per-question badge + score */}
+                <div className="flex flex-col items-end gap-0.5 shrink-0">
+                  {showDelta && gotItRight && (
+                    <span className="text-[9px] font-black text-green-600 bg-green-100 rounded-full px-1.5 py-0.5">✓ +1</span>
                   )}
+                  {showDelta && gotItWrong && !didntAnswer && (
+                    <span className="text-[9px] font-black text-red-500 bg-red-100 rounded-full px-1.5 py-0.5">✗ 0</span>
+                  )}
+                  <div className="text-base font-black text-orange-500 font-mono">{e.total_score.toLocaleString()}</div>
                 </div>
               </div>
-              <div className="text-lg font-black text-orange-500 font-mono">{e.total_score.toLocaleString()}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
