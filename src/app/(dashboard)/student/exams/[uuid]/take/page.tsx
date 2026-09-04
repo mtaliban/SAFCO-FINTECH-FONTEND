@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Loader2, ShieldAlert, Timer, ChevronLeft, ChevronRight, Send,
-  CheckCircle2, AlertTriangle, Lock, Maximize2,
+  CheckCircle2, AlertTriangle, Lock, Maximize2, Camera, CameraOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { attemptApi, quizApi, type AttemptQuestion, type AttemptState, type Quiz } from '@/lib/quiz/api';
@@ -31,6 +31,12 @@ export default function TakeExamPage() {
   const [current, setCurrent] = useState(0);
   const [violationCount, setViolationCount] = useState(0);
   const [violationWarning, setViolationWarning] = useState<string | null>(null);
+  // Webcam monitoring
+  const [camStream, setCamStream] = useState<MediaStream | null>(null);
+  const [camDenied, setCamDenied] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const snapshotIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { data: quiz, isLoading: quizLoading } = useQuery({
     queryKey: ['quiz-for-exam', quizUuid],
@@ -57,6 +63,18 @@ export default function TakeExamPage() {
 
       // Enter fullscreen if browser_lock is enabled
       if (ac.browser_lock) await requestFullscreen();
+
+      // Start webcam if webcam_required
+      if (ac.webcam_required) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 320, height: 240 }, audio: false });
+          setCamStream(stream);
+          setCamDenied(false);
+        } catch {
+          setCamDenied(true);
+          // Log camera denial as violation — exam still proceeds but flagged
+        }
+      }
 
       setPhase('taking');
     } catch (e) {
@@ -204,6 +222,54 @@ export default function TakeExamPage() {
     return () => { lock?.release().catch(() => null); };
   }, [phase, ac.browser_lock]);
 
+  // 10) Webcam — attach stream to video element and take periodic snapshots
+  useEffect(() => {
+    if (!camStream || !videoRef.current) return;
+    const vid = videoRef.current;
+    vid.srcObject = camStream;
+    vid.play().catch(() => null);
+  }, [camStream]);
+
+  useEffect(() => {
+    if (!camStream || phase !== 'taking' || !attempt) return;
+    const canvas = canvasRef.current;
+    const vid = videoRef.current;
+    if (!canvas || !vid) return;
+
+    snapshotIntervalRef.current = setInterval(() => {
+      try {
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        canvas.width = 320; canvas.height = 240;
+        ctx.drawImage(vid, 0, 0, 320, 240);
+        canvas.toBlob((blob) => {
+          if (!blob || !attempt) return;
+          attemptApi.snapshot(attempt.attempt_id, blob).catch(() => null);
+        }, 'image/jpeg', 0.6);
+      } catch { /* ignore */ }
+    }, 30_000); // every 30 seconds
+
+    return () => {
+      if (snapshotIntervalRef.current) clearInterval(snapshotIntervalRef.current);
+    };
+  }, [camStream, phase, attempt]);
+
+  // 11) Webcam denial violation — flag it once on exam start
+  useEffect(() => {
+    if (camDenied && phase === 'taking' && attempt) {
+      violation('webcam_denied', { reason: 'Camera access was blocked by the user or browser' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camDenied, phase]);
+
+  // Clean up stream on unmount or exam end
+  useEffect(() => {
+    return () => {
+      camStream?.getTracks().forEach((t) => t.stop());
+      if (snapshotIntervalRef.current) clearInterval(snapshotIntervalRef.current);
+    };
+  }, [camStream]);
+
   /* ---------- Timer + auto-submit ---------- */
 
   const secondsLeft = useCountdownTo(attempt?.expires_at);
@@ -235,6 +301,9 @@ export default function TakeExamPage() {
     try {
       await attemptApi.complete(attempt.attempt_id);
       if (document.fullscreenElement) await document.exitFullscreen().catch(() => null);
+      // Stop webcam stream
+      camStream?.getTracks().forEach((t) => t.stop());
+      setCamStream(null);
       router.replace(`/student/exams/attempts/${attempt.attempt_id}`);
     } catch (e) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Submit failed';
@@ -308,6 +377,27 @@ export default function TakeExamPage() {
       {violationCount > 0 && ac.max_violations && ac.max_violations > 0 && (
         <div className="bg-amber-100 text-amber-900 text-xs text-center py-1">
           Violations: {violationCount} / {ac.max_violations} · Auto-submit at threshold
+        </div>
+      )}
+
+      {/* Webcam preview — fixed bottom-right corner */}
+      {ac.webcam_required && (
+        <div className="fixed bottom-4 right-4 z-50 rounded-xl overflow-hidden shadow-lg border-2 border-slate-300 bg-slate-900 w-32 h-24">
+          {camStream ? (
+            <>
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
+              <video ref={videoRef} className="w-full h-full object-cover" muted playsInline autoPlay />
+              <div className="absolute top-1 left-1 flex items-center gap-1 bg-green-500/90 rounded px-1 py-0.5 text-[9px] text-white font-bold">
+                <Camera className="w-2.5 h-2.5" /> REC
+              </div>
+            </>
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1 text-red-400">
+              <CameraOff className="w-6 h-6" />
+              <span className="text-[9px] font-bold">No camera</span>
+            </div>
+          )}
+          <canvas ref={canvasRef} className="hidden" />
         </div>
       )}
 
@@ -407,6 +497,7 @@ function InstructionsScreen({ quiz, onBegin }: { quiz: Quiz; onBegin: () => void
             </>}
             {ac.disable_copy_paste && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Copy, paste, na cut zimezuiwa. Kuchagua maandishi kumezuiwa.</li>}
             {ac.disable_right_click && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Right-click / context menu imezuiwa.</li>}
+            {ac.webcam_required && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Kamera inahitajika kwa ufuatiliaji. Picha zinachukuliwa moja kwa moja wakati wa mtihani. Kata kamera = ukiukwaji.</li>}
             {ac.max_violations && ac.max_violations > 0 && (
               <li className="flex items-start gap-2 font-bold"><span className="text-red-600 font-bold shrink-0">⚠</span>Baada ya ukiukwaji {ac.max_violations}, mtihani utawasilishwa moja kwa moja.</li>
             )}

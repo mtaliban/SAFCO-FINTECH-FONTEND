@@ -292,6 +292,13 @@ export const attemptApi = {
     apiRequest.post<{ violations_count: number; status: string; auto_submit_reason: string | null }>(
       `/attempts/${attemptUuid}/violation`, { type, meta: meta ?? {} },
     ),
+  snapshot: (attemptUuid: string, blob: Blob) => {
+    const fd = new FormData();
+    fd.append('snapshot', blob, 'snapshot.jpg');
+    return apiRequest.post<{ stored: boolean }>(`/attempts/${attemptUuid}/snapshot`, fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
   myAttempts: (params: Record<string, string> = {}) =>
     apiRequest.get<{ data: MyAttemptRow[]; meta: { total: number } }>('/student/my-attempts', { params }),
 };
