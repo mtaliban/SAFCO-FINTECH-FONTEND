@@ -146,6 +146,64 @@ export default function TakeExamPage() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
   }, [phase]);
 
+  // 6) Block DevTools keyboard shortcuts (F12, Ctrl+Shift+I/J/C/U, Ctrl+S)
+  useEffect(() => {
+    if (phase !== 'taking' || !ac.browser_lock) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const ctrl = e.ctrlKey || e.metaKey;
+      const blocked =
+        e.key === 'F12' ||
+        (ctrl && e.shiftKey && ['I', 'J', 'C', 'i', 'j', 'c'].includes(e.key)) ||
+        (ctrl && ['u', 'U', 's', 'S', 'a', 'A'].includes(e.key));
+      if (blocked) {
+        e.preventDefault();
+        e.stopPropagation();
+        violation('devtools_shortcut', { key: e.key });
+      }
+    }
+    document.addEventListener('keydown', onKeyDown, true);
+    return () => document.removeEventListener('keydown', onKeyDown, true);
+  }, [phase, ac.browser_lock, violation]);
+
+  // 7) Text selection block when copy-paste is disabled
+  useEffect(() => {
+    if (phase !== 'taking' || !ac.disable_copy_paste) return;
+    const style = document.createElement('style');
+    style.id = 'exam-noselect';
+    style.textContent = '* { user-select: none !important; -webkit-user-select: none !important; }';
+    document.head.appendChild(style);
+    return () => document.getElementById('exam-noselect')?.remove();
+  }, [phase, ac.disable_copy_paste]);
+
+  // 8) Window blur — user switched to another window/app (not just a tab)
+  const [windowBlurred, setWindowBlurred] = useState(false);
+  useEffect(() => {
+    if (phase !== 'taking') return;
+    function onBlur() {
+      setWindowBlurred(true);
+      violation('window_blur');
+    }
+    function onFocus() {
+      setWindowBlurred(false);
+    }
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [phase, violation]);
+
+  // 9) Screen Wake Lock — keep screen on during exam (browser_lock)
+  useEffect(() => {
+    if (phase !== 'taking' || !ac.browser_lock) return;
+    if (!('wakeLock' in navigator)) return;
+    let lock: WakeLockSentinel | null = null;
+    (navigator as Navigator & { wakeLock: { request: (type: string) => Promise<WakeLockSentinel> } })
+      .wakeLock.request('screen').then((l) => { lock = l; }).catch(() => null);
+    return () => { lock?.release().catch(() => null); };
+  }, [phase, ac.browser_lock]);
+
   /* ---------- Timer + auto-submit ---------- */
 
   const secondsLeft = useCountdownTo(attempt?.expires_at);
@@ -213,6 +271,16 @@ export default function TakeExamPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
+      {/* Window-blur overlay — covers screen when student leaves the window */}
+      {windowBlurred && phase === 'taking' && (
+        <div className="fixed inset-0 z-[9999] bg-slate-900/95 flex flex-col items-center justify-center text-white text-center p-6">
+          <ShieldAlert className="w-16 h-16 text-red-400 mb-4" />
+          <div className="text-2xl font-black mb-2">Exam paused</div>
+          <div className="text-slate-300 text-sm mb-1">You left the exam window. Click here to return.</div>
+          <div className="text-red-400 text-xs font-semibold">This switch has been recorded as a violation.</div>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between gap-2 sticky top-0 z-10">
         <div className="flex items-center gap-2 min-w-0">
@@ -326,20 +394,24 @@ function InstructionsScreen({ quiz, onBegin }: { quiz: Quiz; onBegin: () => void
           <InfoRow label="Passing mark" value={`${quiz.passing_mark_percentage}%`} />
         </div>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-5">
-          <div className="flex items-center gap-2 font-semibold text-amber-800 mb-2">
-            <AlertTriangle className="w-4 h-4" /> Rules & anti-cheat
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-5">
+          <div className="flex items-center gap-2 font-semibold text-red-800 mb-3">
+            <ShieldAlert className="w-4 h-4" /> Anti-Cheat Rules — Soma kwa makini
           </div>
-          <ul className="text-sm text-amber-900 space-y-1 list-disc list-inside">
-            {ac.browser_lock && <li>The exam runs in fullscreen. Exiting fullscreen counts as a violation.</li>}
-            {ac.disable_copy_paste && <li>Copy, paste, and cut are disabled.</li>}
-            {ac.disable_right_click && <li>Right-click / context menu is disabled.</li>}
-            <li>Switching browser tabs / windows counts as a violation.</li>
+          <ul className="text-sm text-red-900 space-y-1.5 list-none">
+            <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Kubadilisha tab au dirisha la browser ni ukiukwaji.</li>
+            {ac.browser_lock && <>
+              <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Mtihani unaendesha katika fullscreen. Kutoka fullscreen ni ukiukwaji.</li>
+              <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Vitufe vya DevTools (F12, Ctrl+Shift+I, nk.) vimezuiwa.</li>
+              <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Kutoka kwenye dirisha la mtihani kunaandikwa moja kwa moja.</li>
+            </>}
+            {ac.disable_copy_paste && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Copy, paste, na cut zimezuiwa. Kuchagua maandishi kumezuiwa.</li>}
+            {ac.disable_right_click && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Right-click / context menu imezuiwa.</li>}
             {ac.max_violations && ac.max_violations > 0 && (
-              <li className="font-bold">The exam auto-submits after {ac.max_violations} violations.</li>
+              <li className="flex items-start gap-2 font-bold"><span className="text-red-600 font-bold shrink-0">⚠</span>Baada ya ukiukwaji {ac.max_violations}, mtihani utawasilishwa moja kwa moja.</li>
             )}
-            {quiz.duration_minutes && <li>The exam auto-submits when the timer reaches zero.</li>}
-            <li>Answers auto-save. You can revisit any question before submitting.</li>
+            {quiz.duration_minutes && <li className="flex items-start gap-2"><span className="text-red-400 font-bold shrink-0">•</span>Muda ukiisha, mtihani unawasilishwa moja kwa moja.</li>}
+            <li className="flex items-start gap-2 text-green-800"><span className="text-green-600 font-bold shrink-0">✓</span>Majibu yanajihifadhi moja kwa moja. Unaweza kurudi swali lolote kabla ya kuwasilisha.</li>
           </ul>
         </div>
 
