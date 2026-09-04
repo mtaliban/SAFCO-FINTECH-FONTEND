@@ -27,6 +27,18 @@ interface SessionState {
   final_leaderboard?: LeaderboardEntry[] | null;
 }
 
+// Per-question history entry shown in CompletedScreen
+interface QuestionHistoryEntry {
+  questionNumber: number;
+  text: string;
+  isCorrect: boolean;
+  pointsEarned: number;
+  missed: boolean;   // true = didn't answer before time ran out
+  correctAnswer?: unknown;
+  selectedOption?: string | null;
+  options?: CurrentQuestion['options'];
+}
+
 const COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c'];
 const SHAPES = ['▲', '◆', '●', '■'];
 
@@ -38,14 +50,24 @@ export default function PlaySessionPage() {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<AnswerResult | null>(null);
   const [busy, setBusy] = useState(false);
-  // correct_answer revealed by MQTT question_ended payload (or submit response if backend returns it)
   const [revealedAnswer, setRevealedAnswer] = useState<unknown>(undefined);
-  // running cumulative score so MissedScreen can show it without a submit response
   const [cumulativeScore, setCumulativeScore] = useState(0);
-  // final leaderboard captured from MQTT 'completed' payload
   const [mqttLeaderboard, setMqttLeaderboard] = useState<LeaderboardEntry[]>([]);
+  // Per-question history for CompletedScreen breakdown
+  const [questionHistory, setQuestionHistory] = useState<QuestionHistoryEntry[]>([]);
+
   const answeredForRef = useRef<string | null>(null);
   const prevStatusRef = useRef<string>('');
+  // Track which question IDs have been logged so we don't double-add
+  const loggedQuestionsRef = useRef<Set<string>>(new Set());
+  // Keep latest currentQuestion & revealedAnswer in refs for use inside callbacks
+  const currentQuestionRef = useRef<CurrentQuestion | null>(null);
+  const selectedOptionRef = useRef<string | null>(null);
+  const revealedAnswerRef = useRef<unknown>(undefined);
+
+  useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
+  useEffect(() => { selectedOptionRef.current = selectedOption; }, [selectedOption]);
+  useEffect(() => { revealedAnswerRef.current = revealedAnswer; }, [revealedAnswer]);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('safco_participant');
@@ -60,7 +82,6 @@ export default function PlaySessionPage() {
   const { data: state, refetch: refetchState } = useQuery<SessionState | null>({
     queryKey: ['play-session', pin],
     queryFn: () => playApi.sessionState(pin as string) as Promise<SessionState>,
-    // Poll at 500ms after answering so next question appears almost instantly
     refetchInterval: showingResult ? 500 : 3000,
     enabled: !!participant,
   });
@@ -74,7 +95,6 @@ export default function PlaySessionPage() {
       if (!q) return;
       setCurrentQuestion(q);
       if (answeredForRef.current !== q.question_id) {
-        // New question — reset answer state
         setSelectedOption(null);
         setLastResult(null);
         answeredForRef.current = q.question_id;
@@ -87,7 +107,7 @@ export default function PlaySessionPage() {
     prevStatusRef.current = status;
 
     if (status === 'question_active') {
-      setRevealedAnswer(undefined); // clear for new question
+      setRevealedAnswer(undefined);
       if (!currentQuestion || prevStatus === 'question_ended') {
         fetchCurrentQuestion();
       }
@@ -95,6 +115,24 @@ export default function PlaySessionPage() {
       setCurrentQuestion(null);
     }
   }, [status, currentQuestion, fetchCurrentQuestion]);
+
+  // Log a missed question when question_ended and student didn't answer
+  function logMissed(ca: unknown) {
+    const q = currentQuestionRef.current;
+    if (!q) return;
+    if (loggedQuestionsRef.current.has(q.question_id)) return;
+    loggedQuestionsRef.current.add(q.question_id);
+    setQuestionHistory((prev) => [...prev, {
+      questionNumber: q.question_number,
+      text: q.text,
+      isCorrect: false,
+      pointsEarned: 0,
+      missed: true,
+      correctAnswer: ca,
+      selectedOption: null,
+      options: q.options,
+    }]);
+  }
 
   useLiveSession(
     pin,
@@ -109,14 +147,16 @@ export default function PlaySessionPage() {
         fetchCurrentQuestion();
         refetchState();
       } else if (event === 'question_ended') {
-        // Backend sends correct_answer in the question_ended payload — capture it for students
         type EndedPayload = { payload?: { correct_answer?: unknown }; correct_answer?: unknown };
         const p = payload as EndedPayload;
         const ca = p?.payload?.correct_answer ?? p?.correct_answer;
         if (ca !== undefined) setRevealedAnswer(ca);
+        // If student didn't answer, log as missed
+        if (!selectedOptionRef.current) {
+          logMissed(ca ?? revealedAnswerRef.current);
+        }
         refetchState();
       } else if (event === 'completed') {
-        // Capture final leaderboard from MQTT so CompletedScreen shows it immediately
         type CompletedPayload = { payload?: { final_leaderboard?: LeaderboardEntry[] }; final_leaderboard?: LeaderboardEntry[] };
         const p = payload as CompletedPayload;
         const lb = p?.payload?.final_leaderboard ?? p?.final_leaderboard;
@@ -125,20 +165,36 @@ export default function PlaySessionPage() {
       } else {
         refetchState();
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [fetchCurrentQuestion, refetchState]),
   );
 
   async function submit(optionId: string) {
     if (!participant || selectedOption || busy || !optionId) return;
+    const q = currentQuestionRef.current;
     setSelectedOption(optionId);
     setBusy(true);
     try {
       const res = await playApi.submitAnswer(pin as string, participant.id, String(optionId));
-      setLastResult(res as AnswerResult);
-      setCumulativeScore((res as AnswerResult).total_score ?? 0);
-      // If backend already returns correct_answer in submit response, capture it immediately
-      if ((res as AnswerResult).correct_answer !== undefined) {
-        setRevealedAnswer((res as AnswerResult).correct_answer);
+      const result = res as AnswerResult;
+      setLastResult(result);
+      setCumulativeScore(result.total_score ?? 0);
+      if (result.correct_answer !== undefined) {
+        setRevealedAnswer(result.correct_answer);
+      }
+      // Log this question to history
+      if (q && !loggedQuestionsRef.current.has(q.question_id)) {
+        loggedQuestionsRef.current.add(q.question_id);
+        setQuestionHistory((prev) => [...prev, {
+          questionNumber: q.question_number,
+          text: q.text,
+          isCorrect: result.is_correct,
+          pointsEarned: result.points_earned,
+          missed: false,
+          correctAnswer: result.correct_answer,
+          selectedOption: optionId,
+          options: q.options,
+        }]);
       }
     } catch {
       setSelectedOption(null);
@@ -153,21 +209,19 @@ export default function PlaySessionPage() {
   if (status === 'waiting' || status === 'starting') {
     return <LobbyScreen participant={participant} pin={String(pin)} count={state?.participant_count ?? 0} quizName={state?.quiz_name} onExit={() => router.push('/play')} />;
   }
-  // CRITICAL: check completed FIRST — otherwise ResultScreen blocks CompletedScreen
   if (status === 'completed') {
-    const leaderboard = mqttLeaderboard.length > 0
-      ? mqttLeaderboard
-      : (state?.final_leaderboard ?? []);
+    const leaderboard = mqttLeaderboard.length > 0 ? mqttLeaderboard : (state?.final_leaderboard ?? []);
     return (
       <CompletedScreen
         participant={participant}
         finalScore={cumulativeScore || (lastResult?.total_score ?? null)}
         finalLeaderboard={leaderboard}
         quizName={state?.quiz_name}
+        totalQuestions={state?.total_questions ?? questionHistory.length}
+        questionHistory={questionHistory}
       />
     );
   }
-  // Show result IMMEDIATELY after submitting — no waiting for timer
   if (selectedOption && lastResult) {
     const resultWithAnswer: AnswerResult = revealedAnswer !== undefined
       ? { ...lastResult, correct_answer: revealedAnswer }
@@ -193,7 +247,6 @@ export default function PlaySessionPage() {
       />
     );
   }
-  // Student didn't answer before time ran out — show 0-pts feedback + correct answer
   if (status === 'question_ended') {
     return (
       <MissedScreen
@@ -218,9 +271,30 @@ function Full({ bg, children }: { bg: string; children: React.ReactNode }) {
   );
 }
 
+function normalizeCorrect(v: unknown): string[] {
+  if (Array.isArray(v)) return (v as unknown[]).map(String);
+  if (v === null || v === undefined) return [];
+  return [String(v)];
+}
+
+function shapeChar(shape?: string): string {
+  const map: Record<string, string> = { triangle: '▲', diamond: '◆', circle: '●', square: '■', star: '★', plus: '✚' };
+  return shape ? (map[shape] ?? '●') : '●';
+}
+
+function useCountdown(endsAt: string | null | undefined, totalSeconds: number): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 200);
+    return () => clearInterval(t);
+  }, []);
+  if (!endsAt) return totalSeconds;
+  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - now) / 1000));
+}
+
 /* ── Lobby ── */
 function LobbyScreen({ participant, pin, count, quizName, onExit }: {
-  participant: Participant; pin: string; count: number; quizName?: string; onExit: () => void;
+  participant: { nickname: string }; pin: string; count: number; quizName?: string; onExit: () => void;
 }) {
   return (
     <main className="fixed inset-0 bg-slate-50 flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -231,20 +305,16 @@ function LobbyScreen({ participant, pin, count, quizName, onExit }: {
         <div className="w-24 h-24 mx-auto mb-5 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-4xl font-black shadow-lg shadow-orange-200">
           {participant.nickname[0]?.toUpperCase()}
         </div>
-
         <h1 className="text-3xl font-black text-slate-900 mb-1">{participant.nickname}</h1>
         {quizName && <p className="text-slate-500 text-sm mb-6">{quizName}</p>}
-
         <div className="bg-white border border-slate-200 rounded-2xl p-5 mb-6 shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Game PIN</p>
           <p className="text-5xl font-mono font-black tracking-widest text-orange-500">{pin}</p>
         </div>
-
         <div className="inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2 text-green-700 text-sm font-semibold">
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
           {count} {count === 1 ? 'player' : 'players'} joined
         </div>
-
         <p className="mt-8 text-slate-400 text-xs">Subiri mwalimu aanze quiz…</p>
       </div>
     </main>
@@ -258,17 +328,12 @@ function CountdownCircle({ remaining, total }: { remaining: number; total: numbe
   const circ = 2 * Math.PI * r;
   const dash = circ * pct;
   const col = remaining <= 5 ? '#ef4444' : remaining <= 10 ? '#f59e0b' : '#22c55e';
-
   return (
     <div className="relative w-20 h-20 shrink-0">
       <svg className="w-full h-full -rotate-90" viewBox="0 0 96 96">
         <circle cx="48" cy="48" r={r} fill="none" stroke="rgba(0,0,0,0.08)" strokeWidth="8" />
-        <circle
-          cx="48" cy="48" r={r} fill="none"
-          stroke={col} strokeWidth="8" strokeLinecap="round"
-          strokeDasharray={`${dash} ${circ}`}
-          style={{ transition: 'stroke-dasharray 0.25s linear, stroke 0.25s' }}
-        />
+        <circle cx="48" cy="48" r={r} fill="none" stroke={col} strokeWidth="8" strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`} style={{ transition: 'stroke-dasharray 0.25s linear, stroke 0.25s' }} />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <span className="text-2xl font-black text-slate-800">{remaining}</span>
@@ -277,24 +342,9 @@ function CountdownCircle({ remaining, total }: { remaining: number; total: numbe
   );
 }
 
-function useCountdown(endsAt: string | null | undefined, totalSeconds: number): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 200);
-    return () => clearInterval(t);
-  }, []);
-  if (!endsAt) return totalSeconds;
-  return Math.max(0, Math.ceil((new Date(endsAt).getTime() - now) / 1000));
-}
-
-function shapeChar(shape?: string): string {
-  const map: Record<string, string> = { triangle: '▲', diamond: '◆', circle: '●', square: '■', star: '★', plus: '✚' };
-  return shape ? (map[shape] ?? '●') : '●';
-}
-
 /* ── Question ── */
 function QuestionScreen({ participant, question, selectedOption, busy, onSelect }: {
-  participant: Participant;
+  participant: { nickname: string };
   question: CurrentQuestion;
   selectedOption: string | null;
   busy: boolean;
@@ -312,7 +362,6 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
 
   return (
     <main className="fixed inset-0 bg-slate-50 flex flex-col overflow-hidden">
-      {/* Top bar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200">
         <div className="flex-1 text-xs text-slate-500 font-medium">
           Swali <span className="text-slate-900 font-bold">{question.question_number}</span> / {question.total_questions}
@@ -326,15 +375,11 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
         </div>
       </div>
 
-      {/* Progress bar */}
       <div className="h-1 bg-slate-200">
-        <div
-          className="h-full bg-orange-400 transition-all duration-200"
-          style={{ width: `${(question.question_number / question.total_questions) * 100}%` }}
-        />
+        <div className="h-full bg-orange-400 transition-all duration-200"
+          style={{ width: `${(question.question_number / question.total_questions) * 100}%` }} />
       </div>
 
-      {/* Question text */}
       <div className="flex items-center justify-center px-4 py-4 flex-shrink-0" style={{ minHeight: '28%' }}>
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm px-6 py-4 max-w-2xl w-full text-center">
           {question.image_url && (
@@ -345,40 +390,30 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
         </div>
       </div>
 
-      {/* Options — 2×2 grid */}
       <div className="flex-1 grid grid-cols-2 gap-2 p-3">
         {opts.filter((o) => o.id).map((opt, i) => {
           const bg = opt.color ?? COLORS[i] ?? '#334155';
           const shape = shapeChar(opt.shape) ?? SHAPES[i] ?? '●';
           const isSel = selectedOption === opt.id;
           const dim = answered && !isSel;
-
           return (
-            <button
-              key={opt.id}
-              onClick={() => onSelect(opt.id)}
+            <button key={opt.id} onClick={() => onSelect(opt.id)}
               disabled={answered || busy || timeUp}
-              className={`
-                relative rounded-2xl flex flex-col items-center justify-center gap-2 p-3
-                text-white font-bold transition-all duration-150
+              className={`relative rounded-2xl flex flex-col items-center justify-center gap-2 p-3 text-white font-bold transition-all duration-150
                 ${dim ? 'opacity-25 scale-95' : 'active:scale-95'}
                 ${isSel ? 'ring-4 ring-white ring-offset-2 ring-offset-slate-50 scale-[1.03]' : ''}
                 ${!answered && !timeUp ? 'hover:brightness-110 hover:scale-[1.02]' : ''}
-                ${timeUp && !answered ? 'opacity-40' : ''}
-              `}
+                ${timeUp && !answered ? 'opacity-40' : ''}`}
               style={{ backgroundColor: bg }}
             >
               <span className="text-3xl leading-none">{shape}</span>
               <span className="text-sm md:text-base text-center leading-tight">{opt.label}</span>
-              {isSel && (
-                <div className="absolute inset-0 rounded-2xl border-4 border-white/60 animate-pulse" />
-              )}
+              {isSel && <div className="absolute inset-0 rounded-2xl border-4 border-white/60 animate-pulse" />}
             </button>
           );
         })}
       </div>
 
-      {/* Status footer */}
       <div className="py-2 text-center text-xs shrink-0 bg-white border-t border-slate-200">
         {answered && <p className="text-green-600 font-semibold">✓ Jibu limetumwa — inapakia matokeo…</p>}
         {timeUp && !answered && <p className="text-red-500 font-semibold">⏱ Muda umeisha!</p>}
@@ -388,9 +423,9 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
   );
 }
 
-/* ── Missed question (time up, no answer) — shows 0 pts + correct answer ── */
+/* ── Missed question ── */
 function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, isLastQuestion }: {
-  revealedAnswer: unknown; cumulativeScore: number; participant: Participant;
+  revealedAnswer: unknown; cumulativeScore: number; participant: { nickname: string };
   question: CurrentQuestion | null; isLastQuestion: boolean;
 }) {
   const [dots, setDots] = useState('');
@@ -404,7 +439,6 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
 
   return (
     <main className="fixed inset-0 flex flex-col overflow-y-auto bg-slate-50">
-      {/* Verdict banner */}
       <div className="px-6 py-5 text-white text-center bg-slate-600">
         <div className="flex items-center justify-center gap-3 mb-1">
           <span className="text-4xl">⏱</span>
@@ -414,25 +448,18 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
         <div className="text-sm text-slate-300 mt-1">Muda umeisha kabla hujajibu</div>
       </div>
 
-      {/* Options — show correct answer if we have it */}
       {opts.length > 0 && (
         <div className="px-4 py-4 space-y-2">
           {correctIds.length > 0 && (
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
-              ✅ Jibu Sahihi Lilikuwa:
-            </p>
+            <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">✅ Jibu Sahihi Lilikuwa:</p>
           )}
           {opts.map((opt, i) => {
             const isCorrect = correctIds.length > 0 && correctIds.includes(String(opt.id));
             const bg = opt.color ?? COLORS[i] ?? '#334155';
-            const rowClass = isCorrect ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-white';
-            const labelClass = isCorrect ? 'text-green-800 font-bold' : 'text-slate-500';
             return (
-              <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${rowClass}`}>
-                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>
-                  {shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}
-                </span>
-                <span className={`flex-1 text-sm ${labelClass}`}>{opt.label}</span>
+              <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${isCorrect ? 'border-green-400 bg-green-50' : 'border-slate-200 bg-white'}`}>
+                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>{shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}</span>
+                <span className={`flex-1 text-sm ${isCorrect ? 'text-green-800 font-bold' : 'text-slate-500'}`}>{opt.label}</span>
                 {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
               </div>
             );
@@ -440,7 +467,6 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
         </div>
       )}
 
-      {/* Score + waiting */}
       <div className="px-4 pb-6 mt-auto space-y-3">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
@@ -452,10 +478,8 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
           {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
         </div>
         <div className="text-center">
-          <button
-            onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
-            className="text-xs text-slate-300 hover:text-slate-500 underline transition"
-          >
+          <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
+            className="text-xs text-slate-300 hover:text-slate-500 underline transition">
             Toka kwenye quiz
           </button>
         </div>
@@ -464,24 +488,13 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
   );
 }
 
-/* ── Per-question result — shows immediately after submitting ── */
-function normalizeCorrect(v: unknown): string[] {
-  if (Array.isArray(v)) return (v as unknown[]).map(String);
-  if (v === null || v === undefined) return [];
-  return [String(v)];
-}
-
+/* ── Per-question result ── */
 function ResultScreen({ result, participant, question, selectedOption, isLastQuestion }: {
-  result: AnswerResult;
-  participant: Participant;
-  question: CurrentQuestion | null;
-  selectedOption: string | null;
-  isLastQuestion: boolean;
+  result: AnswerResult; participant: { nickname: string };
+  question: CurrentQuestion | null; selectedOption: string | null; isLastQuestion: boolean;
 }) {
   const correctIds = normalizeCorrect(result.correct_answer);
   const opts = question?.options?.slice(0, 4) ?? [];
-
-  // Show dot-dot-dot countdown so student knows something is happening
   const [dots, setDots] = useState('');
   useEffect(() => {
     const t = setInterval(() => setDots((d) => d.length >= 3 ? '' : d + '.'), 500);
@@ -490,7 +503,6 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
 
   return (
     <main className="fixed inset-0 flex flex-col overflow-y-auto bg-slate-50">
-      {/* Verdict banner */}
       <div className={`px-6 py-5 text-white text-center ${result.is_correct ? 'bg-green-500' : 'bg-red-500'}`}>
         <div className="flex items-center justify-center gap-3 mb-1">
           {result.is_correct
@@ -498,9 +510,9 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
             : <XCircle className="w-8 h-8" strokeWidth={2.5} />}
           <span className="text-2xl font-black">{result.is_correct ? 'Sahihi! 🎉' : 'Sio Sahihi 😬'}</span>
         </div>
-        {result.points_earned > 0 && (
-          <div className="text-4xl font-black text-yellow-200 font-mono">+{result.points_earned.toLocaleString()}</div>
-        )}
+        <div className="text-4xl font-black text-yellow-200 font-mono">
+          {result.is_correct ? `+${result.points_earned.toLocaleString()}` : '+0'}
+        </div>
         {(result.speed_bonus > 0 || result.streak_bonus > 0) && (
           <div className="flex items-center justify-center gap-2 mt-1 flex-wrap">
             {result.speed_bonus > 0 && (
@@ -517,7 +529,6 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
         )}
       </div>
 
-      {/* Options — show correct answer highlighted */}
       {opts.length > 0 && (
         <div className="px-4 py-4 space-y-2">
           {!result.is_correct && (
@@ -529,22 +540,13 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
             const isCorrect = correctIds.length > 0 && correctIds.includes(String(opt.id));
             const wasSelected = selectedOption === opt.id;
             const bg = opt.color ?? COLORS[i] ?? '#334155';
-
-            let rowClass = 'border-slate-200 bg-white text-slate-700';
+            let rowClass = 'border-slate-200 bg-white';
             let labelClass = 'text-slate-700';
-            if (isCorrect) {
-              rowClass = 'border-green-400 bg-green-50';
-              labelClass = 'text-green-800 font-bold';
-            } else if (wasSelected && !result.is_correct) {
-              rowClass = 'border-red-300 bg-red-50';
-              labelClass = 'text-red-700';
-            }
-
+            if (isCorrect) { rowClass = 'border-green-400 bg-green-50'; labelClass = 'text-green-800 font-bold'; }
+            else if (wasSelected && !result.is_correct) { rowClass = 'border-red-300 bg-red-50'; labelClass = 'text-red-700'; }
             return (
               <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-xl border-2 ${rowClass}`}>
-                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>
-                  {shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}
-                </span>
+                <span className="text-xl w-7 text-center shrink-0" style={{ color: bg }}>{shapeChar(opt.shape) ?? SHAPES[i] ?? '●'}</span>
                 <span className={`flex-1 text-sm ${labelClass}`}>{opt.label}</span>
                 {isCorrect && <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />}
                 {wasSelected && !result.is_correct && <XCircle className="w-5 h-5 text-red-400 shrink-0" />}
@@ -555,7 +557,6 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
         </div>
       )}
 
-      {/* Score + waiting */}
       <div className="px-4 pb-6 mt-auto space-y-3">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
@@ -566,13 +567,13 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
             </div>
           )}
         </div>
-
         <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
           {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
         </div>
         <div className="text-center">
-          <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }} className="text-xs text-slate-300 hover:text-slate-500 underline transition">
+          <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
+            className="text-xs text-slate-300 hover:text-slate-500 underline transition">
             Toka kwenye quiz
           </button>
         </div>
@@ -581,10 +582,10 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
   );
 }
 
-/* ── Final podium ── */
-function CompletedScreen({ participant, finalScore, finalLeaderboard, quizName }: {
-  participant: Participant; finalScore: number | null; finalLeaderboard: LeaderboardEntry[];
-  quizName?: string;
+/* ── Final screen — score + breakdown + leaderboard ── */
+function CompletedScreen({ participant, finalScore, finalLeaderboard, quizName, totalQuestions, questionHistory }: {
+  participant: { nickname: string }; finalScore: number | null; finalLeaderboard: LeaderboardEntry[];
+  quizName?: string; totalQuestions: number; questionHistory: QuestionHistoryEntry[];
 }) {
   const router = useRouter();
   const myRow = useMemo(
@@ -593,6 +594,9 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard, quizName }
   );
   const rank = myRow?.rank;
   const score = myRow?.total_score ?? finalScore ?? 0;
+  const correctCount = myRow?.correct_answers ?? questionHistory.filter((q) => q.isCorrect).length;
+  const incorrectCount = myRow?.incorrect_answers ?? questionHistory.filter((q) => !q.isCorrect).length;
+  const missedCount = questionHistory.filter((q) => q.missed).length;
 
   const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '🎯';
   const rankLabel = !rank ? null
@@ -601,70 +605,118 @@ function CompletedScreen({ participant, finalScore, finalLeaderboard, quizName }
 
   return (
     <main className="fixed inset-0 bg-slate-50 overflow-y-auto">
-      <div className="min-h-full flex flex-col items-center justify-start px-4 py-8">
+      <div className="min-h-full flex flex-col items-center px-4 py-6 max-w-lg mx-auto">
 
-        {/* Top nav — back to home */}
-        <div className="w-full max-w-sm mb-6 flex items-center justify-between">
-          <button
-            onClick={() => router.push('/student')}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition"
-          >
+        {/* Nav */}
+        <div className="w-full mb-4 flex items-center justify-between">
+          <button onClick={() => router.push('/student')}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800 transition">
             ← Dashibodi
           </button>
           <span className="text-xs text-slate-400 font-mono">{participant.nickname}</span>
         </div>
 
-        <Trophy className="w-20 h-20 text-yellow-500 mb-3" />
-        <h1 className="text-4xl font-black text-slate-900 mb-1">Quiz Imekamilika!</h1>
-        {quizName && <p className="text-slate-500 text-sm mb-2">{quizName}</p>}
-        {rankLabel && <div className="text-2xl text-slate-700 mb-4">{rankLabel}</div>}
+        {/* Trophy + title */}
+        <Trophy className="w-16 h-16 text-yellow-500 mb-2" />
+        <h1 className="text-3xl font-black text-slate-900 mb-0.5">Quiz Imekamilika!</h1>
+        {quizName && <p className="text-slate-500 text-sm mb-2 text-center">{quizName}</p>}
+        {rankLabel && <div className="text-xl text-slate-700 mb-4 font-bold">{rankLabel}</div>}
 
-        <div className="bg-white border border-slate-200 rounded-2xl px-8 py-5 mb-6 text-center shadow-sm w-full max-w-sm">
+        {/* Score card */}
+        <div className="bg-white border border-slate-200 rounded-2xl px-6 py-4 mb-4 text-center shadow-sm w-full">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Alama Zako {rankEmoji}</p>
-          <p className="text-6xl font-black text-orange-500 font-mono">{score.toLocaleString()}</p>
-          {myRow && (
-            <div className="flex items-center justify-center gap-4 mt-3 text-sm text-slate-600">
-              <span>✓ {myRow.correct_answers} sahihi</span>
-              {myRow.longest_streak > 0 && (
-                <span className="text-orange-500 flex items-center gap-1">
-                  <Flame className="w-4 h-4" /> streak {myRow.longest_streak}
-                </span>
-              )}
+          <p className="text-5xl font-black text-orange-500 font-mono mb-3">{score.toLocaleString()}</p>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-green-50 rounded-xl p-2">
+              <div className="text-2xl font-black text-green-600">{correctCount}</div>
+              <div className="text-[10px] uppercase tracking-wider text-green-500 font-semibold">Sahihi</div>
             </div>
-          )}
+            <div className="bg-red-50 rounded-xl p-2">
+              <div className="text-2xl font-black text-red-500">{incorrectCount}</div>
+              <div className="text-[10px] uppercase tracking-wider text-red-400 font-semibold">Makosa</div>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-2">
+              <div className="text-2xl font-black text-slate-500">{missedCount}</div>
+              <div className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Zilizokosa</div>
+            </div>
+          </div>
         </div>
 
-        {finalLeaderboard.length > 0 && (
-          <div className="w-full max-w-sm bg-white border border-slate-200 rounded-2xl p-4 mb-6 space-y-1.5 shadow-sm">
-            <p className="text-xs uppercase tracking-widest text-slate-400 text-center mb-3">🏆 Orodha ya Ushindi</p>
-            {finalLeaderboard.slice(0, 10).map((e) => {
-              const isMe = e.nickname === participant.nickname;
-              const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
-              return (
-                <div key={e.participant_id}
-                  className={`flex items-center gap-3 p-2.5 rounded-xl ${isMe ? 'bg-orange-50 ring-2 ring-orange-400' : 'bg-slate-50'}`}>
-                  <div className="w-8 text-center font-black text-sm">{medal}</div>
-                  <div className="flex-1 font-semibold text-slate-900 truncate">
-                    {e.nickname}{isMe && <span className="text-orange-500 text-xs ml-1">(wewe)</span>}
+        {/* Per-question breakdown */}
+        {questionHistory.length > 0 && (
+          <div className="w-full bg-white border border-slate-200 rounded-2xl p-4 mb-4 shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-slate-400 mb-3 text-center">Majibu Yako Kwa Kila Swali</p>
+            <div className="space-y-2">
+              {questionHistory.map((entry, idx) => (
+                <div key={idx} className={`flex items-center gap-3 p-2.5 rounded-xl border ${
+                  entry.missed ? 'bg-slate-50 border-slate-200' :
+                  entry.isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                }`}>
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-black text-white"
+                    style={{ backgroundColor: entry.missed ? '#94a3b8' : entry.isCorrect ? '#22c55e' : '#ef4444' }}>
+                    {entry.questionNumber}
                   </div>
-                  <div className="font-mono font-black text-orange-500">{e.total_score.toLocaleString()}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-700 font-medium truncate">{entry.text}</p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {entry.missed ? (
+                      <span className="text-xs text-slate-400 font-mono">+0</span>
+                    ) : entry.isCorrect ? (
+                      <span className="text-xs text-green-600 font-black font-mono">+{entry.pointsEarned.toLocaleString()}</span>
+                    ) : (
+                      <span className="text-xs text-red-500 font-mono">+0</span>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    {entry.missed
+                      ? <span className="text-slate-400 text-sm">⏱</span>
+                      : entry.isCorrect
+                        ? <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        : <XCircle className="w-4 h-4 text-red-400" />}
+                  </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
         )}
 
-        <div className="flex flex-col gap-3 w-full max-w-sm">
-          <button
-            onClick={() => router.push('/play')}
-            className="btn-primary text-base px-8 py-3 justify-center"
-          >
+        {/* Leaderboard */}
+        {finalLeaderboard.length > 0 && (
+          <div className="w-full bg-white border border-slate-200 rounded-2xl p-4 mb-4 shadow-sm">
+            <p className="text-xs uppercase tracking-widest text-slate-400 text-center mb-3">🏆 Orodha ya Ushindi</p>
+            <div className="space-y-1.5">
+              {finalLeaderboard.slice(0, 10).map((e) => {
+                const isMe = e.nickname === participant.nickname;
+                const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
+                return (
+                  <div key={e.participant_id}
+                    className={`flex items-center gap-3 p-2.5 rounded-xl ${isMe ? 'bg-orange-50 ring-2 ring-orange-400' : 'bg-slate-50'}`}>
+                    <div className="w-8 text-center font-black text-sm">{medal}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-slate-900 truncate text-sm">
+                        {e.nickname}{isMe && <span className="text-orange-500 text-xs ml-1">(wewe)</span>}
+                      </div>
+                      <div className="text-[10px] text-slate-400 flex items-center gap-2">
+                        <span className="text-green-600">✓ {e.correct_answers}</span>
+                        {typeof e.incorrect_answers === 'number' && (
+                          <span className="text-red-400">✗ {e.incorrect_answers}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="font-mono font-black text-orange-500">{e.total_score.toLocaleString()}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3 w-full">
+          <button onClick={() => router.push('/play')} className="btn-primary text-base px-8 py-3 justify-center">
             Cheza Tena 🚀
           </button>
-          <button
-            onClick={() => router.push('/student')}
-            className="btn-secondary text-sm px-8 py-2.5 justify-center"
-          >
+          <button onClick={() => router.push('/student')} className="btn-secondary text-sm px-8 py-2.5 justify-center">
             ← Rudi Dashibodini
           </button>
         </div>

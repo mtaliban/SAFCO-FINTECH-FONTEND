@@ -716,43 +716,78 @@ function LeaderboardPanel({
 
 function FinalPodium({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   const [first, second, third] = leaderboard;
-  return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-1">Matokeo ya Mwisho</div>
-      <div className="text-2xl sm:text-3xl font-black text-slate-900 mb-6">🏆 SAFCO Live — Mabingwa</div>
+  const totalQ = leaderboard[0]
+    ? (leaderboard[0].correct_answers ?? 0) + (leaderboard[0].incorrect_answers ?? 0)
+    : 0;
 
-      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 items-end max-w-2xl mx-auto">
-        <PodiumStep entry={second} rank={2} height="h-32" bg="bg-slate-400" emoji="🥈" />
-        <PodiumStep entry={first} rank={1} height="h-40" bg="bg-yellow-400" emoji="🥇" />
-        <PodiumStep entry={third} rank={3} height="h-24" bg="bg-orange-400" emoji="🥉" />
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 px-6 py-5 text-center">
+        <div className="text-3xl font-black text-white drop-shadow">🏆 SAFCO Live — Mabingwa</div>
+        <div className="text-white/80 text-sm mt-1">{leaderboard.length} washiriki · {totalQ > 0 ? `${totalQ} maswali` : ''}</div>
       </div>
 
-      {leaderboard.length > 3 && (
-        <div className="text-left max-w-md mx-auto space-y-1.5 mt-6">
-          <div className="text-xs font-semibold text-slate-400 uppercase mb-2">Orodha Kamili</div>
-          {leaderboard.slice(3, 20).map((e) => (
-            <div key={e.participant_id} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50">
-              <div className="w-6 text-slate-400 font-bold text-sm">{e.rank}</div>
-              <div className="flex-1 truncate font-medium text-slate-900">{e.nickname}</div>
-              <div className="text-orange-500 font-black font-mono">{e.total_score.toLocaleString()}</div>
-            </div>
-          ))}
+      {/* Podium top 3 */}
+      <div className="px-6 py-6">
+        <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 items-end max-w-2xl mx-auto">
+          <PodiumStep entry={second} rank={2} height="h-28" bg="bg-slate-400" emoji="🥈" />
+          <PodiumStep entry={first}  rank={1} height="h-36" bg="bg-yellow-400" emoji="🥇" />
+          <PodiumStep entry={third}  rank={3} height="h-20" bg="bg-orange-400" emoji="🥉" />
         </div>
-      )}
+      </div>
+
+      {/* Full ranked table — all players */}
+      <div className="border-t border-slate-100">
+        <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-slate-400">
+          <span className="w-8">#</span>
+          <span className="flex-1">Mchezaji</span>
+          <span className="w-16 text-center text-green-600">✓ Sahihi</span>
+          <span className="w-16 text-center text-red-400">✗ Makosa</span>
+          <span className="w-20 text-right">Alama</span>
+        </div>
+        <div className="divide-y divide-slate-100 max-h-80 overflow-y-auto">
+          {leaderboard.map((e) => {
+            const medal = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : null;
+            return (
+              <div key={e.participant_id}
+                className={`flex items-center gap-2 px-4 py-3 text-sm ${
+                  e.rank === 1 ? 'bg-yellow-50' : e.rank <= 3 ? 'bg-orange-50/50' : 'bg-white hover:bg-slate-50'
+                }`}>
+                <div className="w-8 text-center font-black text-sm shrink-0">
+                  {medal ?? <span className="text-slate-400">{e.rank}</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-slate-900 truncate">{e.nickname}</div>
+                  {e.is_late_join && (
+                    <span className="text-[9px] px-1 rounded bg-amber-100 text-amber-700 uppercase font-bold">Late</span>
+                  )}
+                </div>
+                <div className="w-16 text-center font-bold text-green-600">{e.correct_answers}</div>
+                <div className="w-16 text-center font-bold text-red-400">
+                  {typeof e.incorrect_answers === 'number' ? e.incorrect_answers : '—'}
+                </div>
+                <div className="w-20 text-right font-black text-orange-500 font-mono">{e.total_score.toLocaleString()}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
 function PodiumStep({ entry, rank, height, bg, emoji }: { entry?: LeaderboardEntry; rank: number; height: string; bg: string; emoji: string }) {
   if (!entry) {
-    return <div className={`${height} ${bg} opacity-30 rounded-t-xl flex items-center justify-center text-white font-black text-2xl`}>—</div>;
+    return <div className={`${height} ${bg} opacity-20 rounded-t-xl flex items-center justify-center text-white font-black text-2xl`}>—</div>;
   }
   return (
     <div className="flex flex-col items-center">
       <div className="text-3xl mb-1">{emoji}</div>
-      <div className="font-bold text-white mb-0.5 truncate max-w-full px-1 text-sm">{entry.nickname}</div>
-      <div className="text-yellow-300 font-black font-mono mb-2 text-sm">{entry.total_score.toLocaleString()}</div>
-      <div className={`${bg} ${height} w-full rounded-t-xl flex items-center justify-center text-4xl font-black text-white shadow-lg`}>{rank}</div>
+      <div className="font-bold text-slate-800 mb-0.5 truncate max-w-full px-1 text-sm text-center">{entry.nickname}</div>
+      <div className="text-orange-500 font-black font-mono mb-2 text-sm">{entry.total_score.toLocaleString()}</div>
+      <div className="text-xs text-slate-500 mb-2">✓ {entry.correct_answers}</div>
+      <div className={`${bg} ${height} w-full rounded-t-xl flex items-center justify-center text-3xl font-black text-white shadow-lg`}>{rank}</div>
     </div>
   );
 }
