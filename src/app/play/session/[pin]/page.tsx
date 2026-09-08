@@ -13,6 +13,8 @@ interface CurrentQuestion {
   type: string; text: string; image_url: string | null;
   options: Array<{ id: string; label: string; color?: string; shape?: string }>;
   time_limit_seconds: number; ends_at: string | null;
+  points: number;
+  explanation?: string | null;
 }
 interface AnswerResult {
   is_correct: boolean; points_earned: number; total_score: number;
@@ -82,8 +84,8 @@ export default function PlaySessionPage() {
   const { data: state, refetch: refetchState } = useQuery<SessionState | null>({
     queryKey: ['play-session', pin],
     queryFn: () => playApi.sessionState(pin as string) as Promise<SessionState>,
-    refetchInterval: showingResult ? 500 : 3000,
     enabled: !!participant,
+    staleTime: Infinity,
   });
 
   const status = state?.status ?? 'connecting';
@@ -365,6 +367,7 @@ function QuestionScreen({ participant, question, selectedOption, busy, onSelect 
       <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-200">
         <div className="flex-1 text-xs text-slate-500 font-medium">
           Swali <span className="text-slate-900 font-bold">{question.question_number}</span> / {question.total_questions}
+          <span className="ml-2 text-orange-500 font-bold">{question.points} alama</span>
         </div>
         <CountdownCircle remaining={remaining} total={question.time_limit_seconds} />
         <div className="flex-1 flex items-center justify-end gap-2">
@@ -467,6 +470,16 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
         </div>
       )}
 
+      {/* Explanation for missed question */}
+      {question?.explanation && (
+        <div className="px-4">
+          <div className="bg-navy-50 border-l-4 border-navy-300 rounded-xl p-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-navy-500 mb-1">Maelezo</p>
+            <p className="text-sm text-navy-700">{question.explanation}</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 pb-6 mt-auto space-y-3">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
@@ -475,7 +488,7 @@ function MissedScreen({ revealedAnswer, cumulativeScore, participant, question, 
         </div>
         <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-          {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
+          {isLastQuestion ? 'Quiz imekwisha! Inapakia matokeo ya mwisho…' : 'Subiri swali linalofuata…'}
         </div>
         <div className="text-center">
           <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
@@ -557,6 +570,26 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
         </div>
       )}
 
+      {/* Points earned / possible */}
+      <div className="px-4 pt-2">
+        <div className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+          <span className="text-xs uppercase tracking-widest text-slate-400 font-semibold">Alama ulizopata</span>
+          <span className="text-xl font-black font-mono text-orange-500">
+            {result.points_earned} <span className="text-sm text-slate-400 font-normal">/ {question?.points ?? '—'}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Explanation */}
+      {question?.explanation && (
+        <div className="px-4">
+          <div className="bg-navy-50 border-l-4 border-navy-300 rounded-xl p-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-navy-500 mb-1">Maelezo</p>
+            <p className="text-sm text-navy-700">{question.explanation}</p>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 pb-6 mt-auto space-y-3">
         <div className="bg-white border border-slate-200 rounded-2xl p-4 text-center shadow-sm">
           <p className="text-xs uppercase tracking-widest text-slate-400 mb-1">Jumla ya Alama</p>
@@ -569,7 +602,7 @@ function ResultScreen({ result, participant, question, selectedOption, isLastQue
         </div>
         <div className="flex items-center justify-center gap-2 text-slate-500 text-sm font-medium">
           <Loader2 className="w-4 h-4 animate-spin text-orange-400" />
-          {isLastQuestion ? `Inasubiri matokeo ya mwisho${dots}` : `Swali linalofuata linakuja${dots}`}
+          {isLastQuestion ? 'Quiz imekwisha! Inapakia matokeo ya mwisho…' : 'Umejibu! Subiri swali linalofuata…'}
         </div>
         <div className="text-center">
           <button onClick={() => { if (typeof window !== 'undefined') window.location.href = '/play'; }}
