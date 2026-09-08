@@ -504,13 +504,19 @@ function QuestionReveal({ reveal, total }: { reveal: LiveEndQuestionPayload; tot
           <span className="text-sm font-bold uppercase tracking-widest opacity-90">Jibu Sahihi</span>
         </div>
         {correctOpts.length > 0 ? (
-          correctOpts.map((o, i) => (
+          correctOpts.map((o) => (
             <div key={o.id} className="text-2xl md:text-3xl font-black leading-tight">
               {DEFAULT_SHAPES[opts.indexOf(o)] ?? '●'} {o.label}
             </div>
           ))
         ) : (
-          <div className="text-xl font-black">{JSON.stringify(reveal.correct_answer)}</div>
+          <div className="text-xl font-black">
+            {Array.isArray(reveal.correct_answer)
+              ? (reveal.correct_answer as unknown[]).join(' / ')
+              : reveal.correct_answer === true ? 'TRUE'
+              : reveal.correct_answer === false ? 'FALSE'
+              : String(reveal.correct_answer ?? '—')}
+          </div>
         )}
       </div>
 
