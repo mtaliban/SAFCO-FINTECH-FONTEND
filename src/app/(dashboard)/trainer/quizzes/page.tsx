@@ -1,15 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Play, Zap, BookOpen, Loader2, AlertTriangle } from 'lucide-react';
+import { Plus, Play, Zap, BookOpen, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiRequest } from '@/lib/api';
 import { Quiz, quizApi } from '@/lib/quiz/api';
 
 export default function TrainerQuizzesPage() {
   const router = useRouter();
+  const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['trainer', 'my-quizzes'],
     queryFn: () => apiRequest.get<{ data: Quiz[] }>('/trainer/my-quizzes'),
@@ -24,6 +25,22 @@ export default function TrainerQuizzesPage() {
       router.push(`/dashboard/quizzes/${q.id}/host/${session.id}?pin=${session.pin}`);
     } catch (e) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to start session';
+      toast.error(msg);
+    }
+  }
+
+  async function publish(q: Quiz) {
+    const attachedCount = q.questions !== undefined ? q.questions.length : null;
+    if (attachedCount === 0) {
+      toast.error('Ongeza maswali kwanza kabla ya kuchapisha quiz.');
+      return;
+    }
+    try {
+      await quizApi.publish(q.id);
+      toast.success('Quiz imechapishwa — wanafunzi wanaweza kuifanya sasa.');
+      qc.invalidateQueries({ queryKey: ['trainer', 'my-quizzes'] });
+    } catch (e) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Imeshindwa kuchapisha';
       toast.error(msg);
     }
   }
@@ -95,6 +112,15 @@ export default function TrainerQuizzesPage() {
 
               <div className="flex gap-2">
                 <Link href={`/dashboard/quizzes/${q.id}/edit`} className="btn-secondary flex-1 text-sm">Edit</Link>
+                {q.status !== 'published' && (
+                  <button
+                    onClick={() => publish(q)}
+                    className="btn-primary flex-1 text-sm"
+                    title={(q.questions !== undefined && q.questions.length === 0) ? 'Ongeza maswali kwanza' : 'Chapisha quiz'}
+                  >
+                    <CheckCircle2 className="w-3 h-3" /> Publish
+                  </button>
+                )}
                 {q.status === 'published' && q.mode === 'live_kahoot' && (
                   <button onClick={() => hostLive(q)} className="btn-primary flex-1 text-sm">
                     <Play className="w-3 h-3" /> Host Live
