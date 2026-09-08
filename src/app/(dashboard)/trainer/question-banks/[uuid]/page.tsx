@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Loader2, Plus, Search, Pencil, Trash2, HelpCircle,
-  CheckSquare, ToggleRight, ListChecks, PenLine, Shuffle, Type, Sparkles,
+  CheckSquare, ToggleRight, ListChecks, PenLine, Shuffle, Type, Sparkles, CheckCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -46,6 +46,8 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
   const [difficulty, setDifficulty] = useState<'' | 'easy' | 'medium' | 'hard'>('');
   const [editor, setEditor] = useState<{ open: boolean; question: Question | null }>({ open: false, question: null });
   const [showAi, setShowAi] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   const { data: bank, isLoading: bankLoading } = useQuery({
     queryKey: ['question-bank', uuid],
@@ -67,11 +69,38 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
     try {
       await questionBankApi.deleteQuestion(q.id);
       toast.success('Question deleted');
+      setSelected((s) => { const n = new Set(s); n.delete(q.id); return n; });
       qc.invalidateQueries({ queryKey: ['question-bank-questions', uuid] });
       qc.invalidateQueries({ queryKey: ['question-bank', uuid] });
     } catch {
       toast.error('Delete failed');
     }
+  }
+
+  async function handleBulkDelete() {
+    if (selected.size === 0) return;
+    if (!confirm(`Futa maswali ${selected.size} yaliyochaguliwa? Haiwezi kurudishwa.`)) return;
+    setBulkDeleting(true);
+    let deleted = 0;
+    for (const id of selected) {
+      try { await questionBankApi.deleteQuestion(id); deleted++; } catch { /* continue */ }
+    }
+    toast.success(`Yamefutwa ${deleted} / ${selected.size} maswali`);
+    setSelected(new Set());
+    setBulkDeleting(false);
+    qc.invalidateQueries({ queryKey: ['question-bank-questions', uuid] });
+    qc.invalidateQueries({ queryKey: ['question-bank', uuid] });
+    qc.invalidateQueries({ queryKey: ['question-banks'] });
+  }
+
+  function toggleSelect(id: string) {
+    setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  function toggleSelectAll() {
+    const all = qs?.data ?? [];
+    if (selected.size === all.length) setSelected(new Set());
+    else setSelected(new Set(all.map((q) => q.id)));
   }
 
   function onEditorSaved() {
@@ -153,6 +182,30 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
             </select>
           </div>
 
+          {/* Bulk action bar */}
+          {(qs?.data?.length ?? 0) > 0 && (
+            <div className="flex items-center gap-3 mb-3 px-1">
+              <button onClick={toggleSelectAll} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 font-semibold">
+                <CheckCheck className="w-4 h-4" />
+                {selected.size === (qs?.data?.length ?? 0) ? 'Bofya Yote' : 'Chagua Yote'}
+              </button>
+              {selected.size > 0 && (
+                <>
+                  <span className="text-xs text-slate-400">|</span>
+                  <span className="text-xs font-semibold text-brand-700">{selected.size} zimechaguliwa</span>
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleting}
+                    className="flex items-center gap-1 text-xs font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg disabled:opacity-50 transition"
+                  >
+                    {bulkDeleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                    Futa Zilizochaguliwa
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {qsLoading ? (
             <div className="p-12 text-center"><Loader2 className="w-8 h-8 animate-spin text-brand-600 mx-auto" /></div>
           ) : !qs?.data?.length ? (
@@ -176,8 +229,15 @@ export default function QuestionBankDetailPage({ params }: { params: { uuid: str
             <div className="space-y-3">
               {qs.data.map((q) => {
                 const Icon = TYPE_ICON[q.type];
+                const isSelected = selected.has(q.id);
                 return (
-                  <div key={q.id} className="card p-4 flex items-start gap-4 hover:border-brand-300 transition">
+                  <div key={q.id} className={`card p-4 flex items-start gap-4 hover:border-brand-300 transition ${isSelected ? 'border-brand-400 bg-brand-50/40' : ''}`}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelect(q.id)}
+                      className="mt-1 w-4 h-4 shrink-0 accent-brand-600 cursor-pointer"
+                    />
                     <div className={`shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${TYPE_COLOR[q.type]}`}>
                       <Icon className="w-5 h-5" />
                     </div>

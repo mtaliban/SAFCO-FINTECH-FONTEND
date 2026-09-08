@@ -320,6 +320,7 @@ export const playApi = {
     type: string; text: string; image_url: string | null;
     options: Array<{ id: string; label: string; color?: string; shape?: string }>;
     time_limit_seconds: number; ends_at: string | null;
+    points: number; explanation?: string | null;
   } | null>(`/play/session/${pin}/current-question`),
   submitAnswer: (pin: string, participantId: string, answer: unknown) =>
     apiRequest.post<{
