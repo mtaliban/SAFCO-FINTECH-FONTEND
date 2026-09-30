@@ -303,6 +303,64 @@ export const attemptApi = {
     apiRequest.get<{ data: MyAttemptRow[]; meta: { total: number } }>('/student/my-attempts', { params }),
 };
 
+/* ---------- QUIZ ANALYTICS (trainer) ---------- */
+
+export interface QuizViolation {
+  type: string;
+  at: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface AnalyticsAttemptRow {
+  id: string;
+  attempt_number: number;
+  status: 'in_progress' | 'completed' | 'expired' | 'abandoned';
+  exam_type: ExamType | null;
+  passed: boolean;
+  percentage: number;
+  total_questions: number;
+  correct_answers: number;
+  duration_seconds: number | null;
+  auto_submit_reason: string | null;
+  violations: QuizViolation[];
+  violations_count: number;
+  started_at: string | null;
+  completed_at: string | null;
+  student: { id: string; name: string; email: string; avatar: string | null } | null;
+}
+
+export interface QuizAnalytics {
+  quiz: {
+    id: string;
+    name: string;
+    exam_type: ExamType | null;
+    passing_mark_percentage: number;
+    anti_cheat_settings: AntiCheatSettings | null;
+  };
+  summary: {
+    total_attempts: number;
+    in_progress: number;
+    completed: number;
+    expired: number;
+    pass_count: number;
+    fail_count: number;
+    pass_rate: number;
+    avg_score: number;
+    avg_duration_seconds: number;
+    total_violations: number;
+    attempts_with_violations: number;
+    auto_submitted_count: number;
+    violation_breakdown: Record<string, number>;
+  };
+  attempts: AnalyticsAttemptRow[];
+  meta: { current_page: number; last_page: number; per_page: number; total: number };
+}
+
+export const analyticsApi = {
+  quizAnalytics: (quizUuid: string, params: { page?: number; per_page?: number; status?: string } = {}) =>
+    apiRequest.get<QuizAnalytics>(`/quizzes/${quizUuid}/analytics`, { params }),
+};
+
 /* ---------- STUDENT PLAY (public) ---------- */
 export const playApi = {
   join: (pin: string, nickname: string) =>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Play, Zap, BookOpen, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Plus, Play, Zap, BookOpen, Loader2, AlertTriangle, CheckCircle2, Trash2, BarChart3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiRequest } from '@/lib/api';
 import { Quiz, quizApi } from '@/lib/quiz/api';
@@ -25,6 +25,18 @@ export default function TrainerQuizzesPage() {
       router.push(`/dashboard/quizzes/${q.id}/host/${session.id}?pin=${session.pin}`);
     } catch (e) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to start session';
+      toast.error(msg);
+    }
+  }
+
+  async function deleteQuiz(q: Quiz) {
+    if (!confirm(`Futa quiz "${q.name}"? Hatua hii haiwezi kutenduliwa.`)) return;
+    try {
+      await quizApi.delete(q.id);
+      toast.success(`Quiz "${q.name}" imefutwa.`);
+      qc.invalidateQueries({ queryKey: ['trainer', 'my-quizzes'] });
+    } catch (e) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Imeshindwa kufuta quiz';
       toast.error(msg);
     }
   }
@@ -110,7 +122,7 @@ export default function TrainerQuizzesPage() {
                 );
               })()}
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Link href={`/dashboard/quizzes/${q.id}/edit`} className="btn-secondary flex-1 text-sm">Edit</Link>
                 {q.status !== 'published' && (
                   <button
@@ -126,6 +138,22 @@ export default function TrainerQuizzesPage() {
                     <Play className="w-3 h-3" /> Host Live
                   </button>
                 )}
+                {q.mode === 'exam' && q.status === 'published' && (
+                  <Link
+                    href={`/trainer/quizzes/${q.id}/analytics`}
+                    className="p-2 rounded-lg text-brand-600 hover:bg-brand-50 border border-brand-200 transition shrink-0"
+                    title="Anti-Cheat Analytics"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                  </Link>
+                )}
+                <button
+                  onClick={() => deleteQuiz(q)}
+                  className="p-2 rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 border border-red-200 transition shrink-0"
+                  title="Futa quiz"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}

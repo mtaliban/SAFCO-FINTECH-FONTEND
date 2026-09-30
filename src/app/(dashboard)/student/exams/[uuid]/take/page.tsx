@@ -10,7 +10,8 @@ import {
   CheckCircle2, AlertTriangle, Lock, Maximize2, Camera, CameraOff,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { attemptApi, quizApi, type AttemptQuestion, type AttemptState, type Quiz } from '@/lib/quiz/api';
+import { quizApi, type AttemptQuestion, type Quiz } from '@/lib/quiz/api';
+import { examApi, type ExamTakingPayload } from '@/lib/exam/api';
 
 /**
  * SRS Module 8 — Examination taking page.
@@ -21,16 +22,27 @@ import { attemptApi, quizApi, type AttemptQuestion, type AttemptState, type Quiz
  */
 
 type Phase = 'loading' | 'ready' | 'taking' | 'submitting' | 'done';
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 export default function TakeExamPage() {
   const { uuid: quizUuid } = useParams<{ uuid: string }>();
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('loading');
-  const [attempt, setAttempt] = useState<AttemptState | null>(null);
+  const [attempt, setAttempt] = useState<ExamTakingPayload | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [sequences, setSequences] = useState<Record<string, number>>({});
+  const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
+  const [sessionConflict, setSessionConflict] = useState(false);
   const [current, setCurrent] = useState(0);
   const [violationCount, setViolationCount] = useState(0);
   const [violationWarning, setViolationWarning] = useState<string | null>(null);
+  // Session token (kept in memory only)
+  const sessionTokenRef = useRef('');
+  const attemptUuidRef = useRef('');
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Server-corrected seconds remaining
+  const [serverSecondsLeft, setServerSecondsLeft] = useState<number | null>(null);
+  const serverDeadlineRef = useRef<string | null>(null);
   // Webcam monitoring
   const [camStream, setCamStream] = useState<MediaStream | null>(null);
   const [camDenied, setCamDenied] = useState(false);
@@ -45,20 +57,32 @@ export default function TakeExamPage() {
 
   const ac = quiz?.anti_cheat_settings ?? {};
 
-  /* ---------- Start / resume ---------- */
+  /* ---------- Start / resume (V2 API) ---------- */
 
   async function beginAttempt() {
     setPhase('loading');
     try {
-      const state = await attemptApi.start(quizUuid as string);
-      // Shuffle questions client-side when setting enabled (anti-cheat)
-      const shuffledQuestions = quiz?.settings?.shuffle_questions ? shuffleArray(state.questions) : state.questions;
-      const shuffledState = { ...state, questions: shuffledQuestions };
-      setAttempt(shuffledState);
-      // Pre-fill answers from server (in case we resumed)
+      const state = await examApi.start(quizUuid as string);
+
+      // Store session token in memory (not localStorage)
+      const token = state.session_token ?? '';
+      sessionTokenRef.current = token;
+      attemptUuidRef.current = state.attempt_id;
+      serverDeadlineRef.current = state.deadline_at;
+      setServerSecondsLeft(state.seconds_remaining);
+
+      setAttempt(state);
+      // Pre-fill answers from server (resume)
       const initial: Record<string, unknown> = {};
-      for (const q of shuffledState.questions) if (q.my_answer !== null && q.my_answer !== undefined) initial[q.question_id] = q.my_answer;
+      const initialSeqs: Record<string, number> = {};
+      for (const q of state.questions) {
+        if (q.my_answer !== null && q.my_answer !== undefined) {
+          initial[q.question_id] = q.my_answer;
+          initialSeqs[q.question_id] = q.my_sequence ?? 0;
+        }
+      }
       setAnswers(initial);
+      setSequences(initialSeqs);
       setViolationCount(state.violations_count ?? 0);
 
       // Enter fullscreen if browser_lock is enabled
@@ -72,15 +96,21 @@ export default function TakeExamPage() {
           setCamDenied(false);
         } catch {
           setCamDenied(true);
-          // Log camera denial as violation — exam still proceeds but flagged
         }
       }
 
       setPhase('taking');
     } catch (e) {
+      // 409 = SESSION_CONFLICT: another tab holds this exam — blocked immediately on page load
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setSessionConflict(true);
+        setPhase('ready');
+        return;
+      }
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Cannot start exam';
       toast.error(msg);
-      setPhase('ready'); // let user retry / show instructions
+      setPhase('ready');
     }
   }
 
@@ -89,21 +119,55 @@ export default function TakeExamPage() {
     if (quiz && phase === 'loading') setPhase('ready');
   }, [quiz, phase]);
 
+  /* ---------- Heartbeat (every 30 s) — syncs server time + detects session conflict ---------- */
+
+  const runHeartbeat = useCallback(async () => {
+    const tok = sessionTokenRef.current;
+    const aid = attemptUuidRef.current;
+    if (!tok || !aid || phase !== 'taking') return;
+    try {
+      const hb = await examApi.heartbeat(aid, tok);
+      // Sync countdown from server
+      setServerSecondsLeft(hb.seconds_remaining);
+      if (hb.state !== 'in_progress') {
+        // Auto-submitted by server (deadline passed)
+        clearInterval(heartbeatRef.current!);
+        toast('Exam auto-submitted by server.');
+        router.replace(`/dashboard/student/exams/${quizUuid}`);
+      }
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number; data?: { message?: string } } })?.response?.status;
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '';
+      if (status === 409 || msg === 'SESSION_CONFLICT') {
+        clearInterval(heartbeatRef.current!);
+        setSessionConflict(true);
+      }
+    }
+  }, [phase, quizUuid, router]);
+
+  useEffect(() => {
+    if (phase !== 'taking') return;
+    heartbeatRef.current = setInterval(runHeartbeat, 30_000);
+    return () => clearInterval(heartbeatRef.current!);
+  }, [phase, runHeartbeat]);
+
   /* ---------- Anti-cheat guards ---------- */
 
   const violation = useCallback(async (type: string, meta: Record<string, unknown> = {}) => {
-    if (!attempt || phase !== 'taking') return;
+    const tok = sessionTokenRef.current;
+    const aid = attemptUuidRef.current;
+    if (!tok || !aid || phase !== 'taking') return;
     try {
-      const r = await attemptApi.violation(attempt.attempt_id, type, meta);
+      const r = await examApi.violation(aid, tok, type, meta);
       setViolationCount(r.violations_count);
       setViolationWarning(`⚠ Violation: ${type.replace(/_/g, ' ')} (${r.violations_count})`);
       setTimeout(() => setViolationWarning(null), 3500);
-      if (r.auto_submit_reason) {
+      if (r.state !== 'in_progress') {
         toast.error('Auto-submitted: violation threshold exceeded.');
-        router.replace(`/student/exams/attempts/${attempt.attempt_id}`);
+        router.replace(`/dashboard/student/exams/${quizUuid}`);
       }
-    } catch { /* ignore network errors, don't panic user */ }
-  }, [attempt, phase, router]);
+    } catch { /* ignore network errors */ }
+  }, [phase, quizUuid, router]);
 
   // 1) Tab switch / visibilitychange
   useEffect(() => {
@@ -243,8 +307,9 @@ export default function TakeExamPage() {
         canvas.width = 320; canvas.height = 240;
         ctx.drawImage(vid, 0, 0, 320, 240);
         canvas.toBlob((blob) => {
-          if (!blob || !attempt) return;
-          attemptApi.snapshot(attempt.attempt_id, blob).catch(() => null);
+          if (!blob) return;
+          // V2: snapshot upload would go here when S3 wiring is added
+          void blob;
         }, 'image/jpeg', 0.6);
       } catch { /* ignore */ }
     }, 30_000); // every 30 seconds
@@ -270,41 +335,54 @@ export default function TakeExamPage() {
     };
   }, [camStream]);
 
-  /* ---------- Timer + auto-submit ---------- */
+  /* ---------- Timer — countdown from server-provided seconds_remaining ---------- */
 
-  const secondsLeft = useCountdownTo(attempt?.expires_at);
+  // Use deadline_at for local tick; heartbeat corrects it every 30 s
+  const expiresAt = attempt?.deadline_at ?? null;
+  const secondsLeft = useCountdownFrom(serverSecondsLeft, expiresAt);
+
   useEffect(() => {
-    if (phase === 'taking' && attempt?.expires_at && secondsLeft === 0) {
+    if (phase === 'taking' && expiresAt && secondsLeft === 0) {
       toast.error('Muda umeisha — submitting your answers…');
       submitAll(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft, phase, attempt?.expires_at]);
+  }, [secondsLeft, phase, expiresAt]);
 
-  /* ---------- Answer submission ---------- */
+  /* ---------- Answer save (V2: sequence numbers + save status) ---------- */
 
   async function saveAnswer(questionId: string, ans: unknown) {
-    if (!attempt) return;
+    const tok = sessionTokenRef.current;
+    const aid = attemptUuidRef.current;
+    if (!tok || !aid) return;
+
     setAnswers((prev) => ({ ...prev, [questionId]: ans }));
+    const nextSeq = (sequences[questionId] ?? 0) + 1;
+    setSequences((p) => ({ ...p, [questionId]: nextSeq }));
+    setSaveStatus((p) => ({ ...p, [questionId]: 'saving' }));
+
     try {
-      await attemptApi.answer(attempt.attempt_id, questionId, ans);
+      await examApi.answer(aid, tok, questionId, ans, nextSeq);
+      setSaveStatus((p) => ({ ...p, [questionId]: 'saved' }));
     } catch (e) {
+      setSaveStatus((p) => ({ ...p, [questionId]: 'error' }));
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Save failed';
       toast.error(msg);
     }
   }
 
   async function submitAll(auto = false) {
-    if (!attempt) return;
+    const aid = attemptUuidRef.current;
+    if (!aid) return;
     if (!auto && !confirm('Submit exam? You cannot change your answers after this.')) return;
     setPhase('submitting');
     try {
-      await attemptApi.complete(attempt.attempt_id);
+      await examApi.submit(aid);
       if (document.fullscreenElement) await document.exitFullscreen().catch(() => null);
-      // Stop webcam stream
       camStream?.getTracks().forEach((t) => t.stop());
       setCamStream(null);
-      router.replace(`/student/exams/attempts/${attempt.attempt_id}`);
+      clearInterval(heartbeatRef.current!);
+      router.replace(`/dashboard/student/exams/${quizUuid}`);
     } catch (e) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Submit failed';
       toast.error(msg);
@@ -332,9 +410,31 @@ export default function TakeExamPage() {
     return <FullScreenLoader label="Submitting exam…" />;
   }
 
+  /* ---------- Session conflict — shown immediately when load returns 409 ---------- */
+  if (sessionConflict) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl p-8 text-center max-w-md shadow-xl">
+          <ShieldAlert className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-slate-900 mb-2">Access denied</h2>
+          <p className="text-slate-700 mb-3 text-sm font-medium">
+            This exam is already open in another window or device.
+          </p>
+          <p className="text-slate-500 mb-6 text-xs">
+            This attempt is locked to its original session. Contact your exam proctor if you
+            believe this is an error or if your previous session crashed.
+          </p>
+          <button onClick={() => router.back()} className="btn-secondary">
+            Go back
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!attempt) return <FullScreenLoader />;
 
-  const qList: AttemptQuestion[] = attempt.questions;
+  const qList = attempt.questions as unknown as AttemptQuestion[];
   const q = qList[current];
   const answeredCount = Object.keys(answers).filter((k) => qList.some((x) => x.question_id === k)).length;
 
@@ -411,6 +511,7 @@ export default function TakeExamPage() {
           onAnswer={(a) => saveAnswer(q.question_id, a)}
           examType={attempt.exam_type}
           shuffleOptions={!!quiz?.settings?.shuffle_options}
+          saveStatus={saveStatus[q.question_id] ?? 'idle'}
         />
 
         {/* Navigation */}
@@ -549,15 +650,45 @@ function TimerBadge({ secondsLeft }: { secondsLeft: number | null }) {
   );
 }
 
-function useCountdownTo(endsAt: string | null | undefined): number | null {
-  const [now, setNow] = useState(() => Date.now());
+/**
+ * Counts down locally from a server-provided seconds_remaining value.
+ * When the server sends a new value via heartbeat, the countdown resets.
+ * Falls back to computing from deadline_at if serverSeconds is null.
+ */
+function useCountdownFrom(serverSeconds: number | null, deadlineAt: string | null): number | null {
+  const [ticks, setTicks] = useState(0);
+  const baseRef = useRef<{ seconds: number; ts: number } | null>(null);
+
+  // Reset base whenever server provides a new value
   useEffect(() => {
-    if (!endsAt) return;
-    const t = setInterval(() => setNow(Date.now()), 500);
+    if (serverSeconds !== null) {
+      baseRef.current = { seconds: serverSeconds, ts: Date.now() };
+      setTicks((t) => t + 1);
+    }
+  }, [serverSeconds]);
+
+  // Tick every second
+  useEffect(() => {
+    if (!deadlineAt && serverSeconds === null) return;
+    const t = setInterval(() => setTicks((n) => n + 1), 1000);
     return () => clearInterval(t);
-  }, [endsAt]);
-  if (!endsAt) return null;
-  return Math.max(0, Math.floor((new Date(endsAt).getTime() - now) / 1000));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deadlineAt]);
+
+  if (serverSeconds === null && !deadlineAt) return null;
+  // ticks used to force re-render every second
+  if (ticks < 0) return null; // never true; silences unused-var warning
+
+  if (baseRef.current) {
+    const elapsed = Math.floor((Date.now() - baseRef.current.ts) / 1000);
+    return Math.max(0, baseRef.current.seconds - elapsed);
+  }
+
+  if (deadlineAt) {
+    return Math.max(0, Math.floor((new Date(deadlineAt).getTime() - Date.now()) / 1000));
+  }
+
+  return null;
 }
 
 function FullScreenLoader({ label = 'Loading…' }: { label?: string }) {
@@ -574,7 +705,7 @@ function FullScreenLoader({ label = 'Loading…' }: { label?: string }) {
  * ============================================================ */
 
 function QuestionCard({
-  index, total, question, answer, onAnswer, examType, shuffleOptions,
+  index, total, question, answer, onAnswer, examType, shuffleOptions, saveStatus,
 }: {
   index: number; total: number;
   question: AttemptQuestion;
@@ -582,11 +713,30 @@ function QuestionCard({
   onAnswer: (a: unknown) => void;
   examType: string | null;
   shuffleOptions: boolean;
+  saveStatus: SaveStatus;
 }) {
   return (
     <div className="card p-6">
-      <div className="text-xs uppercase font-bold tracking-wider text-slate-500 mb-1">
-        Question {index + 1} of {total} · {question.points} pts
+      <div className="flex items-start justify-between mb-1">
+        <div className="text-xs uppercase font-bold tracking-wider text-slate-500">
+          Question {index + 1} of {total} · {question.points} pts
+        </div>
+        {/* Save status badge — the "Saved ✓" indicator */}
+        {saveStatus === 'saving' && (
+          <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+            <Loader2 className="w-3 h-3 animate-spin" /> Saving…
+          </span>
+        )}
+        {saveStatus === 'saved' && (
+          <span className="inline-flex items-center gap-1 text-xs text-green-600 font-semibold">
+            <CheckCircle2 className="w-3 h-3" /> Saved ✓
+          </span>
+        )}
+        {saveStatus === 'error' && (
+          <span className="inline-flex items-center gap-1 text-xs text-red-500">
+            <AlertTriangle className="w-3 h-3" /> Save failed — retry
+          </span>
+        )}
       </div>
       <h2 className="text-lg md:text-xl font-bold text-slate-900 mb-5">{question.text}</h2>
 
